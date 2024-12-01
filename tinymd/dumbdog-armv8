@@ -1,0 +1,1149 @@
+#################################################################
+ARMv8
+#################################################################
+
+-----------------------------------------------------------------
+ARMv8 Achitecture Registers
+-----------------------------------------------------------------
+
+Argument registers (X0-X7) <参数寄存器>
+    用于将参数传递给函数并返回结果.
+Caller-saved temporary registers (X9-X15) <调用者>
+    如果调用者需要在调用另一个函数时保留一些寄存器中的任何值，则调用者必
+    须将受影响的寄存器保存在自己的堆栈帧中.
+Callee-saved registers (X19-X29) <被调用者>
+    保存在被调用者内部。 只要在返回前保存并恢复，就可以在被调用的子程序中
+    修改.
+Registers with a special purpose (X8, X16-X18, X29, X30) <特殊目的寄存器>
+
+-----------------------------------------------------------------
+ACCDATA_EL1: Accelerator Data
+
+ACTLR_EL1: Auxiliary Control Register (EL1)
+ACTLR_EL2: Auxiliary Control Register (EL2)
+ACTLR_EL3: Auxiliary Control Register (EL3)
+
+AFSR0_EL1: Auxiliary Fault Status Register 0 (EL1)
+AFSR0_EL2: Auxiliary Fault Status Register 0 (EL2)
+AFSR0_EL3: Auxiliary Fault Status Register 0 (EL3)
+AFSR1_EL1: Auxiliary Fault Status Register 1 (EL1)
+AFSR1_EL2: Auxiliary Fault Status Register 1 (EL2)
+AFSR1_EL3: Auxiliary Fault Status Register 1 (EL3)
+
+AIDR_EL1: Auxiliary ID Register
+
+ALLINT: All Interrupt Mask Bit
+
+AMAIR_EL1: Auxiliary Memory Attribute Indirection Register (EL1)
+AMAIR_EL2: Auxiliary Memory Attribute Indirection Register (EL2)
+AMAIR_EL3: Auxiliary Memory Attribute Indirection Register (EL3)
+
+AMCFGR_EL0: Activity Monitors Configuration Register
+
+AMCG1IDR_EL0: Activity Monitors Counter Group 1 Identification Register
+
+AMCGCR_EL0: Activity Monitors Counter Group Configuration Register
+
+AMCNTENCLR0_EL0: Activity Monitors Count Enable Clear Register 0
+AMCNTENCLR1_EL0: Activity Monitors Count Enable Clear Register 1
+
+AMCNTENSET0_EL0: Activity Monitors Count Enable Set Register 0
+AMCNTENSET1_EL0: Activity Monitors Count Enable Set Register 1
+
+AMCR_EL0: Activity Monitors Control Register
+
+AMEVCNTR0<n>_EL0: Activity Monitors Event Counter Registers 0
+AMEVCNTR1<n>_EL0: Activity Monitors Event Counter Registers 1
+
+AMEVCNTVOFF0<n>_EL2: Activity Monitors Event Counter Virtual Offset Registers 0
+AMEVCNTVOFF1<n>_EL2: Activity Monitors Event Counter Virtual Offset Registers 1
+
+AMEVTYPER0<n>_EL0: Activity Monitors Event Type Registers 0
+AMEVTYPER1<n>_EL0: Activity Monitors Event Type Registers 1
+
+AMUSERENR_EL0: Activity Monitors User Enable Register
+
+APDAKeyHi_EL1: Pointer Authentication Key A for Data (bits[127:64])
+APDAKeyLo_EL1: Pointer Authentication Key A for Data (bits[63:0])
+APDBKeyHi_EL1: Pointer Authentication Key B for Data (bits[127:64])
+APDBKeyLo_EL1: Pointer Authentication Key B for Data (bits[63:0])
+APGAKeyHi_EL1: Pointer Authentication Key A for Code (bits[127:64])
+APGAKeyLo_EL1: Pointer Authentication Key A for Code (bits[63:0])
+APIAKeyHi_EL1: Pointer Authentication Key A for Instruction (bits[127:64])
+APIAKeyLo_EL1: Pointer Authentication Key A for Instruction (bits[63:0])
+APIBKeyHi_EL1: Pointer Authentication Key B for Instruction (bits[127:64])
+APIBKeyLo_EL1: Pointer Authentication Key B for Instruction (bits[63:0])
+
+CCSIDR2_EL1: Current Cache Size ID Register 2
+
+CCSIDR_EL1: Current Cache Size ID Register
+
+CLIDR_EL1: Cache Level ID Register
+
+CNTFRQ_EL0: Counter-timer Frequency register
+CNTHCTL_EL2: Counter-timer Hypervisor Control register
+CNTHPS_CTL_EL2: Counter-timer Secure Physical Timer Control register (EL2)
+CNTHPS_CVAL_EL2: Counter-timer Secure Physical Timer CompareValue register (EL2)
+CNTHPS_TVAL_EL2: Counter-timer Secure Physical Timer TimerValue register (EL2)
+CNTHP_CTL_EL2: Counter-timer Hypervisor Physical Timer Control register
+CNTHP_CVAL_EL2: Counter-timer Physical Timer CompareValue register (EL2)
+CNTHP_TVAL_EL2: Counter-timer Physical Timer TimerValue register (EL2)
+CNTHVS_CTL_EL2: Counter-timer Secure Virtual Timer Control register (EL2)
+CNTHVS_CVAL_EL2: Counter-timer Secure Virtual Timer CompareValue register (EL2)
+CNTHVS_TVAL_EL2: Counter-timer Secure Virtual Timer TimerValue register (EL2)
+CNTHV_CTL_EL2: Counter-timer Virtual Timer Control register (EL2)
+CNTHV_CVAL_EL2: Counter-timer Virtual Timer CompareValue register (EL2)
+CNTHV_TVAL_EL2: Counter-timer Virtual Timer TimerValue Register (EL2)
+CNTKCTL_EL1: Counter-timer Kernel Control register
+CNTPCTSS_EL0: Counter-timer Self-Synchronized Physical Count register
+CNTPCT_EL0: Counter-timer Physical Count register
+CNTPOFF_EL2: Counter-timer Physical Offset register
+CNTPS_CTL_EL1: Counter-timer Physical Secure Timer Control register
+CNTPS_CVAL_EL1: Counter-timer Physical Secure Timer CompareValue register
+CNTPS_TVAL_EL1: Counter-timer Physical Secure Timer TimerValue register
+CNTP_CTL_EL0: Counter-timer Physical Timer Control register
+CNTP_CVAL_EL0: Counter-timer Physical Timer CompareValue register
+CNTP_TVAL_EL0: Counter-timer Physical Timer TimerValue register
+CNTVCTSS_EL0: Counter-timer Self-Synchronized Virtual Count register
+CNTVCT_EL0: Counter-timer Virtual Count register
+CNTVOFF_EL2: Counter-timer Virtual Offset register
+CNTV_CTL_EL0: Counter-timer Virtual Timer Control register
+CNTV_CVAL_EL0: Counter-timer Virtual Timer CompareValue register
+CNTV_TVAL_EL0: Counter-timer Virtual Timer TimerValue register
+
+CONTEXTIDR_EL1: Context ID Register (EL1)
+CONTEXTIDR_EL2: Context ID Register (EL2)
+
+CPACR_EL1: Architectural Feature Access Control Register
+CPTR_EL2: Architectural Feature Trap Register (EL2)
+CPTR_EL3: Architectural Feature Trap Register (EL3)
+
+CSSELR_EL1: Cache Size Selection Register
+CTR_EL0: Cache Type Register
+
+CurrentEL: Current Exception Level
+
+DACR32_EL2: Domain Access Control Register
+
+DAIF: Interrupt Mask Bits
+
+-----------------------------------------------------------------
+用于清除或设置单个异常掩码位:
+    msr daifclr, #<imm4>
+    msr daifset, #<imm4>
+-----------------------------------------------------------------
+
+DBGAUTHSTATUS_EL1: Debug Authentication Status register
+DBGBCR<n>_EL1: Debug Breakpoint Control Registers
+DBGBVR<n>_EL1: Debug Breakpoint Value Registers
+DBGCLAIMCLR_EL1: Debug CLAIM Tag Clear register
+DBGCLAIMSET_EL1: Debug CLAIM Tag Set register
+DBGDTRRX_EL0: Debug Data Transfer Register, Receive
+DBGDTRTX_EL0: Debug Data Transfer Register, Transmit
+DBGDTR_EL0: Debug Data Transfer Register, half-duplex
+DBGPRCR_EL1: Debug Power Control Register
+DBGVCR32_EL2: Debug Vector Catch Register
+DBGWCR<n>_EL1: Debug Watchpoint Control Registers
+DBGWVR<n>_EL1: Debug Watchpoint Value Registers
+
+DCZID_EL0: Data Cache Zero ID register
+
+DISR_EL1: Deferred Interrupt Status Register
+
+DIT: Data Independent Timing
+
+DLR_EL0: Debug Link Register
+
+DSPSR_EL0: Debug Saved Program Status Register
+
+ELR_EL1: Exception Link Register (EL1)
+ELR_EL2: Exception Link Register (EL2)
+ELR_EL3: Exception Link Register (EL3)
+
+ERRIDR_EL1: Error Record ID Register
+ERRSELR_EL1: Error Record Select Register
+ERXADDR_EL1: Selected Error Record Address Register
+ERXCTLR_EL1: Selected Error Record Control Register
+ERXFR_EL1: Selected Error Record Feature Register
+ERXMISC0_EL1: Selected Error Record Miscellaneous Register 0
+ERXMISC1_EL1: Selected Error Record Miscellaneous Register 1
+ERXMISC2_EL1: Selected Error Record Miscellaneous Register 2
+ERXMISC3_EL1: Selected Error Record Miscellaneous Register 3
+ERXPFGCDN_EL1: Selected Pseudo-fault Generation Countdown register
+ERXPFGCTL_EL1: Selected Pseudo-fault Generation Control register
+ERXPFGF_EL1: Selected Pseudo-fault Generation Feature register
+ERXSTATUS_EL1: Selected Error Record Primary Status Register
+
+ESR_EL1: Exception Syndrome Register (EL1)
+ESR_EL2: Exception Syndrome Register (EL2)
+ESR_EL3: Exception Syndrome Register (EL3)
+
+-----------------------------------------------------------------
+异常状态寄存器(Exception Syndrome Register, ESR_ELn)包含允许异常处理程序
+确定异常原因的信息.
+-----------------------------------------------------------------
+
+FAR_EL1: Fault Address Register (EL1)
+FAR_EL2: Fault Address Register (EL2)
+FAR_EL3: Fault Address Register (EL3)
+
+FPCR: Floating-point Control Register
+
+FPEXC32_EL2: Floating-Point Exception Control register
+
+FPSR: Floating-point Status Register
+
+GCR_EL1: Tag Control Register
+
+GMID_EL1: Multiple tag transfer ID register
+
+HACR_EL2: Hypervisor Auxiliary Control Register
+
+HAFGRTR_EL2: Hypervisor Activity Monitors Fine-Grained Read Trap Register
+
+HCRX_EL2: Extended Hypervisor Configuration Register
+
+HCR_EL2: Hypervisor Configuration Register
+
+HDFGRTR_EL2: Hypervisor Debug Fine-Grained Read Trap Register
+HDFGWTR_EL2: Hypervisor Debug Fine-Grained Write Trap Register
+HFGITR_EL2: Hypervisor Fine-Grained Instruction Trap Register
+HFGRTR_EL2: Hypervisor Fine-Grained Read Trap Register
+HFGWTR_EL2: Hypervisor Fine-Grained Write Trap Register
+HPFAR_EL2: Hypervisor IPA Fault Address Register
+HSTR_EL2: Hypervisor System Trap Register
+
+ICC_AP0R<n>_EL1: Interrupt Controller Active Priorities Group 0 Registers
+ICC_AP1R<n>_EL1: Interrupt Controller Active Priorities Group 1 Registers
+ICC_ASGI1R_EL1: Interrupt Controller Alias Software Generated Interrupt Group 1 Register
+ICC_BPR0_EL1: Interrupt Controller Binary Point Register 0
+ICC_BPR1_EL1: Interrupt Controller Binary Point Register 1
+ICC_CTLR_EL1: Interrupt Controller Control Register (EL1)
+ICC_CTLR_EL3: Interrupt Controller Control Register (EL3)
+ICC_DIR_EL1: Interrupt Controller Deactivate Interrupt Register
+ICC_EOIR0_EL1: Interrupt Controller End Of Interrupt Register 0
+ICC_EOIR1_EL1: Interrupt Controller End Of Interrupt Register 1
+ICC_HPPIR0_EL1: Interrupt Controller Highest Priority Pending Interrupt Register 0
+ICC_HPPIR1_EL1: Interrupt Controller Highest Priority Pending Interrupt Register 1
+ICC_IAR0_EL1: Interrupt Controller Interrupt Acknowledge Register 0
+ICC_IAR1_EL1: Interrupt Controller Interrupt Acknowledge Register 1
+ICC_IGRPEN0_EL1: Interrupt Controller Interrupt Group 0 Enable register
+ICC_IGRPEN1_EL1: Interrupt Controller Interrupt Group 1 Enable register
+ICC_IGRPEN1_EL3: Interrupt Controller Interrupt Group 1 Enable register (EL3)
+ICC_NMIAR1_EL1: Interrupt Controller Non-maskable Interrupt Acknowledge Register 1
+ICC_PMR_EL1: Interrupt Controller Interrupt Priority Mask Register
+ICC_RPR_EL1: Interrupt Controller Running Priority Register
+ICC_SGI0R_EL1: Interrupt Controller Software Generated Interrupt Group 0 Register
+ICC_SGI1R_EL1: Interrupt Controller Software Generated Interrupt Group 1 Register
+ICC_SRE_EL1: Interrupt Controller System Register Enable register (EL1)
+ICC_SRE_EL2: Interrupt Controller System Register Enable register (EL2)
+ICC_SRE_EL3: Interrupt Controller System Register Enable register (EL3)
+ICH_AP0R<n>_EL2: Interrupt Controller Hyp Active Priorities Group 0 Registers
+ICH_AP1R<n>_EL2: Interrupt Controller Hyp Active Priorities Group 1 Registers
+ICH_EISR_EL2: Interrupt Controller End of Interrupt Status Register
+ICH_ELRSR_EL2: Interrupt Controller Empty List Register Status Register
+ICH_HCR_EL2: Interrupt Controller Hyp Control Register
+ICH_LR<n>_EL2: Interrupt Controller List Registers
+ICH_MISR_EL2: Interrupt Controller Maintenance Interrupt State Register
+ICH_VMCR_EL2: Interrupt Controller Virtual Machine Control Register
+ICH_VTR_EL2: Interrupt Controller VGIC Type Register
+ICV_AP0R<n>_EL1: Interrupt Controller Virtual Active Priorities Group 0 Registers
+ICV_AP1R<n>_EL1: Interrupt Controller Virtual Active Priorities Group 1 Registers
+ICV_BPR0_EL1: Interrupt Controller Virtual Binary Point Register 0
+ICV_BPR1_EL1: Interrupt Controller Virtual Binary Point Register 1
+ICV_CTLR_EL1: Interrupt Controller Virtual Control Register
+ICV_DIR_EL1: Interrupt Controller Deactivate Virtual Interrupt Register
+ICV_EOIR0_EL1: Interrupt Controller Virtual End Of Interrupt Register 0
+ICV_EOIR1_EL1: Interrupt Controller Virtual End Of Interrupt Register 1
+ICV_HPPIR0_EL1: Interrupt Controller Virtual Highest Priority Pending Interrupt Register 0
+ICV_HPPIR1_EL1: Interrupt Controller Virtual Highest Priority Pending Interrupt Register 1
+ICV_IAR0_EL1: Interrupt Controller Virtual Interrupt Acknowledge Register 0
+ICV_IAR1_EL1: Interrupt Controller Virtual Interrupt Acknowledge Register 1
+ICV_IGRPEN0_EL1: Interrupt Controller Virtual Interrupt Group 0 Enable register
+ICV_IGRPEN1_EL1: Interrupt Controller Virtual Interrupt Group 1 Enable register
+ICV_NMIAR1_EL1: Interrupt Controller Virtual Non-maskable Interrupt Acknowledge Register 1
+ICV_PMR_EL1: Interrupt Controller Virtual Interrupt Priority Mask Register
+ICV_RPR_EL1: Interrupt Controller Virtual Running Priority Register
+
+ID_AA64AFR0_EL1: AArch64 Auxiliary Feature Register 0
+ID_AA64AFR1_EL1: AArch64 Auxiliary Feature Register 1
+
+ID_AA64DFR0_EL1: AArch64 Debug Feature Register 0
+ID_AA64DFR1_EL1: AArch64 Debug Feature Register 1
+
+ID_AA64ISAR0_EL1: AArch64 Instruction Set Attribute Register 0
+ID_AA64ISAR1_EL1: AArch64 Instruction Set Attribute Register 1
+ID_AA64ISAR2_EL1: AArch64 Instruction Set Attribute Register 2
+
+ID_AA64MMFR0_EL1: AArch64 Memory Model Feature Register 0
+ID_AA64MMFR1_EL1: AArch64 Memory Model Feature Register 1
+ID_AA64MMFR2_EL1: AArch64 Memory Model Feature Register 2
+
+ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0
+ID_AA64PFR1_EL1: AArch64 Processor Feature Register 1
+
+ID_AA64ZFR0_EL1: SVE Feature ID register 0
+
+ID_AFR0_EL1: AArch32 Auxiliary Feature Register 0
+
+ID_DFR0_EL1: AArch32 Debug Feature Register 0
+
+ID_DFR1_EL1: Debug Feature Register 1
+
+ID_ISAR0_EL1: AArch32 Instruction Set Attribute Register 0
+ID_ISAR1_EL1: AArch32 Instruction Set Attribute Register 1
+ID_ISAR2_EL1: AArch32 Instruction Set Attribute Register 2
+ID_ISAR3_EL1: AArch32 Instruction Set Attribute Register 3
+ID_ISAR4_EL1: AArch32 Instruction Set Attribute Register 4
+ID_ISAR5_EL1: AArch32 Instruction Set Attribute Register 5
+ID_ISAR6_EL1: AArch32 Instruction Set Attribute Register 6
+
+ID_MMFR0_EL1: AArch32 Memory Model Feature Register 0
+ID_MMFR1_EL1: AArch32 Memory Model Feature Register 1
+ID_MMFR2_EL1: AArch32 Memory Model Feature Register 2
+ID_MMFR3_EL1: AArch32 Memory Model Feature Register 3
+ID_MMFR4_EL1: AArch32 Memory Model Feature Register 4
+ID_MMFR5_EL1: AArch32 Memory Model Feature Register 5
+
+ID_PFR0_EL1: AArch32 Processor Feature Register 0
+ID_PFR1_EL1: AArch32 Processor Feature Register 1
+ID_PFR2_EL1: AArch32 Processor Feature Register 2
+
+IFSR32_EL2: Instruction Fault Status Register (EL2)
+
+ISR_EL1: Interrupt Status Register
+
+LORC_EL1: LORegion Control (EL1)
+
+LOREA_EL1: LORegion End Address (EL1)
+
+LORID_EL1: LORegionID (EL1)
+
+LORN_EL1: LORegion Number (EL1)
+
+LORSA_EL1: LORegion Start Address (EL1)
+
+MAIR_EL1: Memory Attribute Indirection Register (EL1)
+MAIR_EL2: Memory Attribute Indirection Register (EL2)
+MAIR_EL3: Memory Attribute Indirection Register (EL3)
+
+MDCCINT_EL1: Monitor DCC Interrupt Enable Register
+MDCCSR_EL0: Monitor DCC Status Register
+
+MDCR_EL2: Monitor Debug Configuration Register (EL2)
+MDCR_EL3: Monitor Debug Configuration Register (EL3)
+
+MDRAR_EL1: Monitor Debug ROM Address Register
+MDSCR_EL1: Monitor Debug System Control Register
+MIDR_EL1: Main ID Register
+
+MPAM0_EL1: MPAM0 Register (EL1)
+MPAM1_EL1: MPAM1 Register (EL1)
+MPAM2_EL2: MPAM2 Register (EL2)
+MPAM3_EL3: MPAM3 Register (EL3)
+
+MPAMHCR_EL2: MPAM Hypervisor Control Register (EL2)
+MPAMIDR_EL1: MPAM ID Register (EL1)
+
+MPAMVPM0_EL2: MPAM Virtual PARTID Mapping Register 0
+MPAMVPM1_EL2: MPAM Virtual PARTID Mapping Register 1
+MPAMVPM2_EL2: MPAM Virtual PARTID Mapping Register 2
+MPAMVPM3_EL2: MPAM Virtual PARTID Mapping Register 3
+MPAMVPM4_EL2: MPAM Virtual PARTID Mapping Register 4
+
+MPAMVPM5_EL2: MPAM Virtual PARTID Mapping Register 5
+MPAMVPM6_EL2: MPAM Virtual PARTID Mapping Register 6
+MPAMVPM7_EL2: MPAM Virtual PARTID Mapping Register 7
+
+MPAMVPMV_EL2: MPAM Virtual Partition Mapping Valid Register
+MPIDR_EL1: Multiprocessor Affinity Register
+
+MVFR0_EL1: AArch32 Media and VFP Feature Register 0
+MVFR1_EL1: AArch32 Media and VFP Feature Register 1
+MVFR2_EL1: AArch32 Media and VFP Feature Register 2
+NZCV: Condition Flags
+
+OSDLR_EL1: OS Double Lock Register
+OSDTRRX_EL1: OS Lock Data Transfer Register, Receive
+OSDTRTX_EL1: OS Lock Data Transfer Register, Transmit
+OSECCR_EL1: OS Lock Exception Catch Control Register
+OSLAR_EL1: OS Lock Access Register
+OSLSR_EL1: OS Lock Status Register
+PAN: Privileged Access Never
+PAR_EL1: Physical Address Register
+PMBIDR_EL1: Profiling Buffer ID Register
+PMBLIMITR_EL1: Profiling Buffer Limit Address Register
+PMBPTR_EL1: Profiling Buffer Write Pointer Register
+PMBSR_EL1: Profiling Buffer Status/syndrome Register
+PMCCFILTR_EL0: Performance Monitors Cycle Count Filter Register
+PMCCNTR_EL0: Performance Monitors Cycle Count Register
+
+PMCEID0_EL0: Performance Monitors Common Event Identification register 0
+PMCEID1_EL0: Performance Monitors Common Event Identification register 1
+
+PMCNTENCLR_EL0: Performance Monitors Count Enable Clear register
+PMCNTENSET_EL0: Performance Monitors Count Enable Set register
+
+PMCR_EL0: Performance Monitors Control Register
+PMEVCNTR<n>_EL0: Performance Monitors Event Count Registers
+PMEVTYPER<n>_EL0: Performance Monitors Event Type Registers
+PMINTENCLR_EL1: Performance Monitors Interrupt Enable Clear register
+PMINTENSET_EL1: Performance Monitors Interrupt Enable Set register
+PMMIR_EL1: Performance Monitors Machine Identification Register
+PMOVSCLR_EL0: Performance Monitors Overflow Flag Status Clear Register
+PMOVSSET_EL0: Performance Monitors Overflow Flag Status Set register
+PMSCR_EL1: Statistical Profiling Control Register (EL1)
+
+PMSCR_EL2: Statistical Profiling Control Register (EL2)
+PMSELR_EL0: Performance Monitors Event Counter Selection Register
+PMSEVFR_EL1: Sampling Event Filter Register
+PMSFCR_EL1: Sampling Filter Control Register
+PMSICR_EL1: Sampling Interval Counter Register
+PMSIDR_EL1: Sampling Profiling ID Register
+PMSIRR_EL1: Sampling Interval Reload Register
+PMSLATFR_EL1: Sampling Latency Filter Register
+PMSNEVFR_EL1: Sampling Inverted Event Filter Register
+PMSWINC_EL0: Performance Monitors Software Increment register
+PMUSERENR_EL0: Performance Monitors User Enable Register
+PMXEVCNTR_EL0: Performance Monitors Selected Event Count Register
+PMXEVTYPER_EL0: Performance Monitors Selected Event Type Register
+REVIDR_EL1: Revision ID Register
+RGSR_EL1: Random Allocation Tag Seed Register.
+RMR_EL1: Reset Management Register (EL1)
+RMR_EL2: Reset Management Register (EL2)
+RMR_EL3: Reset Management Register (EL3)
+RNDR: Random Number
+RNDRRS: Reseeded Random Number
+RVBAR_EL1: Reset Vector Base Address Register (if EL2 and EL3 not implemented)
+RVBAR_EL2: Reset Vector Base Address Register (if EL3 not implemented)
+RVBAR_EL3: Reset Vector Base Address Register (if EL3 implemented)
+S3_<op1>_<Cn>_<Cm>_<op2>: IMPLEMENTATION DEFINED registers
+SCR_EL3: Secure Configuration Register
+SCTLR_EL1: System Control Register (EL1)
+SCTLR_EL2: System Control Register (EL2)
+SCTLR_EL3: System Control Register (EL3)
+
+-----------------------------------------------------------------
+    mrs x0, sctlr_el1
+    orr x0, x0, #(1<<2)      - Set [C] bit and enable data caching
+    orr x0, x0, #(1<<12)     - Set [I] bit and enable instruction caching
+    msr sctlr_el1, x0
+-----------------------------------------------------------------
+Byte-ordering controled by SCTLR_ELn.EE
+
+                               3  2  1  0
+               Little Endian   |78|56|34|12|
+             /
+0x12345678 -+
+             \                 0  1  2  3
+               Big Endian      |12|34|56|78|
+-----------------------------------------------------------------
+
+SCXTNUM_EL0: EL0 Read/Write Software Context Number
+SCXTNUM_EL1: EL1 Read/Write Software Context Number
+SCXTNUM_EL2: EL2 Read/Write Software Context Number
+SCXTNUM_EL3: EL3 Read/Write Software Context Number
+SDER32_EL2: AArch32 Secure Debug Enable Register
+SDER32_EL3: AArch32 Secure Debug Enable Register
+SPSel: Stack Pointer Select
+
+-----------------------------------------------------------------
+    msr spsel, #0       - switch to sp_el0
+-----------------------------------------------------------------
+
+SPSR_abt: Saved Program Status Register (Abort mode)
+
+SPSR_EL1: Saved Program Status Register (EL1)
+SPSR_EL2: Saved Program Status Register (EL2)
+SPSR_EL3: Saved Program Status Register (EL3)
+
+异常发生时, CPSR中的处理器状态将保存在相关的程序状态保存寄存器SPSR中. SPSR保存着异常
+发生之前的PSTATE的值, 用于在异常返回时恢复PSTATE的值.
+
+31                    21                  9         4        0
++-+-+-+-+---- ... ---+--+--+--- ... -----+-+-+-+-+-+-+--------+
+|N|Z|C|V|            |SS|IL|             |D|A|I|F| |M| M[3:0] |
++-+-+-+-+---- ... ---+--+--+--- ... -----+-+-+-+-+-+-+--------+
+
+SS     - Software Step Bit
+IL     - Illegal Execution State Bit
+M[4]   - 异常发生时的执行状态, 0表示AArch64
+M[3:0] - 异常发生时的mode或异常级别
+-----------------------------------------------------------------
+
+SPSR_fiq: Saved Program Status Register (FIQ mode)
+SPSR_irq: Saved Program Status Register (IRQ mode)
+SPSR_und: Saved Program Status Register (Undefined mode)
+
+SP_EL0: Stack Pointer (EL0)
+SP_EL1: Stack Pointer (EL1)
+SP_EL2: Stack Pointer (EL2)
+SP_EL3: Stack Pointer (EL3)
+
+SSBS: Speculative Store Bypass Safe
+TCO: Tag Check Override
+
+TCR_EL1: Translation Control Register (EL1)
+TCR_EL2: Translation Control Register (EL2)
+TCR_EL3: Translation Control Register (EL3)
+
+TFSRE0_EL1: Tag Fault Status Register (EL0)
+
+TFSR_EL1: Tag Fault Status Register (EL1)
+TFSR_EL2: Tag Fault Status Register (EL2)
+TFSR_EL3: Tag Fault Status Register (EL3)
+
+TPIDRRO_EL0: EL0 Read-Only Software Thread ID Register
+TPIDR_EL0: EL0 Read/Write Software Thread ID Register
+
+TPIDR_EL1: EL1 Software Thread ID Register
+TPIDR_EL2: EL2 Software Thread ID Register
+TPIDR_EL3: EL3 Software Thread ID Register
+
+TRFCR_EL1: Trace Filter Control Register (EL1)
+TRFCR_EL2: Trace Filter Control Register (EL2)
+
+TTBR0_EL1: Translation Table Base Register 0 (EL1)
+TTBR0_EL2: Translation Table Base Register 0 (EL2)
+TTBR0_EL3: Translation Table Base Register 0 (EL3)
+TTBR1_EL1: Translation Table Base Register 1 (EL1)
+TTBR1_EL2: Translation Table Base Register 1 (EL2)
+
+UAO: User Access Override
+
+VBAR_EL1: Vector Base Address Register (EL1)
+VBAR_EL2: Vector Base Address Register (EL2)
+VBAR_EL3: Vector Base Address Register (EL3)
+
+VDISR_EL2: Virtual Deferred Interrupt Status Register
+VMPIDR_EL2: Virtualization Multiprocessor ID Register
+VNCR_EL2: Virtual Nested Control Register
+VPIDR_EL2: Virtualization Processor ID Register
+VSESR_EL2: Virtual SError Exception Syndrome Register
+VSTCR_EL2: Virtualization Secure Translation Control Register
+VSTTBR_EL2: Virtualization Secure Translation Table Base Register
+VTCR_EL2: Virtualization Translation Control Register
+VTTBR_EL2: Virtualization Translation Table Base Register
+
+ZCR_EL1: SVE Control Register (EL1)
+ZCR_EL2: SVE Control Register (EL2)
+ZCR_EL3: SVE Control Register (EL3)
+
+
+-----------------------------------------------------------------
+ARMv8 ISA
+-----------------------------------------------------------------
+
+ABS: Absolute value.
+ADC: Add with Carry.
+ADCS: Add with Carry, setting flags.
+ADD (extended register): Add (extended register).
+ADD (immediate): Add (immediate).
+ADD (shifted register): Add (shifted register).
+ADDG: Add with Tag.
+ADDPT: Add checked pointer.
+ADDS (extended register): Add (extended register), setting flags.
+ADDS (immediate): Add (immediate), setting flags.
+ADDS (shifted register): Add (shifted register), setting flags.
+ADR: Form PC-relative address.
+ADRP: Form PC-relative address to 4KB page.
+AND (immediate): Bitwise AND (immediate).
+AND (shifted register): Bitwise AND (shifted register).
+ANDS (immediate): Bitwise AND (immediate), setting flags.
+ANDS (shifted register): Bitwise AND (shifted register), setting flags.
+ASR (immediate): Arithmetic Shift Right (immediate): an alias of SBFM.
+ASR (register): Arithmetic Shift Right (register): an alias of ASRV.
+ASRV: Arithmetic Shift Right Variable.
+AT: Address Translate: an alias of SYS.
+AUTDA, AUTDZA: Authenticate Data address, using key A.
+AUTDB, AUTDZB: Authenticate Data address, using key B.
+AUTIA, AUTIA1716, AUTIASP, AUTIAZ, AUTIZA: Authenticate Instruction address, using key A.
+AUTIA171615: Authenticate Instruction address, using key A.
+AUTIASPPC (immediate): Authenticate return address, using key A (immediate).
+AUTIASPPC (register): Authenticate return address, using key A (register).
+AUTIB, AUTIB1716, AUTIBSP, AUTIBZ, AUTIZB: Authenticate Instruction address, using key B.
+AUTIB171615: Authenticate Instruction address, using key B.
+AUTIBSPPC (immediate): Authenticate return address, using key B (immediate).
+AUTIBSPPC (register): Authenticate return address, using key B (register).
+AXFLAG: Convert floating-point condition flags from Arm to external format.
+B: Branch.
+B.cond: Branch conditionally.
+BC.cond: Branch Consistent conditionally.
+
+BFC: Bitfield Clear: an alias of BFM.
+BFI: Bitfield Insert: an alias of BFM.
+BFM: Bitfield Move.
+BFXIL: Bitfield extract and insert at low end: an alias of BFM.
+BIC (shifted register): Bitwise Bit Clear (shifted register).
+BICS (shifted register): Bitwise Bit Clear (shifted register), setting flags.
+BL: Branch with Link.
+BLR: Branch with Link to Register.
+BLRAA, BLRAAZ, BLRAB, BLRABZ: Branch with Link to Register, with pointer authentication.
+BR: Branch to Register.
+BRAA, BRAAZ, BRAB, BRABZ: Branch to Register, with pointer authentication.
+BRB: Branch Record Buffer: an alias of SYS.
+BRK: Breakpoint instruction.
+
+-----------------------------------------------------------------
+    brk #<imm16>      - 进入监视器模式调试，其中有片上调试监视器代码
+-----------------------------------------------------------------
+
+BTI: Branch Target Identification.
+CAS, CASA, CASAL, CASL: Compare and Swap word or doubleword in memory.
+CASB, CASAB, CASALB, CASLB: Compare and Swap byte in memory.
+CASH, CASAH, CASALH, CASLH: Compare and Swap halfword in memory.
+CASP, CASPA, CASPAL, CASPL: Compare and Swap Pair of words or doublewords in memory.
+CBNZ: Compare and Branch on Nonzero.
+CBZ: Compare and Branch on Zero.
+CCMN (immediate): Conditional Compare Negative (immediate).
+CCMN (register): Conditional Compare Negative (register).
+CCMP (immediate): Conditional Compare (immediate).
+CCMP (register): Conditional Compare (register).
+CFINV: Invert Carry Flag.
+CFP: Control Flow Prediction Restriction by Context: an alias of SYS.
+CHKFEAT: Check feature status.
+CINC: Conditional Increment: an alias of CSINC.
+CINV: Conditional Invert: an alias of CSINV.
+CLRBHB: Clear Branch History.
+CLREX: Clear Exclusive.
+CLS: Count Leading Sign bits.
+CLZ: Count Leading Zeros.
+CMN (extended register): Compare Negative (extended register): an alias of ADDS (extended register).
+
+CMN (immediate): Compare Negative (immediate): an alias of ADDS (immediate).
+CMN (shifted register): Compare Negative (shifted register): an alias of ADDS (shifted register).
+CMP (extended register): Compare (extended register): an alias of SUBS (extended register).
+CMP (immediate): Compare (immediate): an alias of SUBS (immediate).
+CMP (shifted register): Compare (shifted register): an alias of SUBS (shifted register).
+CMPP: Compare with Tag: an alias of SUBPS.
+CNEG: Conditional Negate: an alias of CSNEG.
+CNT: Count bits.
+COSP: Clear Other Speculative Prediction Restriction by Context: an alias of SYS.
+CPP: Cache Prefetch Prediction Restriction by Context: an alias of SYS.
+CPYFP, CPYFM, CPYFE: Memory Copy Forward-only.
+CPYFPN, CPYFMN, CPYFEN: Memory Copy Forward-only, reads and writes non-temporal.
+CPYFPRN, CPYFMRN, CPYFERN: Memory Copy Forward-only, reads non-temporal.
+CPYFPRT, CPYFMRT, CPYFERT: Memory Copy Forward-only, reads unprivileged.
+CPYFPRTN, CPYFMRTN, CPYFERTN: Memory Copy Forward-only, reads unprivileged, reads and writes non-temporal.
+CPYFPRTRN, CPYFMRTRN, CPYFERTRN: Memory Copy Forward-only, reads unprivileged and non-temporal.
+CPYFPRTWN, CPYFMRTWN, CPYFERTWN: Memory Copy Forward-only, reads unprivileged, writes non-temporal.
+CPYFPT, CPYFMT, CPYFET: Memory Copy Forward-only, reads and writes unprivileged.
+CPYFPTN, CPYFMTN, CPYFETN: Memory Copy Forward-only, reads and writes unprivileged and non-temporal.
+CPYFPTRN, CPYFMTRN, CPYFETRN: Memory Copy Forward-only, reads and writes unprivileged, reads non-temporal.
+CPYFPTWN, CPYFMTWN, CPYFETWN: Memory Copy Forward-only, reads and writes unprivileged, writes non-temporal.
+CPYFPWN, CPYFMWN, CPYFEWN: Memory Copy Forward-only, writes non-temporal.
+CPYFPWT, CPYFMWT, CPYFEWT: Memory Copy Forward-only, writes unprivileged.
+CPYFPWTN, CPYFMWTN, CPYFEWTN: Memory Copy Forward-only, writes unprivileged, reads and writes non-temporal.
+CPYFPWTRN, CPYFMWTRN, CPYFEWTRN: Memory Copy Forward-only, writes unprivileged, reads non-temporal.
+CPYFPWTWN, CPYFMWTWN, CPYFEWTWN: Memory Copy Forward-only, writes unprivileged and non-temporal.
+CPYP, CPYM, CPYE: Memory Copy.
+CPYPN, CPYMN, CPYEN: Memory Copy, reads and writes non-temporal.
+CPYPRN, CPYMRN, CPYERN: Memory Copy, reads non-temporal.
+CPYPRT, CPYMRT, CPYERT: Memory Copy, reads unprivileged.
+CPYPRTN, CPYMRTN, CPYERTN: Memory Copy, reads unprivileged, reads and writes non-temporal.
+CPYPRTRN, CPYMRTRN, CPYERTRN: Memory Copy, reads unprivileged and non-temporal.
+CPYPRTWN, CPYMRTWN, CPYERTWN: Memory Copy, reads unprivileged, writes non-temporal.
+CPYPT, CPYMT, CPYET: Memory Copy, reads and writes unprivileged.
+CPYPTN, CPYMTN, CPYETN: Memory Copy, reads and writes unprivileged and non-temporal.
+CPYPTRN, CPYMTRN, CPYETRN: Memory Copy, reads and writes unprivileged, reads non-temporal.
+
+CPYPTWN, CPYMTWN, CPYETWN: Memory Copy, reads and writes unprivileged, writes non-temporal
+CPYPWN, CPYMWN, CPYEWN: Memory Copy, writes non-temporal.
+CPYPWT, CPYMWT, CPYEWT: Memory Copy, writes unprivileged.
+CPYPWTN, CPYMWTN, CPYEWTN: Memory Copy, writes unprivileged, reads and writes non-temporal.
+CPYPWTRN, CPYMWTRN, CPYEWTRN: Memory Copy, writes unprivileged, reads non-temporal.
+CPYPWTWN, CPYMWTWN, CPYEWTWN: Memory Copy, writes unprivileged and non-temporal.
+CRC32B, CRC32H, CRC32W, CRC32X: CRC32 checksum.
+CRC32CB, CRC32CH, CRC32CW, CRC32CX: CRC32C checksum.
+CSDB: Consumption of Speculative Data Barrier.
+CSEL: Conditional Select.
+CSET: Conditional Set: an alias of CSINC.
+CSETM: Conditional Set Mask: an alias of CSINV.
+CSINC: Conditional Select Increment.
+CSINV: Conditional Select Invert.
+CSNEG: Conditional Select Negation.
+CTZ: Count Trailing Zeros.
+DC: Data Cache operation: an alias of SYS.
+DCPS1: Debug Change PE State to EL1.
+DCPS2: Debug Change PE State to EL2.
+DCPS3: Debug Change PE State to EL3.
+DGH: Data Gathering Hint.
+DMB: Data Memory Barrier.
+DRPS: Debug restore PE state.
+DSB: Data Synchronization Barrier.
+DVP: Data Value Prediction Restriction by Context: an alias of SYS.
+EON (shifted register): Bitwise Exclusive-OR NOT (shifted register).
+EOR (immediate): Bitwise Exclusive-OR (immediate).
+EOR (shifted register): Bitwise Exclusive-OR (shifted register).
+ERET: Exception Return.
+ERETAA, ERETAB: Exception Return, with pointer authentication.
+ESB: Error Synchronization Barrier.
+EXTR: Extract register.
+GCSB: Guarded Control Stack Barrier.
+GCSPOPCX: Guarded Control Stack Pop and Compare exception return record: an alias of SYS.
+GCSPOPM: Guarded Control Stack Pop: an alias of SYSL.
+GCSPOPX: Guarded Control Stack Pop exception return record: an alias of SYS.
+
+GCSPUSHM: Guarded Control Stack Push: an alias of SYS
+GCSPUSHX: Guarded Control Stack Push exception return record: an alias of SYS.
+GCSSS1: Guarded Control Stack Switch Stack 1: an alias of SYS.
+GCSSS2: Guarded Control Stack Switch Stack 2: an alias of SYSL.
+GCSSTR: Guarded Control Stack Store.
+GCSSTTR: Guarded Control Stack unprivileged Store.
+GMI: Tag Mask Insert.
+HINT: Hint instruction.
+HLT: Halt instruction.
+
+-----------------------------------------------------------------
+    hlt #<imm16>      - 进入停止模式调试，其中连接外部调试硬件
+-----------------------------------------------------------------
+
+HVC: Hypervisor Call.
+IC: Instruction Cache operation: an alias of SYS.
+IRG: Insert Random Tag.
+ISB: Instruction Synchronization Barrier.
+LD64B: Single-copy Atomic 64-byte Load.
+LDADD, LDADDA, LDADDAL, LDADDL: Atomic add on word or doubleword in memory.
+LDADDB, LDADDAB, LDADDALB, LDADDLB: Atomic add on byte in memory.
+LDADDH, LDADDAH, LDADDALH, LDADDLH: Atomic add on halfword in memory.
+LDAPR: Load-Acquire RCpc Register.
+LDAPRB: Load-Acquire RCpc Register Byte.
+LDAPRH: Load-Acquire RCpc Register Halfword.
+LDAPUR: Load-Acquire RCpc Register (unscaled).
+LDAPURB: Load-Acquire RCpc Register Byte (unscaled).
+LDAPURH: Load-Acquire RCpc Register Halfword (unscaled).
+LDAPURSB: Load-Acquire RCpc Register Signed Byte (unscaled).
+LDAPURSH: Load-Acquire RCpc Register Signed Halfword (unscaled).
+LDAPURSW: Load-Acquire RCpc Register Signed Word (unscaled).
+LDAR: Load-Acquire Register.
+LDARB: Load-Acquire Register Byte.
+LDARH: Load-Acquire Register Halfword.
+LDAXP: Load-Acquire Exclusive Pair of Registers.
+LDAXR: Load-Acquire Exclusive Register.
+LDAXRB: Load-Acquire Exclusive Register Byte.
+LDAXRH: Load-Acquire Exclusive Register Halfword.
+LDCLR, LDCLRA, LDCLRAL, LDCLRL: Atomic bit clear on word or doubleword in memory.
+LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB: Atomic bit clear on byte in memory.
+LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH: Atomic bit clear on halfword in memory.
+
+LDCLRP, LDCLRPA, LDCLRPAL, LDCLRPL: Atomic bit clear on quadword in memory.
+LDEOR, LDEORA, LDEORAL, LDEORL: Atomic Exclusive-OR on word or doubleword in memory.
+LDEORB, LDEORAB, LDEORALB, LDEORLB: Atomic Exclusive-OR on byte in memory.
+LDEORH, LDEORAH, LDEORALH, LDEORLH: Atomic Exclusive-OR on halfword in memory.
+LDG: Load Allocation Tag.
+LDGM: Load Tag Multiple.
+LDIAPP: Load-Acquire RCpc ordered Pair of registers.
+LDLAR: Load LOAcquire Register.
+LDLARB: Load LOAcquire Register Byte.
+LDLARH: Load LOAcquire Register Halfword.
+LDNP: Load Pair of Registers, with non-temporal hint.
+LDP: Load Pair of Registers.
+LDPSW: Load Pair of Registers Signed Word.
+LDR (immediate): Load Register (immediate).
+LDR (literal): Load Register (literal).
+LDR (register): Load Register (register).
+LDRAA, LDRAB: Load Register, with pointer authentication.
+LDRB (immediate): Load Register Byte (immediate).
+LDRB (register): Load Register Byte (register).
+LDRH (immediate): Load Register Halfword (immediate).
+LDRH (register): Load Register Halfword (register).
+LDRSB (immediate): Load Register Signed Byte (immediate).
+LDRSB (register): Load Register Signed Byte (register).
+LDRSH (immediate): Load Register Signed Halfword (immediate).
+LDRSH (register): Load Register Signed Halfword (register).
+LDRSW (immediate): Load Register Signed Word (immediate).
+LDRSW (literal): Load Register Signed Word (literal).
+LDRSW (register): Load Register Signed Word (register).
+LDSET, LDSETA, LDSETAL, LDSETL: Atomic bit set on word or doubleword in memory.
+LDSETB, LDSETAB, LDSETALB, LDSETLB: Atomic bit set on byte in memory.
+LDSETH, LDSETAH, LDSETALH, LDSETLH: Atomic bit set on halfword in memory.
+LDSETP, LDSETPA, LDSETPAL, LDSETPL: Atomic bit set on quadword in memory.
+LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL: Atomic signed maximum on word or doubleword in memory.
+LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB: Atomic signed maximum on byte in memory.
+LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH: Atomic signed maximum on halfword in memory.
+LDSMIN, LDSMINA, LDSMINAL, LDSMINL: Atomic signed minimum on word or doubleword in memory.
+
+LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB: Atomic signed minimum on byte in memory
+LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH: Atomic signed minimum on halfword in memory.
+LDTR: Load Register (unprivileged).
+LDTRB: Load Register Byte (unprivileged).
+LDTRH: Load Register Halfword (unprivileged).
+LDTRSB: Load Register Signed Byte (unprivileged).
+LDTRSH: Load Register Signed Halfword (unprivileged).
+LDTRSW: Load Register Signed Word (unprivileged).
+LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL: Atomic unsigned maximum on word or doubleword in memory.
+LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB: Atomic unsigned maximum on byte in memory.
+LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH: Atomic unsigned maximum on halfword in memory.
+LDUMIN, LDUMINA, LDUMINAL, LDUMINL: Atomic unsigned minimum on word or doubleword in memory.
+LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB: Atomic unsigned minimum on byte in memory.
+LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH: Atomic unsigned minimum on halfword in memory.
+LDUR: Load Register (unscaled).
+LDURB: Load Register Byte (unscaled).
+LDURH: Load Register Halfword (unscaled).
+LDURSB: Load Register Signed Byte (unscaled).
+LDURSH: Load Register Signed Halfword (unscaled).
+LDURSW: Load Register Signed Word (unscaled).
+LDXP: Load Exclusive Pair of Registers.
+LDXR: Load Exclusive Register.
+LDXRB: Load Exclusive Register Byte.
+LDXRH: Load Exclusive Register Halfword.
+LSL (immediate): Logical Shift Left (immediate): an alias of UBFM.
+LSL (register): Logical Shift Left (register): an alias of LSLV.
+LSLV: Logical Shift Left Variable.
+LSR (immediate): Logical Shift Right (immediate): an alias of UBFM.
+LSR (register): Logical Shift Right (register): an alias of LSRV.
+LSRV: Logical Shift Right Variable.
+MADD: Multiply-Add.
+MADDPT: Multiply-Add checked pointer.
+MNEG: Multiply-Negate: an alias of MSUB.
+MOV (bitmask immediate): Move (bitmask immediate): an alias of ORR (immediate).
+MOV (inverted wide immediate): Move (inverted wide immediate): an alias of MOVN.
+MOV (register): Move (register): an alias of ORR (shifted register).
+
+MOV (to/from SP): Move (to/from SP): an alias of ADD (immediate)
+MOV (wide immediate): Move (wide immediate): an alias of MOVZ.
+MOVK: Move wide with keep.
+MOVN: Move wide with NOT.
+MOVZ: Move wide with zero.
+MRRS: Move System Register to two adjacent general-purpose registers.
+MRS: Move System Register to general-purpose register.
+MSR (immediate): Move immediate value to Special Register.
+MSR (register): Move general-purpose register to System Register.
+MSRR: Move two adjacent general-purpose registers to System Register.
+MSUB: Multiply-Subtract.
+MSUBPT: Multiply-Subtract checked pointer.
+MUL: Multiply: an alias of MADD.
+MVN: Bitwise NOT: an alias of ORN (shifted register).
+NEG (shifted register): Negate (shifted register): an alias of SUB (shifted register).
+NEGS: Negate, setting flags: an alias of SUBS (shifted register).
+NGC: Negate with Carry: an alias of SBC.
+NGCS: Negate with Carry, setting flags: an alias of SBCS.
+NOP: No Operation.
+ORN (shifted register): Bitwise OR NOT (shifted register).
+ORR (immediate): Bitwise OR (immediate).
+ORR (shifted register): Bitwise OR (shifted register).
+PACDA, PACDZA: Pointer Authentication Code for Data address, using key A.
+PACDB, PACDZB: Pointer Authentication Code for Data address, using key B.
+PACGA: Pointer Authentication Code, using Generic key.
+PACIA, PACIA1716, PACIASP, PACIAZ, PACIZA: Pointer Authentication Code for Instruction address, using key A.
+PACIA171615: Pointer Authentication Code for Instruction address, using key A.
+PACIASPPC: Pointer Authentication Code for return address, using key A.
+PACIB, PACIB1716, PACIBSP, PACIBZ, PACIZB: Pointer Authentication Code for Instruction address, using key B.
+PACIB171615: Pointer Authentication Code for Instruction address, using key B.
+PACIBSPPC: Pointer Authentication Code for return address, using key B.
+PACM: Pointer authentication modifier.
+PACNBIASPPC: Pointer Authentication Code for return address, using key A, not a Branch Target.
+PACNBIBSPPC: Pointer Authentication Code for return address, using key B, not a Branch Target.
+PRFM (immediate): Prefetch Memory (immediate).
+PRFM (literal): Prefetch Memory (literal).
+
+PRFM (register): Prefetch Memory (register)
+PRFUM: Prefetch Memory (unscaled offset).
+PSB: Profiling Synchronization Barrier.
+PSSBB: Physical Speculative Store Bypass Barrier: an alias of DSB.
+RBIT: Reverse Bits.
+RCWCAS, RCWCASA, RCWCASL, RCWCASAL: Read Check Write Compare and Swap doubleword in memory.
+RCWCASP, RCWCASPA, RCWCASPL, RCWCASPAL: Read Check Write Compare and Swap quadword in memory.
+RCWCLR, RCWCLRA, RCWCLRL, RCWCLRAL: Read Check Write atomic bit Clear on doubleword in memory.
+RCWCLRP, RCWCLRPA, RCWCLRPL, RCWCLRPAL: Read Check Write atomic bit Clear on quadword in memory.
+RCWSCAS, RCWSCASA, RCWSCASL, RCWSCASAL: Read Check Write Software Compare and Swap doubleword in memory.
+RCWSCASP, RCWSCASPA, RCWSCASPL, RCWSCASPAL: Read Check Write Software Compare and Swap quadword in memory.
+RCWSCLR, RCWSCLRA, RCWSCLRL, RCWSCLRAL: Read Check Write Software atomic bit Clear on doubleword in memory.
+RCWSCLRP, RCWSCLRPA, RCWSCLRPL, RCWSCLRPAL: Read Check Write Software atomic bit Clear on quadword in memory.
+RCWSET, RCWSETA, RCWSETL, RCWSETAL: Read Check Write atomic bit Set on doubleword in memory.
+RCWSETP, RCWSETPA, RCWSETPL, RCWSETPAL: Read Check Write atomic bit Set on quadword in memory.
+RCWSSET, RCWSSETA, RCWSSETL, RCWSSETAL: Read Check Write Software atomic bit Set on doubleword in memory.
+RCWSSETP, RCWSSETPA, RCWSSETPL, RCWSSETPAL: Read Check Write Software atomic bit Set on quadword in memory.
+RCWSSWP, RCWSSWPA, RCWSSWPL, RCWSSWPAL: Read Check Write Software Swap doubleword in memory.
+RCWSSWPP, RCWSSWPPA, RCWSSWPPL, RCWSSWPPAL: Read Check Write Software Swap quadword in memory.
+RCWSWP, RCWSWPA, RCWSWPL, RCWSWPAL: Read Check Write Swap doubleword in memory.
+RCWSWPP, RCWSWPPA, RCWSWPPL, RCWSWPPAL: Read Check Write Swap quadword in memory.
+RET: Return from subroutine.
+RETAA, RETAB: Return from subroutine, with pointer authentication.
+RETAASPPC, RETABSPPC (immediate): Return from subroutine, with enhanced pointer authentication return (immediate).
+RETAASPPC, RETABSPPC (register): Return from subroutine, with enhanced pointer authentication return (register).
+REV: Reverse Bytes.
+REV16: Reverse bytes in 16-bit halfwords.
+REV32: Reverse bytes in 32-bit words.
+REV64: Reverse Bytes: an alias of REV.
+RMIF: Rotate, Mask Insert Flags.
+ROR (immediate): Rotate right (immediate): an alias of EXTR.
+ROR (register): Rotate Right (register): an alias of RORV.
+RORV: Rotate Right Variable.
+RPRFM: Range Prefetch Memory.
+SB: Speculation Barrier.
+SBC: Subtract with Carry.
+
+SBCS: Subtract with Carry, setting flags
+SBFIZ: Signed Bitfield Insert in Zero: an alias of SBFM.
+SBFM: Signed Bitfield Move.
+SBFX: Signed Bitfield Extract: an alias of SBFM.
+SDIV: Signed Divide.
+SETF8, SETF16: Evaluation of 8 or 16 bit flag values.
+SETGP, SETGM, SETGE: Memory Set with tag setting.
+SETGPN, SETGMN, SETGEN: Memory Set with tag setting, non-temporal.
+SETGPT, SETGMT, SETGET: Memory Set with tag setting, unprivileged.
+SETGPTN, SETGMTN, SETGETN: Memory Set with tag setting, unprivileged and non-temporal.
+SETP, SETM, SETE: Memory Set.
+SETPN, SETMN, SETEN: Memory Set, non-temporal.
+SETPT, SETMT, SETET: Memory Set, unprivileged.
+SETPTN, SETMTN, SETETN: Memory Set, unprivileged and non-temporal.
+SEV: Send Event.
+SEVL: Send Event Local.
+SMADDL: Signed Multiply-Add Long.
+SMAX (immediate): Signed Maximum (immediate).
+SMAX (register): Signed Maximum (register).
+SMC: Secure Monitor Call.
+SMIN (immediate): Signed Minimum (immediate).
+SMIN (register): Signed Minimum (register).
+SMNEGL: Signed Multiply-Negate Long: an alias of SMSUBL.
+SMSTART: Enables access to Streaming SVE mode and SME architectural state: an alias of MSR (immediate).
+SMSTOP: Disables access to Streaming SVE mode and SME architectural state: an alias of MSR (immediate).
+SMSUBL: Signed Multiply-Subtract Long.
+SMULH: Signed Multiply High.
+SMULL: Signed Multiply Long: an alias of SMADDL.
+SSBB: Speculative Store Bypass Barrier: an alias of DSB.
+ST2G: Store Allocation Tags.
+ST64B: Single-copy Atomic 64-byte Store without status result.
+ST64BV: Single-copy Atomic 64-byte Store with status result.
+ST64BV0: Single-copy Atomic 64-byte EL0 Store with status result.
+STADD, STADDL: Atomic add on word or doubleword in memory, without return: an alias of LDADD, LDADDA, LDADDAL, LDADDL.
+STADDB, STADDLB: Atomic add on byte in memory, without return: an alias of LDADDB, LDADDAB, LDADDALB, LDADDLB.
+STADDH, STADDLH: Atomic add on halfword in memory, without return: an alias of LDADDH, LDADDAH, LDADDALH, LDADDLH.
+
+STCLR, STCLRL: Atomic bit clear on word or doubleword in memory, without return: an alias of LDCLR, LDCLRA, LDCLRAL, LDCLRL
+STCLRB, STCLRLB: Atomic bit clear on byte in memory, without return: an alias of LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB.
+STCLRH, STCLRLH: Atomic bit clear on halfword in memory, without return: an alias of LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH.
+STEOR, STEORL: Atomic Exclusive-OR on word or doubleword in memory, without return: an alias of LDEOR, LDEORA, LDEORAL, LDEORL.
+STEORB, STEORLB: Atomic Exclusive-OR on byte in memory, without return: an alias of LDEORB, LDEORAB, LDEORALB, LDEORLB.
+STEORH, STEORLH: Atomic Exclusive-OR on halfword in memory, without return: an alias of LDEORH, LDEORAH, LDEORALH, LDEORLH.
+STG: Store Allocation Tag.
+STGM: Store Tag Multiple.
+STGP: Store Allocation Tag and Pair of registers.
+STILP: Store-Release ordered Pair of registers.
+STLLR: Store LORelease Register.
+STLLRB: Store LORelease Register Byte.
+STLLRH: Store LORelease Register Halfword.
+STLR: Store-Release Register.
+STLRB: Store-Release Register Byte.
+STLRH: Store-Release Register Halfword.
+STLUR: Store-Release Register (unscaled).
+STLURB: Store-Release Register Byte (unscaled).
+STLURH: Store-Release Register Halfword (unscaled).
+STLXP: Store-Release Exclusive Pair of registers.
+STLXR: Store-Release Exclusive Register.
+STLXRB: Store-Release Exclusive Register Byte.
+STLXRH: Store-Release Exclusive Register Halfword.
+STNP: Store Pair of Registers, with non-temporal hint.
+STP: Store Pair of Registers.
+STR (immediate): Store Register (immediate).
+STR (register): Store Register (register).
+STRB (immediate): Store Register Byte (immediate).
+STRB (register): Store Register Byte (register).
+STRH (immediate): Store Register Halfword (immediate).
+STRH (register): Store Register Halfword (register).
+STSET, STSETL: Atomic bit set on word or doubleword in memory, without return: an alias of LDSET, LDSETA, LDSETAL, LDSETL.
+STSETB, STSETLB: Atomic bit set on byte in memory, without return: an alias of LDSETB, LDSETAB, LDSETALB, LDSETLB.
+STSETH, STSETLH: Atomic bit set on halfword in memory, without return: an alias of LDSETH, LDSETAH, LDSETALH, LDSETLH.
+STSMAX, STSMAXL: Atomic signed maximum on word or doubleword in memory, without return: an alias of LDSMAX, LDSMAXA,
+LDSMAXAL, LDSMAXL.
+STSMAXB, STSMAXLB: Atomic signed maximum on byte in memory, without return: an alias of LDSMAXB, LDSMAXAB, LDSMAXALB,
+LDSMAXLB.
+STSMAXH, STSMAXLH: Atomic signed maximum on halfword in memory, without return: an alias of LDSMAXH, LDSMAXAH, LDSMAXALH,
+LDSMAXLH.
+STSMIN, STSMINL: Atomic signed minimum on word or doubleword in memory, without return: an alias of LDSMIN, LDSMINA, LDSMINAL,
+LDSMINL.
+STSMINB, STSMINLB: Atomic signed minimum on byte in memory, without return: an alias of LDSMINB, LDSMINAB, LDSMINALB,
+LDSMINLB.
+STSMINH, STSMINLH: Atomic signed minimum on halfword in memory, without return: an alias of LDSMINH, LDSMINAH, LDSMINALH,
+LDSMINLH.
+
+STTR: Store Register (unprivileged).
+STTRB: Store Register Byte (unprivileged).
+STTRH: Store Register Halfword (unprivileged).
+STUMAX, STUMAXL: Atomic unsigned maximum on word or doubleword in memory, without return: an alias of LDUMAX, LDUMAXA,
+LDUMAXAL, LDUMAXL.
+STUMAXB, STUMAXLB: Atomic unsigned maximum on byte in memory, without return: an alias of LDUMAXB, LDUMAXAB, LDUMAXALB,
+LDUMAXLB.
+STUMAXH, STUMAXLH: Atomic unsigned maximum on halfword in memory, without return: an alias of LDUMAXH, LDUMAXAH,
+LDUMAXALH, LDUMAXLH.
+STUMIN, STUMINL: Atomic unsigned minimum on word or doubleword in memory, without return: an alias of LDUMIN, LDUMINA,
+LDUMINAL, LDUMINL.
+STUMINB, STUMINLB: Atomic unsigned minimum on byte in memory, without return: an alias of LDUMINB, LDUMINAB, LDUMINALB,
+LDUMINLB.
+STUMINH, STUMINLH: Atomic unsigned minimum on halfword in memory, without return: an alias of LDUMINH, LDUMINAH, LDUMINALH,
+LDUMINLH.
+STUR: Store Register (unscaled).
+STURB: Store Register Byte (unscaled).
+STURH: Store Register Halfword (unscaled).
+STXP: Store Exclusive Pair of registers.
+STXR: Store Exclusive Register.
+STXRB: Store Exclusive Register Byte.
+STXRH: Store Exclusive Register Halfword.
+STZ2G: Store Allocation Tags, Zeroing.
+STZG: Store Allocation Tag, Zeroing.
+STZGM: Store Tag and Zero Multiple.
+SUB (extended register): Subtract (extended register).
+SUB (immediate): Subtract (immediate).
+SUB (shifted register): Subtract (shifted register).
+SUBG: Subtract with Tag.
+SUBP: Subtract Pointer.
+SUBPS: Subtract Pointer, setting Flags.
+SUBPT: Subtract checked pointer.
+SUBS (extended register): Subtract (extended register), setting flags
+SUBS (immediate): Subtract (immediate), setting flags.
+SUBS (shifted register): Subtract (shifted register), setting flags.
+
+SVC: Supervisor Call.
+SWP, SWPA, SWPAL, SWPL: Swap word or doubleword in memory.
+SWPB, SWPAB, SWPALB, SWPLB: Swap byte in memory.
+SWPH, SWPAH, SWPALH, SWPLH: Swap halfword in memory.
+SWPP, SWPPA, SWPPAL, SWPPL: Swap quadword in memory.
+SXTB: Signed Extend Byte: an alias of SBFM.
+SXTH: Sign Extend Halfword: an alias of SBFM.
+SXTW: Sign Extend Word: an alias of SBFM.
+SYS: System instruction.
+SYSL: System instruction with result.
+SYSP: 128-bit System instruction.
+TBNZ: Test bit and Branch if Nonzero.
+TBZ: Test bit and Branch if Zero.
+TCANCEL: Cancel current transaction.
+TCOMMIT: Commit current transaction.
+TLBI: TLB Invalidate operation: an alias of SYS.
+TLBIP: TLB Invalidate Pair operation: an alias of SYSP.
+TRCIT: Trace Instrumentation: an alias of SYS.
+TSB: Trace Synchronization Barrier.
+TST (immediate): Test bits (immediate): an alias of ANDS (immediate).
+TST (shifted register): Test (shifted register): an alias of ANDS (shifted register).
+TSTART: Start transaction.
+TTEST: Test transaction state.
+UBFIZ: Unsigned Bitfield Insert in Zero: an alias of UBFM.
+UBFM: Unsigned Bitfield Move.
+UBFX: Unsigned Bitfield Extract: an alias of UBFM.
+UDF: Permanently Undefined.
+UDIV: Unsigned Divide.
+UMADDL: Unsigned Multiply-Add Long.
+UMAX (immediate): Unsigned Maximum (immediate).
+UMAX (register): Unsigned Maximum (register).
+UMIN (immediate): Unsigned Minimum (immediate).
+UMIN (register): Unsigned Minimum (register).
+
+UMNEGL: Unsigned Multiply-Negate Long: an alias of UMSUBL
+UMSUBL: Unsigned Multiply-Subtract Long.
+UMULH: Unsigned Multiply High.
+UMULL: Unsigned Multiply Long: an alias of UMADDL.
+UXTB: Unsigned Extend Byte: an alias of UBFM.
+UXTH: Unsigned Extend Halfword: an alias of UBFM.
+WFE: Wait For Event.
+WFET: Wait For Event with Timeout.
+WFI: Wait For Interrupt.
+WFIT: Wait For Interrupt with Timeout.
+XAFLAG: Convert floating-point condition flags from external format to Arm format.
+XPACD, XPACI, XPACLRI: Strip Pointer Authentication Code.
+YIELD: YIELD.
+
+-----------------------------------------------------------------
+    stp x0, x1, [sp, #-16]!       - Push x0 and x1 to the stack
+    ldp x0, x1, [sp], #16         - Pop x0 and x1 off the stack
+-----------------------------------------------------------------
+TrustZone
+-----------------------------------------------------------------
+
+TrustZone is the name of the Security architecture in the Arm A-profile
+architecture.
+
+           Non-secure World           |         Secure World
+            SCR_EL3.NS == 1           |        SCR_EL3.NS == 0
+    +-----+          +-----+          | +--------------------------+
+    | APP | * * *    | APP | * * *    | |     Trusted Services     |  EL0
+    +-----+          +-----+          | +--------------------------+
+    +--------------+ +--------------+ | +--------------------------+
+    |   Rich OS    | |   Rich OS    | | |       Trusted OS         |  EL1
+    +--------------+ +--------------+ | +--------------------------+
+    +-------------------------------+ | +--------------------------+
+    |         Hypervisor            | | | Secure Partition Manager |  EL2
+    +-------------------------------+ | +--------------------------+
+    ----------------------------------+
+    +--------------------------------------------------------------+
+    |                   Firmware/Secure Monitor                    |  EL3
+    +--------------------------------------------------------------+
+
+
+-----------------------------------------------------------------
+Byte Alignment
+
+数据和代码必须满足适当的对齐方式. 访问对齐会影响ARM内核的性能.
+
+.align  <n> - n^2字节对齐
+.balign <n> - n^2字节对齐 -> (ARM Compiler 6)
+-----------------------------------------------------------------
+
+distributor和CPU interface在复位时都被禁用. GIC必须在复位后初始化, 然后才能向内核
+提供中断.
+
+GICD_CTLR - 启用distributor和CPU interface
+
+通用中断控制器(GIC)支持在多核系统中的内核之间路由软件(SPI)生成私有(PPI)和共享的外围
+中断(SPI).
+
+GIC架构提供的寄存器可用于管理中断源和中断行为, 以及在多核系统中将中断路由到各个内核.
+以使软件能够屏蔽、启用和禁用来自单个源的中断，对(在硬件中)单个源进行优先级排序并生成软
+件中断. GIC接受在系统级别断言的中断, 并可以向它所连接的每个内核发送信号, 从而可能导致
+发生IRQ或FIQ异常.
+
+软件生成中断(SGI)
+专用外设中断(PPI)
+共享外设中断(SPI)
+局部特定外设中断(LPI)
+
+Distributor: 系统中的所有中断源都连接到distributor. Distributor提供寄存器来控制
+各个中断的属性，例如优先级、状态、安全性、路由信息和启用状态. distributor通过附加的
+CPU接口确定将哪个中断转发到内核.
+
+CPU Interface: cpu通过它接收中断. CPU接口提供寄存器来屏蔽、识别和控制转发到该内核
+的中断状态. 系统中的每个内核都有一个单独的CPU接口.
+
+中断传递的优先级和目标core都在distributor中配置. 外围设备distributor发送的中断都
+处于待处理状态(如果它已经处于活动状态，则处于活动和待处理状态). distributor确定最高
+优先级的待处理的中断, 可以传递到core并将其转发到CPU接口, 在CPU接口处, 中断依次发送
+给core, 此时core接受FIQ或IRQ异常. core执行异常处理程序作为响应. 处理程序从CPU接口
+寄存器中查询中断ID并开始执行中断服务程序. 完成后, 处理程序必须写入CPU接口寄存器以报
+告处理结束.
+
+当core接受了中断, 就跳转到顶层中断向量表并且开始执行。顶层的中断处理程序从CPU
+interface读取寄存器以获得中断ID.
+
+读取寄存器除了返回中断ID外, 还会导致中断在distributor中被标记为活active. 一旦知道
+中断ID(识别中断源)，顶层处理程序就可以调度特定于设备的中断处理程序来服务中断.
+
+当中断处理程序完成执行时, 顶层处理程序将相同的中断ID写入CPU接口块中的中断结束(EoI)寄
+存器，指示中断处理结束。
+
+除了移除活动状态, 使最终的中断状态为Inactive或pending(如果状态为active and
+pending), 这使CPU接口能够将更多挂起的中断转发到core.
+
+-----------------------------------------------------------------
+MMU
+
+63                                             0
++-----------+---------- ... ----------+--------+
+|TTBR select|                         |PA[n:0]|
++-----------+---------- ... ----------+--------+
+
+VA[63:42]=1 -> TTBR1
+VA[63:42]=0 -> TTBR0
+
+-----------------------------------------------------------------
+    msr ttbr0_el1, x0  - Set TTBR0
+    msr ttbr1_el1, x1  - Set TTBR1
+    msr tcr_el1, x2    - Set TCR
+    isb	- The ISB forces these changes to be seen before the MMU is enabled
+    mrs x0, sctlr_el1  - Read System Control Register configuration data
+    orr x0, x0, #1     - Set [M] bit and enable the MMU.
+    msr sctlr_el1, x0  - Write System Control Register configuration data
+    isb	- The ISB forces these changes to be seen by the next instruction
+-----------------------------------------------------------------
+
+
+
+-----------------------------------------------------------------

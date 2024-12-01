@@ -1,0 +1,131 @@
+#################################################################
+Kernel Ebpf
+#################################################################
+
+### eBPF Diagram ###
+
+   +--------------+
+   | eBPF Program | C sources
+   +--------------+
+          | clang/LLVM (clang -target bpf)
+          V
+   +--------------+
+   | eBPF Program | Bytecode
+   +--------------+
+          |
+   +--------------+
+   |   Program    |------------+
+   +--------------+            |
+                               V
+                    +----------------------+
+          +---------|     eBPF Library     |
+  syscall |         +----------------------+            userspace
+x---------V--------------------------|--------------------------x
+          |                          |                     kernel
+          v                          |
+       verifier                      |
+          |                          V
+          V                      eBPF Maps
+     JIT Compiler                    |
+              \                      V
+               +------------> Kernel Functions
+
+
+-----------------------------------------------------------------
+
+Fundamentals
+
+### Compile eBPF ###
+
+$ clang -target bpf -Wall -O2 -c *.bpf.c -o *.bpf.o \
+        -I[path of linux headers]
+
+-----------------------------------------------------------------
+
+### Analysis eBPF Bytecode ###
+
+$ readelf --sections *.bpf.o --wide
+$ readelf -x .text *.bpf.o
+
+eBPF Basic Instruction Encoding:
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|    opcode     |     regs      |            offset             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                              imm                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+BPF has 10 general purpose registers and a read-only frame
+pointer register, all of which are 64-bits wide.
+
+The BPF calling convention is defined as:
+
+* R0: return value from function calls, and exit value for BPF
+      programs
+* R1 - R5: arguments for function calls
+* R6 - R9: callee saved registers that function calls will
+           preserve
+* R10: read-only frame pointer to access stack
+
+R0 - R5 are scratch registers and BPF programs needs to
+spill/fill them if necessary across calls.
+
+$ llvm-objdump -dr *.bpf.o
+
+-----------------------------------------------------------------
+
+### libbpf ###
+libbpf steps up the BPF program portability by supporting the BPF
+CO-RE concept. BPF CO-RE brings together BTF type information,
+libbpf, and the compiler to produce a single executable binary
+that you can run on multiple kernel versions and configurations.
+
+### BPF Type Format (BTF) ###
+BTF (BPF Type Format) is the metadata format which encodes the
+debug info related to BPF program/map. The name BTF was used
+initially to describe data types. The BTF was later extended to
+include function info for defined subroutines, and line info for
+source/line information.
+
+The debug info is used for map pretty print, function signature,
+etc. The function signature enables better bpf program/function
+kernel symbol. The line info helps generate source annotated
+translated byte code, jited code and verifier log.
+
+The BTF specification contains two parts,
+  * BTF kernel API
+  * BTF ELF file format
+
+The kernel API is the contract between user space and kernel.
+The kernel verifies the BTF info before using it. The ELF file
+format is a user space contract between ELF file and libbpf
+loader.
+
+To make BPF programs portable libbpf relies on the BTF type
+information of the running kernel.
+
+### vmlinux.h ###
+
+$ bpftool btf dump file /sys/kernel/btf/vmlinux format c > [path]/vmlinux.h
+
+libbpf enables portability of BPF programs by looking at the BPF
+program's recorded BTF type and relocation information and
+matching them to BTF information (vmlinux) provided by the
+running kernel. libbpf then resolves and matches all the types
+and fields, and updates necessary offsets and other relocatable
+data to ensure that BPF program's logic functions correctly for a
+specific kernel on the host. BPF CO-RE concept thus eliminates
+overhead associated with BPF development and allows developers to
+write portable BPF applications without modifications and runtime
+source code compilation on the target machine.
+
+In this case, to run BPF program, [CONFIG_DEBUG_INFO_BTF] must be
+enabled on the target machine.
+
+### EBPF DEBUG - bpf_printk ###
+
+Use bpf_printk() in Ebpf program, to check what it prints:
+$ echo 1 > /sys/kernel/debug/tracing/tracing_on
+$ cat /sys/kernel/debug/tracing/trace_pipe
+
+-----------------------------------------------------------------

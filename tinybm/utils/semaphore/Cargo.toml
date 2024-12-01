@@ -1,0 +1,26 @@
+[package]
+name = "lilos-semaphore"
+version = "0.2.0"
+authors = ["Cliff L. Biffle <code@cliffle.com>"]
+description = "A counting semaphore for use with lilos."
+keywords = ["async", "embedded", "realtime", "os"]
+categories = ["embedded"]
+readme = "README.mkdn"
+
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+default-target = "thumbv7em-none-eabihf"
+
+[dependencies]
+lilos-list.workspace = true
+lilos.workspace = true
+pin-project.workspace = true
+portable-atomic = { version = "1.6.0", default-features = false }
+
+[lib]
+test = false
+bench = false

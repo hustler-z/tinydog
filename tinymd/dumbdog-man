@@ -1,0 +1,3 @@
+## switch to specific version of the package ##
+$ sudo apt-cache policy package_name
+$ sudo apt install package_name=package-version-number

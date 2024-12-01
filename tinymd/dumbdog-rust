@@ -1,0 +1,783 @@
+____            _
+\_  \()/\/\/\/\/ \/\    /\/\
+ / // /\   \  // /_ \/\/_/ /
+ \/ \/  \/\/_/__/_/\_/\/ \/ @2024
+
+-----------------------------------------------------------------
+
+Rust Quick Intro - 2024
+
+Programming Paradigms:
+
+(a) Functional Programming
+(b) Expression-oriented Programming
+(c) Pattern-oriented Programming
+
+Features:
+
+(a) Safeness
+(b) Ownership
+(c) Lifetimes
+(d) Fearless Concurrency
+(e) Zero-Cost Abstraction
+
+-----------------------------------------------------------------
+
+Stack
+1) values have fixed sizes known at compile time.
+2) Extremely fast: just move a stack pointer.
+3) Easy to manage: follows function calls.
+4) Great memory locality.
+
+Heap
+1) Values have dynamic sizes determined at runtime.
+2) Slightly slower than the stack: some book-keeping
+   needed.
+3) No guarantee of memory locality.
+
+Resource Acquisition is Initialization (RAII paradigm)
+A stack-based replace may contain a reference to heap memory
+When the stack-based value is dropped (removed from memory),
+the related heap memory must also be freed.
+
+Shallow Copy vs. Deep Copy
+
+Types with the Copy trait have copy semantics. When copied,
+a bitwise copy is performed.
+Types that reference external resources or memory, such as
+Strings, do not support copy semantics.
+
+In Rust, all scalar types have the copy trait.
+
+Rust won’t let us annotate a type with Copy if the type, or
+any of its parts, has implemented the Drop trait. If the type
+needs something special to happen when the value goes out of
+scope and we add the Copy annotation to that type, we’ll get a
+compile-time error.
+
+Implement the Clone trait when a deep copy is required.
+
+All values in Rust are stack allocated by default. Values
+can be boxed (allocated on the heap) by creating a Box<T>.
+A box is a smart pointer to heap allocated value of type T.
+When a box goes out of scope, its desctructor is called,
+the inner object is destroyed, and the memory on the heap
+is freed.
+
+Conditional compilation
+
+all(ConfigurationPredicateList)
+any(ConfigurationPredicateList)
+not(ConfigurationPredicate)
+
+OOP
+
+State Pattern (状态模式) is an object-oriented design pattern.
+The states are represented by a set of state objects, and
+the value's behavior changes based on its state.
+
+-----------------------------------------------------------------
+
+    ownership                        borrowing
+            \                         /
+            +-------------------------+
+            | Memory Safeness in Rust |
+            +-------------------------+
+                        |
+                    lifetimes
+
+-----------------------------------------------------------------
+
+Reference
+
+Unlike a pointer, a reference is guaranteed to point to a valid
+value of a particular type for the life of that reference. It
+allow you to refer to some value without taking ownership of it.
+
+Reference             Far pointer on Stack  Data on Heap
++---------------+     +---------------+     +-------+-------+
+|    pointer    |---->|    pointer    |---->| Index | Value |
++---------------+     +---------------+     +-------+-------+
+                      |    length     |     :       :       :
+                      +---------------+     +-------+-------+
+                      |   capacity    |
+                      +---------------+
+
+The opposite of referencing by using & is dereferencing, which is
+accomplished with the dereference operator, *.
+
+Rust has a feature called automatic referencing and dereferencing
+
+when you call a method with object.something(), Rust
+automatically adds in &, &mut, or * so object matches the
+signature of the method.
+
+-----------------------------------------------------------------
+
+Ownership
+
+Rules: (a) Each value in Rust has an owner.
+    (b) There can only be one owner at a time.
+    (c) When the owner goes out of scope, the value will be
+        dropped.
+
+Ownership can be borrowed instead of moved. '&' Reference
+(a) At any given time, can have either one mutable
+    reference or any number of immutable references.
+    - Think of data race cases.
+
+Lifetimes - prevent dangling references (occur when a reference
+            outlives a borrowed value, at the time, the reference
+            points to invalid memory).
+
+A Lifetime spans the lifetime of a value.
+
+A lifetime annotation only labels a lifetime. It does not
+modify a lifetime in any manner.
+
+``
+fn test_lifetime() {
+    let ref_0; -------------------------------+
+    {                                         |
+        let num_0 = 2; ----+                  |
+        ref_0 = &num_0;    | 'a for num_0     | 'b for ref_0
+    } ---------------------+                  |
+    println!("{}", ref_0);                    |
+}  -------------------------------------------+
+
+``
+
+Lifetime Elision
+
+a) When there is a single input lifetime, it is elided to the
+   output lifetime.
+i.e., “one in, one out” elision rule
+
+fn f(x: &T) -> (&T, &T) =>
+fn f<'a>(x: &'a T) -> (&'a T, &'a T)
+
+
+b) when there are no references in the outputs from a function;
+  in this case, each of the input references automatically
+  gets its own lifetime, different from any of the other
+  input parameters.
+
+fn f(x: &T, y: &T, z: &U) -> u32 =>
+fn<'a, 'b, 'c>(x: &'a T, y: &'b T, z: &'c T) -> u32
+
+c) methods that use a reference to self (either &self or &mut
+   self); in this case, the compiler assumes that any output
+   references take the lifetime of self, as this turns out to
+   be (by far) the most common situation.
+
+fn f(&self, x: T, y: &T) -> &U =>
+fn f<'a, 'b, 'c>(&'a self, x: &'b T, y: &'c T) -> &'a U
+
+-----------------------------------------------------------------
+
+Lifetime sharing
+
+-----------------------------------------------------------------
+
+If there are no input lifetimes, but the output return value
+includes a reference:
+
+A static lifetime, 'static, spans the entire application.
+
+fn f() -> &'static T
+
+The Rust compiler guarantees that a static item always has
+the same address for the entire duration of the program and
+never moves.
+
+Subtyping Lifetime creates an extensible relationship
+between two lifetimes.
+
+'subtype: 'basetype
+
+-----------------------------------------------------------------
+
+Anonymous Lifetime '_ can be used in places where a specific
+lifetime label is not needed.
+
+The anonymous lifetime '_ allows you to mark an elided
+lifetime as being present, without having to fully restore all
+of the lifetime names.
+
+-----------------------------------------------------------------
+
+Rust has two types of pointers: safe pointers and raw pointers.
+
+References a.k.a borrowing
+
+References, &T, are primitives and the preferred pointer type
+in Rust. References borrow values, means ownership remains
+with the original binding.
+
+Raw pointers
+1) Are allowed to ignore the borrowing rules by having both
+   immutable and mutable pointers or multiple mutable pointers
+   to the same location
+2) Aren't guaranteed to point to valid memory
+3) Are allowed to be null
+4) Don't implement any automatic cleanup
+
+(a) const T   -  immutable raw pointer
+(b) *mut T    -  mutable raw pointer
+
+Note the asterisk * not dereference operator. here in the
+context of raw pointers, immutable means that the pointer can't
+be directly assigned to after being dereferenced.
+
+The lifetime of the owner must outlive the borrower (i.e.,
+the reference).
+
+deref coercion ()
+
+-----------------------------------------------------------------
+Struct/Enum
+
+Methods (方法)
+
+Associate functions with the new type using impl
+
+self - specify the "receiver" - the object the method acts on
+
+-----------------------------------------------------------------
+
+Traits (特征)
+
+a) Define a set of related functions that some underlying item
+   make publicly available.
+b) Describe collections of related functionality that all
+   apply to the same underlying item.
+
+To implement traits: impl Trait for Type {..}
+
+Supertraits
+
+A trait can require the types implementing it also implement
+other traits.
+
+In Rust, can define a trait as being a superset of another
+trait.
+
+Trait Bounds - Indicate that generic code that is
+               parameterized by some type T can be used only
+               when that type T implements some specific
+               trait.
+
+[Marker Traits]
+
+A bound like T: Sized requires T to be a type whose size is known
+at compile time.
+
+Rust also has a few unsized types, a pointer to an unsized value
+is always a fat pointer, two words wide: a pointer to a slice also
+carries the slice’s length, and a trait object also carries a
+pointer to a vtable of method implementations.
+
+S<T: ?Sized>
+
+Here ?Sized syntax means "Not necessary Sized".
+
+Deref and DerefMut Traits - Dereferencing Operators * and .
+
+Deref
+
+DerefMut - Dereference Mutably
+
+
+AsRef
+When a type implements AsRef<T>, that means we can borrow a &T
+from it efficiently.
+
+Borrow   - similar to AsRef
+
+AsMut    - Mutable References
+
+impl Trait syntax can be used in function arguments and return
+values. It allows us to work with types which cannot name.
+
+-----------------------------------------------------------------
+
+Trait Objects
+
+A trait object points to both an instance of a type implementing
+our specified trait and a table used to look up trait methods on
+that type at runtime. We create a trait object by specifying
+some sort of point, such as a & reference or a Box<T> smart
+pointer, then the dyn keyword, and then specifying the relevant
+trait.
+
+dyn Trait syntax - type-erased and dynamic dispatch
+
+A trait object is the other way to make use of the
+encapsulation defined by a trait, but here, different possible
+implementations of the trait are chosen at runtime rather than
+compile time. This dynamic dispatch is analogous to using
+virtual functions in C++, and under the covers, Rust has
+“vtable” objects that are roughly analogous to those in C++.
+
+dynamic aspect of trait objects also means that they always
+have to be handled indirectly, via a reference
+(e.g., &dyn Trait) or a pointer (e.g., Box<dyn Trait>) of some
+kind. The reason is that the size of the object implementing
+the trait isn’t known at compile time—it could be a giant
+struct or a tiny enum—so there’s no way to allocate the right
+amount of space for a bare trait object.
+
+Trait objects are fat pointers that combine a pointer to the
+underlying concrete item with a pointer to a vtable that in turn
+holds function pointers for all of the trait implementation’s
+methods.
+
+struct X on Stack
+   +------------+
++->|            |     +------------+
+:  :            :  +->|            | vtable
+|  |            |  |  +------------+
+|  +------------+  |
+|                  |
+|  +------------+  |
++--| trait_ptr0 |  |
+   +------------+  |
+   | trait_ptr1 |--+
+   +------------+
+
+-----------------------------------------------------------------
+
+An attribute is metadata applied to some module, crate or
+item.
+
+#[outer_attribute]  - apply to the item immediately following
+                      it.
+#![inner_attribute] - apply to enclosing item (typically a
+                      module or a crate).
+
+#[cfg(...)]         - attribute position
+
+e.g. #[cfg(target_os = "linux")]
+
+-----------------------------------------------------------------
+loop
+
+break    - exit the loop early
+continue - immediately start the next iteration
+
+Both continue and break can optionally take a label argument
+which is used to break out of nested loop.
+
+The loop label - can break or continue in an outer loop.
+'label: while
+'label: for
+'label: loop
+
+-----------------------------------------------------------------
+
+Both Option and Result provide a pair of methods that extract
+their inner value and panic! if it's absent:
+.unwrap() and .expect().
+
+
+Option<T> stores either a value of type T or nothing.
+
+unwrap will return the value in an option, or panic. expect is
+similar but takes an error message.
+
+enum Option<T> {
+    None,           - Indicate failure/lack of value
+    Some(T),        - a tuple struct that wraps a
+}                     value with type T.
+
+.unwrap()                - Returns the contained Some value,
+                           consuming the Self value.
+.unwrap_or(default)      - Returns the contained Some value or a
+                           provided default.
+.unwrap_or_else(closure) - Returns the contained Some value or
+                           computes it from a closure.
+.unwrap_or_default()     - Returns the contained Some value or
+                           a default.
+
+-----------------------------------------------------------------
+
+Whereas Result<T, E> enum:
+a) Ok(value)        - Indicate operation succeeded, and wrap the
+                      value returned by operation.
+b) Err(why)         - Indicate operation failed, and wrap why
+                      which hopefully explained.
+
+? used at the end of an expression returning a Result.
+
+This piece of syntactic sugar takes care of matching the Err arm,
+transforming the error type if necessary, and building the return
+Err(...) expression, all in a single character.
+
+-----------------------------------------------------------------
+
+Macros
+
+macro_rule! - metaprogramming (元编程)
+
+Declarative macros
+
+The arguments of a macro are prefixed by $ and type annotated
+with a designator:
+
+$ name : fragment-specifier
+
+Matches a Rust syntax fragment of the kind specified and binds it
+to the metavariable $name.
+
+1)  block
+2)  expr
+3)  ident      - variable/function names
+4)  item
+5)  literal    - literal constants
+6)  pat        - pattern
+7)  path
+8)  stmt       - statement
+9)  tt         - token tree
+10) ty         - type
+11) vis        - visibility qualifier
+12) meta       - an Attr, the contents of an attribute
+13) pat_param
+
+Repetition operators:
+
+1) * — indicates any number of repetitions.
+2) + — indicates any number but at least one.
+3) ? — indicates an optional fragment with zero or one
+       occurrence.
+
+-----------------------------------------------------------------
+
+
+Generics (泛型编程)
+
+Generics are templates for building unique functions and type
+definitions.
+
+(a) Code reuse
+(b) Refactoring
+(c) Extensibility
+(d) Less error prone
+(e) Unique capabilities
+
+Generic functions are templates for creating concrete
+functions, using type parameters.
+
+fn funcname<T>(param: T) -> T {
+    let variable: T;
+}
+
+-----------------------------------------------------------------
+
+(a) Type parameters in the impl definition:
+
+        Type Parameter
+keyword  within impl  struct name
+        \    |         /
+        impl <T>   Wrapper<T> {...}
+
+
+(b) A generic trait for a generic struct:
+
+impl block  Trait name    Struct name
+    \           |             /
+    impl<T>    Trait<T> for Struct<T> {...}
+
+-----------------------------------------------------------------
+
+Pattern (模式)
+
+Patterns come in two forms:
+a) refutable   (可反驳的模式)
+b) irrefutable (不可反驳的模式)
+
+Patterns that will match for any possible value passed are
+irrefutable.
+
+Pattern Syntax (模式语法)
+
+1) Ignore an entire value with _
+2) Ignore an unused variable by starting its name with _
+3) Ignore remaining parts of a value with ..
+4) Extra conditionals with match guards (匹配守卫)
+5) @ bindings - create a variable that holds a value at the
+                same time as testing that value for a pattern
+                match. (绑定并验证模式匹配)
+
+-----------------------------------------------------------------
+
+Operator Overloading
+
+Unary operators
+    std::ops::Neg                 -x
+    std::ops::Not                 !x
+Arithmetic operators
+    std::ops::Add                 x + y
+    std::ops::Sub                 x - y
+    std::ops::Mul                 xy
+    std::ops::Div                 x / y
+    std::ops::Rem                 x % y
+Bitwise operators
+    std::ops::BitAnd              x & y
+    std::ops::BitOr               x | y
+    std::ops::BitXor              x ^ y
+    std::ops::Shl                 x << y
+    std::ops::Shr                 x >> y
+Compound assignment arithmetic operators
+    std::ops::AddAssign           x += y
+    std::ops::SubAssign           x -= y
+    std::ops::MulAssign           x *= y
+    std::ops::DivAssign           x /= y
+    std::ops::RemAssign           x %= y
+Compound assignment bitwise operators
+    std::ops::BitAndAssign        x &= y
+    std::ops::BitOrAssign         x |= y
+    std::ops::BitXorAssign        x ^= y
+    std::ops::ShlAssign           x <<= y
+    std::ops::ShrAssign           x >>= y
+Comparison
+    std::cmp::PartialEq           x == y, x != y
+    std::cmp::PartialOrd          x < y, x <= y, x > y, x >= y
+Indexing
+    std::ops::Index               x[y], &x[y]
+    std::ops::IndexMut            x[y] = z, &mut x[y]
+
+-----------------------------------------------------------------
+
+Smart Pointer (智能指针)
+
+Using Box<T> to point to data on the heap
+
+``
+struct LinkedListNode<T> {
+    value: T,
+    next: Option<Box<LinkedListNode>>,
+}
+
+``
+
+Reference Counting (引用计数智能指针)
+
+The Rc<T> type keeps track of the number of references to a value
+to determine whether or not the value is still in use. If there
+are zero references to a value, the value can be cleaned up
+without any references becoming invalid.
+
+use Rust’s smart pointers for interconnected data structures:
+
+a) Rc allows shared ownership, with multiple things
+   referring to the same item. Rc is often combined with
+   RefCell.
+
+             ---+-+-+-+-+-+-+-+---
+ Stack Frame    | |x| | |y| |z|
+             ---+-+-+-+-+-+-+-+---
+                   |     |   |
+                +--+-----+---+
+                |
+                V strong ref count
+        ----+-------+---------
+ Heap       |       |   ...
+        ----+-------+---------
+
+Note: For any type T, an Rc<T> value is a pointer to a
+      heap-allocated T that has had a reference count affixed to
+      it. Cloning an Rc<T> value does not copy the T; instead,
+      it simply creates another pointer to it and increments the
+      reference count.
+
+b) RefCell allows interior mutability so that internal
+   state can be modified without needing a mutable
+   reference. This comes at the cost of moving borrow
+   checks from compile time to runtime.'
+
+   .borrow()          - Immutably borrows the wrapped value
+   .borrow_mut()      - Mutably borrows the wrapped value
+
+c) Arc is the multithreading equivalent to Rc.
+d) Mutex (and RwLock) allows interior mutability in a
+   multithreading environment, roughly equivalent to RefCell.
+e) Cell allows interior mutability for Copy types.
+
+-----------------------------------------------------------------
+
+Standard Library Types
+
+core    - most basic types, ain't depend on libc
+alloc   - types rquire a global heap allocator, Vec, Box, etc.
+std
+
+-----------------------------------------------------------------
+
+Standard Library Traits
+
+PartialEq and Eq         ==, !=
+PartialOrd and Ord       <, <=, >=, >
+
+Operator overloading:    std::ops
+
+-----------------------------------------------------------------
+
+User-Defined Type Conversions
+
+From<T>
+TryFrom<T>
+Into<T>
+TryInto<T>
+
+-----------------------------------------------------------------
+
+Closure (Lambda Expression)
+
+ | closure arguments | { expression }
+
+Fn* Traits
+
+The code that receives the closure has to accept an instance
+of one of the Fn* trauts:
+
+Fn        - consume/mutate captured values, can be called
+            multiple times, concurrently
+FnMut     - might mutate captured values can be called multiple
+            times, not concurrently
+FnOnce    - may call it once, might consume captured values
+
+-----------------------------------------------------------------
+
+Explicit Type Casting - "as" and from/into
+
+>_@ Rock
+
+The as version also allows lossy conversions, whereas from/into
+do not.
+
+Type coercions are implicit operations that change the type of a
+value. They happen automatically at specific locations and are
+highly restricted in what types actually coerce.
+
+-----------------------------------------------------------------
+
+Vector in Rust
+
+The stack allocation size for every Vec is constant: 3 usize.
+
+       ptr      len      capacity
+       +--------+--------+--------+
+       | 0x0123 |      2 |      4 |
+       +--------+--------+--------+
+            |
+            v
+Heap   +--------+--------+--------+--------+
+       |    'a' |    'b' | uninit | uninit |
+       +--------+--------+--------+--------+
+                                       |
+                                       V
+                              uninitialized element
+
+The capacity of a vector is the amount of space allocated for any
+future elements that will be added onto the vector. This is not
+to be confused with the length of a vector, which specifies the
+number of actual elements within the vector. If a vector’s length
+exceeds its capacity, its capacity will automatically be
+increased, but its elements will have to be reallocated.
+
+-----------------------------------------------------------------
+
+The two most used string types in Rust are:
+a) String - stored as a vector of bytes (Vec<u8>), but guaranteed
+            to always be a valid UTF-8 sequence.
+b) &str   - a slice (&[u8]) that always points to a valid UTF-8
+            sequence, and can be used to view into a String.
+
+&[T] is a view into Vec<T>
+
+String Type consists of three fields:
+
+Far pointer on Stack         Data on Heap
++---------------+            +-------+-------+
+|    pointer    |----------->| Index | Value |
++---------------+            +-------+-------+
+|    length     |            :       :       :
++---------------+            +-------+-------+
+|   capacity    |
++---------------+
+
+push
+push_str
+insert
+insert_str
+
+slices:
+
+string[starting index..ending index]
+
+-----------------------------------------------------------------
+
+Unsafe Rust
+
+Dereference a raw pointer
+Call an unsafe function or method
+Access or modify a mutable static variable
+Implement an unsafe trait
+Access fields of a union
+
+-----------------------------------------------------------------
+
+(*) Quick Notes on std::future::Future
+    Future represents an asynchronous computation obtained by use
+    of 'async', i.e. a future is a value that might not have
+    finished computing yet. This kind of 'asynchronous value'
+    makes it possible for a thread to continue doing useful work
+    while it waits for the value to become available.
+
+    ----+---------------> Future     (poll) --------------->
+         \
+          +------------------------------>
+
+(*) Ownership Rules
+    [1] Each value in Rust has an owner.
+    [2] There can only be one owner at a time.
+    [3] When the owner goes out of scope, the value will be dropped.
+
+(*) Copy Trait
+    To be Copy, it must be possible to duplicate the type's values
+    simply by copy their bits.
+
+(*) Reference in Rust (Borrowing)
+    [1] At any given time, can have either one mutable reference
+        or any number of immutable references.
+    [2] References must always be valid.
+
+(*) Lifetime in Rust [@_<]
+
+    A Lifetime is name for a region of code that some reference must
+    be valid for.
+
+(*) Smart Pointers in Rust
+
+
+(*) Send and Sync Traits in Rust
+    A type is 'Send' if it is safe to send it to another thread.
+    A type is 'Sync' if it is safe to share between threads.
+    (T is 'Sync' if and only if &T is Send)
+
+(*) Auto Traits
+    Auto traits permit automatically implementing a trait for types
+    which contain fields implementing the trait.
+    [1] Send
+    [2] Sync
+    [3] Unpin
+    [4] UnwindSafe
+    [5] RefUnwindSafe
+
+-----------------------------------------------------------------
+____            _
+\_  \()/\/\/\/\/ \/\    /\/\
+ / // /\   \  // /_ \/\/_/ /
+ \/ \/  \/\/_/__/_/\_/\/ \/ @2024
+
+-----------------------------------------------------------------

@@ -1,0 +1,53 @@
+[package]
+name = "tinyfw"
+version = "0.4.2"
+authors = ["The Rust Hypervisor Firmware Authors"]
+edition = "2021"
+
+# Despite "panic-strategy": "abort" being set in x86_64-unknown-none.json, panic = "abort" is
+# needed here to make "cargo check" and "cargo clippy" run without errors.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+lto = "thin"
+
+[features]
+default = ["log-serial", "log-panic"]
+# Have the log! macro write to serial output. Disabling this significantly
+# reduces code size, but makes debugging essentially impossible
+log-serial = []
+# Log panics to serial output. Disabling this (without disabling log-serial)
+# gets you most of the code size reduction, without losing _all_ debugging.
+log-panic = ["log-serial"]
+integration_tests = []
+coreboot = []
+efi-var = []
+
+[dependencies]
+bitflags = "2.6.0"
+atomic_refcell = "0.1.13"
+r-efi = { version = "5.1.0", features = ["efiapi"] }
+heapless = "0.8.0"
+log = "0.4.22"
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+tock-registers = "0.9.0"
+aarch64-cpu = "10.0.0"
+fdt = "0.1.5"
+chrono = { version = "0.4", default-features = false }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+uart_16550 = "0.3.2"
+x86_64 = "0.15.1"
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+chrono = { version = "0.4", default-features = false }
+fdt = "0.1.5"
+
+[dev-dependencies]
+dirs = "5.0.1"
+rand = "0.8.5"
+ssh2 = { version = "0.9.4", features = ["vendored-openssl"] }
+tempfile = "3.14.0"

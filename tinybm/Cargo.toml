@@ -1,0 +1,60 @@
+[workspace]
+resolver = "2"
+members = [
+    "utils/*",
+    "core",
+    "board/*/*",
+]
+
+[workspace.package]
+# common defaults
+edition = "2021"
+license = "MPL-2.0"
+rust-version = "1.69"
+
+[workspace.dependencies]
+# Internal
+lilos = { path = "core", version = "1.1.0", default-features = false }
+lilos-list = { path = "utils/list", version = "0.1.0" }
+lilos-handoff = { path = "utils/handoff" }
+lilos-semaphore = { path = "utils/semaphore" }
+lilos-rwlock = { path = "utils/rwlock" }
+lilos-watch = { path = "utils/watch" }
+
+# External
+cfg-if = "1.0.0"
+cortex-m = {version = "0.7.4", features = ["inline-asm"]}
+cortex-m-rt = {version = "0.7.1"}
+cortex-m-semihosting = "0.5.0"
+pin-project = "1.1.6"
+panic-halt = "0.2.0"
+panic-semihosting = "0.6.0"
+futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
+stm32-metapac = {version = "15.0", features = ["rt", "pac"]}
+rp2040-pac = {version = "0.3", features = ["rt"]}
+rp2040-boot2 = "0.2"
+scopeguard = { version = "1.2.0", default-features = false }
+
+#
+# Before you get excited about turning on the workspace.lints table here, note
+# that it is silently ignored by our MSRV of 1.69.
+#
+
+# Turn on some basic optimizations even in dev for space reasons.
+[profile.dev]
+codegen-units = 1       # better optimizations
+debug = true            # symbols are nice and they don't increase the size on Flash
+lto = true              # better optimizations
+opt-level = 1           # very basic optimization
+
+# The testsuite ain't tiny and doesn't fit in a 32 kiB M0 without
+# cranking up the optimization level:
+[profile.dev.package.lilos-testsuite-stm32g0]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
+opt-level = "s"
+overflow-checks = true

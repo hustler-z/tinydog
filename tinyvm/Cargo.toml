@@ -1,0 +1,93 @@
+[package]
+name = "tinyvm"
+version = "0.1.0"
+authors = [
+    "Siran Li <ohmrlsr@buaa.edu.cn>",
+    "Ce Mo <moce4917@buaa.edu.cn>",
+    "Keyang Hu <hky1999@buaa.edu.cn>",
+    "Bo Jiang <jiangbo@buaa.edu.cn>",
+    "Lei Wang <wanglei@buaa.edu.cn>",
+]
+edition = "2021"
+description = "A Reliable Embedded Hypervisor Supporting VM Migration and Hypervisor Live-Update"
+build = "build.rs"
+license = "MulanPSL-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["staticlib"]
+test = false
+bench = false
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+lto = true
+panic = "abort"
+debug = true
+
+[build-dependencies]
+chrono = "0.4.23"
+built = { version = "0.6.1", features = [] }
+gethostname = "0.4.3"
+
+[dependencies]
+riscv-decode = "0.2.1"
+fdt_print = { package = "fdt", version = "0.1.5", features =["pretty-printing"] }
+vm-fdt = { git = "https://github.com/OhmR/vm-fdt" }
+fdt = { git = "https://github.com/Zera-Algorithm/libfdt-rs" }
+log = { version = "0.4", features = [
+    "max_level_trace",
+    "release_max_level_info",
+] }
+spin = { version = "0.9.4", features = ["use_ticket_mutex"] }
+memoffset = { version = "0.8", default-features = false, features = [
+    "unstable_const",
+] }
+cfg-if = "1.0.0"
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+cortex-a = { package = "aarch64-cpu", version = "9.3.1" }
+smccc = "0.1.1"
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+rustsbi = "0.4.0"
+sbi-spec = { version = "0.0.7", features = ["legacy"] }
+sbi-rt = "0.0.3"
+riscv = { git = "https://github.com/Zera-Algorithm/riscv" }
+
+[dependencies.buddy_system_allocator]
+version = "0.8.0"
+features = ["const_fn"]
+
+[dependencies.tock-registers]
+version = "0.8.0"
+default-features = false
+features = ["register_types"]
+
+[dependencies.fdt-rs]
+version = "x"
+default-features = false
+
+[features]
+default = ["aia", "sbi_legacy"]
+tx2 = ["ns16550"]
+qemu = ["pl011"]
+pi4 = ["pl011"]
+rk3588 = ["ns16550", "gicv3"]
+gicv3 = []
+ramdisk = []
+static-config = []
+lvl4 = []
+secondary_start = []
+rk3588-noeth = ["rk3588"]
+ns16550 = []
+pl011 = []
+unilib = []
+memrsv = []
+doc = []
+sbi_legacy = []
+plic = []
+aia = []

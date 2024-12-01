@@ -1,0 +1,15 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+authors = ["The Cortex-M Team <cortex-m@teams.rust-embedded.org>"]
+edition = "2018"
+publish = false
+
+[[test]]
+name = "ci"
+harness = false
+
+[dependencies]
+ar = "0.9.0"
+cortex-m = { path = "../cortex-m", features = ["serde", "std"] }
+serde_json = "1"

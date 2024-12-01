@@ -1,0 +1,11 @@
+[package]
+name = "tinyos"
+version = "0.1.0"
+authors = ["Hustler <roxhustlin@gmail.com"]
+edition = "2021"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
