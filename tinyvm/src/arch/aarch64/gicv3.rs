@@ -9,22 +9,24 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use alloc::collections::BTreeSet;
 
 use spin::Mutex;
-use tock_registers::*;
 use tock_registers::interfaces::*;
 use tock_registers::registers::*;
+use tock_registers::*;
 
+use crate::arch::aarch64::regs::{ReadableReg, WriteableReg};
 use crate::arch::traits::InterruptController;
-use crate::arch::aarch64::regs::{WriteableReg, ReadableReg};
 use crate::arch::{
-    isb, IntCtrl, ICC_SGI1R_EL1, ICH_HCR_EL2, ICH_VTR_EL2, ICC_SRE_EL2, ICC_SRE_EL1, ICH_VMCR_EL2, ICH_AP0R2_EL2,
-    ICH_AP0R1_EL2, ICH_AP0R0_EL2, ICH_AP1R0_EL2, ICH_AP1R1_EL2, ICH_AP1R2_EL2, ICC_PMR_EL1, ICC_BPR1_EL1, ICC_CTLR_EL1,
-    ICH_ELRSR_EL2, ICC_IGRPEN1_EL1, ICC_DIR_EL1, ICC_EOIR1_EL1, ICH_LR0_EL2, ICH_LR1_EL2, ICH_LR2_EL2, ICH_LR3_EL2,
-    ICH_LR4_EL2, ICH_LR5_EL2, ICH_LR6_EL2, ICH_LR7_EL2, ICH_LR8_EL2, ICH_LR9_EL2, ICH_LR10_EL2, ICH_LR11_EL2,
-    ICH_LR12_EL2, ICH_LR13_EL2, ICH_LR14_EL2, ICH_LR15_EL2, ICH_EISR_EL2, ICH_MISR_EL2, sysreg_enc_addr,
+    isb, sysreg_enc_addr, IntCtrl, ICC_BPR1_EL1, ICC_CTLR_EL1, ICC_DIR_EL1, ICC_EOIR1_EL1,
+    ICC_IGRPEN1_EL1, ICC_PMR_EL1, ICC_SGI1R_EL1, ICC_SRE_EL1, ICC_SRE_EL2, ICH_AP0R0_EL2,
+    ICH_AP0R1_EL2, ICH_AP0R2_EL2, ICH_AP1R0_EL2, ICH_AP1R1_EL2, ICH_AP1R2_EL2, ICH_EISR_EL2,
+    ICH_ELRSR_EL2, ICH_HCR_EL2, ICH_LR0_EL2, ICH_LR10_EL2, ICH_LR11_EL2, ICH_LR12_EL2,
+    ICH_LR13_EL2, ICH_LR14_EL2, ICH_LR15_EL2, ICH_LR1_EL2, ICH_LR2_EL2, ICH_LR3_EL2, ICH_LR4_EL2,
+    ICH_LR5_EL2, ICH_LR6_EL2, ICH_LR7_EL2, ICH_LR8_EL2, ICH_LR9_EL2, ICH_MISR_EL2, ICH_VMCR_EL2,
+    ICH_VTR_EL2,
 };
-use crate::board::{Platform, PlatOperation};
-use crate::utils::bit_extract;
+use crate::board::{PlatOperation, Platform};
 use crate::kernel::current_cpu;
+use crate::utils::bit_extract;
 use crate::utils::device_ref::DeviceRef;
 
 use super::ICC_IAR1_EL1;
@@ -40,7 +42,8 @@ pub const GICD_IROUTER_RES0_MSK: usize = (1 << 40) - 1;
 pub const GICD_IROUTER_IRM_BIT: usize = 1 << 31;
 pub const GICD_TYPER_IDBITS_OFF: usize = 19;
 pub const GICD_TYPER_IDBITS_LEN: usize = 5;
-pub const GICD_TYPER_IDBITS_MSK: usize = (((1 << ((GICD_TYPER_IDBITS_LEN) - 1)) << 1) - 1) << (GICD_TYPER_IDBITS_OFF);
+pub const GICD_TYPER_IDBITS_MSK: usize =
+    (((1 << ((GICD_TYPER_IDBITS_LEN) - 1)) << 1) - 1) << (GICD_TYPER_IDBITS_OFF);
 const GICD_IROUTER_AFF_MSK: usize = GICD_IROUTER_RES0_MSK & !GICD_IROUTER_IRM_BIT;
 pub const GICD_TYPER_LPIS: usize = 1 << 17;
 
@@ -68,7 +71,8 @@ pub const GICC_SRE_EL2_ENABLE: usize = 1 << 3;
 // GICH BITS
 pub const GICH_LR_VID_OFF: usize = 0;
 pub const GICH_LR_VID_LEN: usize = 32;
-pub const GICH_LR_VID_MASK: usize = (((1 << ((GICH_LR_VID_LEN) - 1)) << 1) - 1) << (GICH_LR_VID_OFF);
+pub const GICH_LR_VID_MASK: usize =
+    (((1 << ((GICH_LR_VID_LEN) - 1)) << 1) - 1) << (GICH_LR_VID_OFF);
 pub const GICH_LR_PID_OFF: usize = 32;
 pub const GICH_LR_PID_LEN: usize = 10;
 pub const GICH_LR_PID_MSK: usize = (((1 << ((GICH_LR_PID_LEN) - 1)) << 1) - 1) << (GICH_LR_PID_OFF);
@@ -76,11 +80,13 @@ pub const GICH_LR_PRIO_OFF: usize = 48;
 pub const GICH_LR_PRIO_LEN: usize = 8;
 pub const GICH_LR_STATE_LEN: usize = 2;
 pub const GICH_LR_STATE_OFF: usize = 62;
-pub const GICH_LR_STATE_MSK: usize = (((1 << ((GICH_LR_STATE_LEN) - 1)) << 1) - 1) << (GICH_LR_STATE_OFF);
+pub const GICH_LR_STATE_MSK: usize =
+    (((1 << ((GICH_LR_STATE_LEN) - 1)) << 1) - 1) << (GICH_LR_STATE_OFF);
 pub const GICH_LR_STATE_ACT: usize = (2 << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
 pub const GICH_LR_STATE_PND: usize = (1 << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
 pub const GICH_LR_GRP_BIT: usize = 1 << 60;
-pub const GICH_LR_PRIO_MSK: usize = (((1 << ((GICH_LR_PRIO_LEN) - 1)) << 1) - 1) << (GICH_LR_PRIO_OFF);
+pub const GICH_LR_PRIO_MSK: usize =
+    (((1 << ((GICH_LR_PRIO_LEN) - 1)) << 1) - 1) << (GICH_LR_PRIO_OFF);
 pub const GICH_LR_HW_BIT: usize = 1 << 61;
 pub const GICH_LR_EOI_BIT: usize = 1 << 41;
 /* End Of Interrupt.
@@ -95,7 +101,8 @@ pub const GICH_HCR_NPIE_BIT: usize = 1 << 3;
  */
 pub const GICH_HCR_EOIC_OFF: usize = 27;
 pub const GICH_HCR_EOIC_LEN: usize = 5;
-pub const GICH_HCR_EOIC_MSK: usize = (((1 << ((GICH_HCR_EOIC_LEN) - 1)) << 1) - 1) << (GICH_HCR_EOIC_OFF);
+pub const GICH_HCR_EOIC_MSK: usize =
+    (((1 << ((GICH_HCR_EOIC_LEN) - 1)) << 1) - 1) << (GICH_HCR_EOIC_OFF);
 pub const GICH_MISR_U: usize = 1 << 1;
 pub const GICH_MISR_EOI: usize = 1;
 /* No Pending.
@@ -140,7 +147,8 @@ pub const GIC_LIST_REGS_NUM: usize = 64;
 
 pub const GICD_TYPER_CPUNUM_OFF: usize = 5;
 pub const GICD_TYPER_CPUNUM_LEN: usize = 3;
-pub const GICD_TYPER_CPUNUM_MSK: usize = ((1 << GICD_TYPER_CPUNUM_LEN) - 1) << (GICD_TYPER_CPUNUM_OFF);
+pub const GICD_TYPER_CPUNUM_MSK: usize =
+    ((1 << GICD_TYPER_CPUNUM_LEN) - 1) << (GICD_TYPER_CPUNUM_OFF);
 const GICD_TYPER_ITLINESNUM_LEN: usize = 0b11111;
 pub const ICC_CTLR_EOIMODE_BIT: usize = 0x1 << 1;
 
@@ -595,7 +603,9 @@ impl core::ops::Index<usize> for GicRedistributor {
 impl GicRedistributor {
     fn init(&self) {
         let waker = self[current_cpu().id].WAKER.get();
-        self[current_cpu().id].WAKER.set(waker & !GICR_WAKER_PSLEEP_BIT as u32);
+        self[current_cpu().id]
+            .WAKER
+            .set(waker & !GICR_WAKER_PSLEEP_BIT as u32);
         while (self[current_cpu().id].WAKER.get() & GICR_WAKER_CASLEEP_BIT as u32) != 0 {}
 
         self[current_cpu().id].IGROUPR0.set(u32::MAX);
@@ -615,7 +625,8 @@ impl GicRedistributor {
         let lock = GICR_LOCK.lock(); //lock is for per core
 
         self[gicr_id as usize].IPRIORITYR[reg_id].set(
-            (self[gicr_id as usize].IPRIORITYR[reg_id].get() & !mask as u32) | (((prio as usize) << off) & mask) as u32,
+            (self[gicr_id as usize].IPRIORITYR[reg_id].get() & !mask as u32)
+                | (((prio as usize) << off) & mask) as u32,
         );
 
         drop(lock);
@@ -643,12 +654,14 @@ impl GicRedistributor {
         match reg_id {
             0 => {
                 self[gicr_id as usize].ICFGR0.set(
-                    ((self[gicr_id as usize].ICFGR0.get() as usize & !mask) | (((cfg as usize) << off) & mask)) as u32,
+                    ((self[gicr_id as usize].ICFGR0.get() as usize & !mask)
+                        | (((cfg as usize) << off) & mask)) as u32,
                 );
             }
             _ => {
                 self[gicr_id as usize].ICFGR1.set(
-                    ((self[gicr_id as usize].ICFGR1.get() as usize & !mask) | (((cfg as usize) << off) & mask)) as u32,
+                    ((self[gicr_id as usize].ICFGR1.get() as usize & !mask)
+                        | (((cfg as usize) << off) & mask)) as u32,
                 );
             }
         }
@@ -660,9 +673,13 @@ impl GicRedistributor {
         let lock = GICR_LOCK.lock();
 
         if pend {
-            self[gicr_id as usize].ISPENDR0.set((1 << (int_id % 32)) as u32);
+            self[gicr_id as usize]
+                .ISPENDR0
+                .set((1 << (int_id % 32)) as u32);
         } else {
-            self[gicr_id as usize].ICPENDR0.set((1 << (int_id % 32)) as u32);
+            self[gicr_id as usize]
+                .ICPENDR0
+                .set((1 << (int_id % 32)) as u32);
         }
 
         drop(lock);
@@ -889,7 +906,7 @@ impl GicHypervisorInterface {
             13 => ICH_LR13_EL2::read(),
             14 => ICH_LR14_EL2::read(),
             15 => ICH_LR15_EL2::read(),
-            _ => panic!("gic: trying to read inexistent list register"),
+            _ => panic!("GIC: Trying To Read Inexistent List Register"),
         }
     }
 
@@ -918,7 +935,7 @@ impl GicHypervisorInterface {
                 13 => ICH_LR13_EL2::write(val),
                 14 => ICH_LR14_EL2::write(val),
                 15 => ICH_LR15_EL2::write(val),
-                _ => panic!("gic: trying to write inexistent list register"),
+                _ => panic!("GIC: Trying To Write Inexistent List Register"),
             }
         }
     }
@@ -948,7 +965,9 @@ pub struct GicState {
 
 impl Default for GicState {
     fn default() -> Self {
-        let nr_prio = (((ICH_VTR_EL2::read() >> GICH_VTR_PRIBITS_OFF) & ((1 << GICH_VTR_PRIBITS_LEN) - 1)) + 1) as u32;
+        let nr_prio = (((ICH_VTR_EL2::read() >> GICH_VTR_PRIBITS_OFF)
+            & ((1 << GICH_VTR_PRIBITS_LEN) - 1))
+            + 1) as u32;
 
         GicState {
             ctlr: GICC_CTLR_EOIMODE_BIT as u32,
@@ -1051,7 +1070,7 @@ impl GicState {
             5 => {
                 self.save_apr0();
             }
-            _ => panic!("priority not surpport"),
+            _ => panic!("Priority Not Surpport"),
         }
     }
 
@@ -1082,13 +1101,14 @@ impl GicState {
             5 => {
                 restore_apr0();
             }
-            _ => panic!("priority not surpport"),
+            _ => panic!("Priority Not Surpport"),
         }
     }
 }
 
 // SAFETY: GICD & GICR are GICv3 mmio device regions
-pub static GICD: DeviceRef<GicDistributor> = unsafe { DeviceRef::new(Platform::GICD_BASE as *const GicDistributor) };
+pub static GICD: DeviceRef<GicDistributor> =
+    unsafe { DeviceRef::new(Platform::GICD_BASE as *const GicDistributor) };
 pub static GICC: GicCpuInterface = GicCpuInterface;
 pub static GICH: GicHypervisorInterface = GicHypervisorInterface;
 pub static GICR: DeviceRef<GicRedistributor> =
@@ -1171,7 +1191,11 @@ pub fn gic_set_icfgr(int_id: usize, cfg: u8) {
 }
 
 pub fn gic_set_state(int_id: usize, state: usize, gicr_id: u32) {
-    gic_set_act(int_id, (state & IrqState::IrqSActive as usize) != 0, gicr_id);
+    gic_set_act(
+        int_id,
+        (state & IrqState::IrqSActive as usize) != 0,
+        gicr_id,
+    );
     gic_set_pend(int_id, (state & IrqState::IrqSPend as usize) != 0, gicr_id);
 }
 

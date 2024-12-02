@@ -41,12 +41,12 @@ impl log::Log for SimpleLogger {
                 "{}",
                 with_color!(
                     level2color(record.level()),
-                    "{}>[core {}, {}, {}:{}] {}",
-                    level,
+                    "[H]<core {}> {} {}",
                     crate::kernel::current_cpu().id,
-                    record.target(),
-                    record.file().unwrap_or("Unknown File"),
-                    record.line().unwrap_or(0),
+                    level,
+                    // record.target(),
+                    // record.file().unwrap_or("Unknown File"),
+                    // record.line().unwrap_or(0),
                     record.args()
                 )
             );

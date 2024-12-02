@@ -6,18 +6,18 @@ use alloc::vec::Vec;
 use spin::Mutex;
 
 use crate::config::VmEmulatedDeviceConfig;
-use crate::device::{
-    EmuContext, virtio_blk_notify_handler, virtio_console_notify_handler, virtio_mediated_blk_notify_handler,
-    virtio_net_handle_ctrl, virtio_net_notify_handler, EmuDev, EmuDeviceType,
-};
+use crate::device::VirtDev;
 use crate::device::VirtioDeviceType;
 use crate::device::Virtq;
-use crate::device::{VIRTQUEUE_BLK_MAX_SIZE, VIRTQUEUE_CONSOLE_MAX_SIZE, VIRTQUEUE_NET_MAX_SIZE};
-use crate::device::VirtDev;
 use crate::device::VIRTQ_READY;
-use crate::kernel::{current_cpu, ipi_send_msg, IpiInnerMsg, IpiIntInjectMsg, IpiType, vm_ipa2pa};
-use crate::kernel::{active_vm, active_vm_id};
+use crate::device::{
+    virtio_blk_notify_handler, virtio_console_notify_handler, virtio_mediated_blk_notify_handler,
+    virtio_net_handle_ctrl, virtio_net_notify_handler, EmuContext, EmuDev, EmuDeviceType,
+};
+use crate::device::{VIRTQUEUE_BLK_MAX_SIZE, VIRTQUEUE_CONSOLE_MAX_SIZE, VIRTQUEUE_NET_MAX_SIZE};
 use crate::kernel::Vm;
+use crate::kernel::{active_vm, active_vm_id};
+use crate::kernel::{current_cpu, ipi_send_msg, vm_ipa2pa, IpiInnerMsg, IpiIntInjectMsg, IpiType};
 
 pub const VIRTIO_F_VERSION_1: usize = 1 << 32;
 pub const VIRTIO_MMIO_MAGIC_VALUE: usize = 0x000;
@@ -174,7 +174,7 @@ impl VirtioMmio {
                 }
             }
             _ => {
-                panic!("virtio_queue_init: unknown dev_type");
+                panic!("Virtio Queue Init Failed: Unknown dev_type");
             }
         }
     }
@@ -195,13 +195,16 @@ impl VirtioMmio {
         if target_vcpu.phys_id() == current_cpu().id {
             interrupt_vm_inject(&vm, target_vcpu, int_id);
         } else {
-            let m = IpiIntInjectMsg { vm_id: vm.id(), int_id };
+            let m = IpiIntInjectMsg {
+                vm_id: vm.id(),
+                int_id,
+            };
             if !ipi_send_msg(
                 target_vcpu.phys_id(),
                 IpiType::IpiTIntInject,
                 IpiInnerMsg::IntInjectMsg(m),
             ) {
-                error!("notify_config: failed to send ipi to Core {}", target_vcpu.phys_id());
+                error!("Failed To Send IPI To Core {}", target_vcpu.phys_id());
             }
         }
     }
@@ -218,13 +221,16 @@ impl VirtioMmio {
         if target_vcpu.phys_id() == current_cpu().id {
             interrupt_vm_inject(&vm, target_vcpu, int_id);
         } else {
-            let m = IpiIntInjectMsg { vm_id: vm.id(), int_id };
+            let m = IpiIntInjectMsg {
+                vm_id: vm.id(),
+                int_id,
+            };
             if !ipi_send_msg(
                 target_vcpu.phys_id(),
                 IpiType::IpiTIntInject,
                 IpiInnerMsg::IntInjectMsg(m),
             ) {
-                error!("notify_config: failed to send ipi to Core {}", target_vcpu.phys_id());
+                error!("Failed To Send IPI To Core {}", target_vcpu.phys_id());
             }
         }
     }
@@ -395,7 +401,12 @@ impl VirtioMmioInnerMut {
 }
 
 /// Handles prologue access to Virtio MMIO registers.
-fn virtio_mmio_prologue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usize, write: bool) {
+fn virtio_mmio_prologue_access(
+    mmio: &VirtioMmio,
+    emu_ctx: &EmuContext,
+    offset: usize,
+    write: bool,
+) {
     if !write {
         let value = match offset {
             VIRTIO_MMIO_MAGIC_VALUE => mmio.magic(),
@@ -413,7 +424,10 @@ fn virtio_mmio_prologue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: 
             }
             VIRTIO_MMIO_STATUS => mmio.dev_stat(),
             _ => {
-                error!("virtio_be_init_handler wrong reg_read, address=0x{:x}", emu_ctx.address);
+                error!(
+                    "Virtio Mmio Prologue: Wrong reg_read, Address=0x{:x}",
+                    emu_ctx.address
+                );
                 return;
             }
         };
@@ -442,14 +456,25 @@ fn virtio_mmio_prologue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: 
                 mmio.set_dev_stat(value);
                 if mmio.dev_stat() == 0 {
                     mmio.dev_reset();
-                    info!("VM {} virtio device {:#x} is reset", active_vm_id(), mmio.base());
+                    info!(
+                        "Vm[{}] Virtio Device {:#x} Is Reset",
+                        active_vm_id(),
+                        mmio.base()
+                    );
                 } else if mmio.dev_stat() == 0xf {
                     mmio.dev().set_activated(true);
-                    info!("VM {} virtio device {:#x} init ok", active_vm_id(), mmio.base());
+                    info!(
+                        "Vm[{}] Virtio Device {:#x} Init Ok",
+                        active_vm_id(),
+                        mmio.base()
+                    );
                 }
             }
             _ => {
-                error!("virtio_mmio_prologue_access: wrong reg write 0x{:x}", emu_ctx.address);
+                error!(
+                    "Virtio Mmio Prologue: wrong reg write 0x{:x}",
+                    emu_ctx.address
+                );
             }
         }
     }
@@ -469,7 +494,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     }
                     Err(_) => {
                         panic!(
-                            "virtio_mmio_queue_access: wrong q_sel {:x} in read VIRTIO_MMIO_QUEUE_READY",
+                            "Virtio Mmio Queue: Wrong q_sel {:x} In Read VIRTIO_MMIO_QUEUE_READY",
                             idx
                         );
                         // return;
@@ -478,7 +503,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
             }
             _ => {
                 error!(
-                    "virtio_mmio_queue_access: wrong reg_read, address {:x}",
+                    "Virtio Mmio Queue: Wrong reg_read, Address {:x}",
                     emu_ctx.address
                 );
                 return;
@@ -500,7 +525,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     }
                     Err(_) => {
                         panic!(
-                            "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_NUM",
+                            "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_NUM",
                             q_sel
                         );
                         // return;
@@ -512,14 +537,14 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     virtq.set_ready(value);
                     if value == VIRTQ_READY {
                         info!(
-                            "VM {} virtio device {:#x} queue {:#x} ready",
+                            "Vm[{}] Virtio Device {:#x} Queue {:#x} Ready",
                             active_vm_id(),
                             mmio.base(),
                             q_sel
                         );
                     } else {
                         warn!(
-                            "VM {} virtio device {:#x} queue {:#x} init failed",
+                            "Vm[{}] Virtio Device {:#x} Queue {:#x} Init Failed",
                             active_vm_id(),
                             mmio.base(),
                             q_sel
@@ -528,7 +553,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_READY",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_READY",
                         q_sel
                     );
                 }
@@ -539,7 +564,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_DESC_LOW",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_DESC_LOW",
                         q_sel
                     );
                 }
@@ -549,7 +574,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     virtq.or_desc_table_addr(value << 32);
                     let desc_table_addr = vm_ipa2pa(&active_vm().unwrap(), virtq.desc_table_addr());
                     if desc_table_addr == 0 {
-                        error!("virtio_mmio_queue_access: invalid desc_table_addr");
+                        error!("Virtio Mmio Queue: Invalid desc_table_addr");
                         return;
                     }
                     // SAFETY:
@@ -561,7 +586,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_DESC_HIGH",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_DESC_HIGH",
                         q_sel
                     );
                 }
@@ -572,7 +597,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_AVAIL_LOW",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_AVAIL_LOW",
                         q_sel
                     );
                 }
@@ -582,7 +607,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     virtq.or_avail_addr(value << 32);
                     let avail_addr = vm_ipa2pa(&active_vm().unwrap(), virtq.avail_addr());
                     if avail_addr == 0 {
-                        error!("virtio_mmio_queue_access: invalid avail_addr");
+                        error!("Virtio Mmio Queue: Invalid avail_addr");
                         return;
                     }
                     // SAFETY:
@@ -594,7 +619,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_AVAIL_HIGH",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_AVAIL_HIGH",
                         q_sel
                     );
                 }
@@ -605,7 +630,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_USED_LOW",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_USED_LOW",
                         q_sel
                     );
                 }
@@ -615,7 +640,7 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                     virtq.or_used_addr(value << 32);
                     let used_addr = vm_ipa2pa(&active_vm().unwrap(), virtq.used_addr());
                     if used_addr == 0 {
-                        error!("virtio_mmio_queue_access: invalid used_addr");
+                        error!("Virtio Mmio Queue: Invalid used_addr");
                         return;
                     }
                     // SAFETY:
@@ -627,13 +652,13 @@ fn virtio_mmio_queue_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usi
                 }
                 Err(_) => {
                     panic!(
-                        "virtio_mmio_queue_access: wrong q_sel {:x} in write VIRTIO_MMIO_QUEUE_USED_HIGH",
+                        "Virtio Mmio Queue: Wrong q_sel {:x} In Write VIRTIO_MMIO_QUEUE_USED_HIGH",
                         q_sel
                     );
                 }
             },
             _ => {
-                error!("virtio_mmio_queue_access: wrong reg write 0x{:x}", emu_ctx.address);
+                error!("Virtio Mmio Queue: Wrong Reg Write 0x{:x}", emu_ctx.address);
             }
         }
     }
@@ -655,29 +680,38 @@ fn virtio_mmio_cfg_access(mmio: &VirtioMmio, emu_ctx: &EmuContext, offset: usize
                     unsafe { net_desc.offset_data(offset - VIRTIO_MMIO_CONFIG, width) }
                 }
                 _ => {
-                    panic!("unknow desc type");
+                    panic!("Unknown Virtio Mmio Desc Type");
                 }
             },
             _ => {
-                error!("virtio_mmio_cfg_access: wrong reg write 0x{:x}", emu_ctx.address);
+                error!(
+                    "Virtio Mmio Config: Wrong Reg Write 0x{:x}",
+                    emu_ctx.address
+                );
                 return;
             }
         };
         let idx = emu_ctx.reg;
         current_cpu().set_gpr(idx, value);
     } else {
-        error!("virtio_mmio_cfg_access: wrong reg write 0x{:x}", emu_ctx.address);
+        error!(
+            "Virtio Mmio Config: Wrong Reg Write 0x{:x}",
+            emu_ctx.address
+        );
     }
 }
 
 /// Initializes the Virtio MMIO device for a virtual machine.
-pub fn emu_virtio_mmio_init(vm: Weak<Vm>, emu_cfg: &VmEmulatedDeviceConfig) -> Result<Arc<dyn EmuDev>, ()> {
+pub fn emu_virtio_mmio_init(
+    vm: Weak<Vm>,
+    emu_cfg: &VmEmulatedDeviceConfig,
+) -> Result<Arc<dyn EmuDev>, ()> {
     let virt_dev_type = match emu_cfg.emu_type {
         EmuDeviceType::EmuDeviceTVirtioBlk => VirtioDeviceType::Block,
         EmuDeviceType::EmuDeviceTVirtioNet => VirtioDeviceType::Net,
         EmuDeviceType::EmuDeviceTVirtioConsole => VirtioDeviceType::Console,
         _ => {
-            error!("emu_virtio_mmio_init: unknown emulated device type");
+            error!("Unknown Emulated Virtio Mmio Device Type");
             return Err(());
         }
     };
@@ -691,7 +725,12 @@ pub fn emu_virtio_mmio_init(vm: Weak<Vm>, emu_cfg: &VmEmulatedDeviceConfig) -> R
 
     if emu_cfg.emu_type == EmuDeviceType::EmuDeviceTVirtioNet {
         let nic = mmio.clone();
-        let mac = emu_cfg.cfg_list.iter().take(6).map(|&x| x as u8).collect::<Vec<_>>();
+        let mac = emu_cfg
+            .cfg_list
+            .iter()
+            .take(6)
+            .map(|&x| x as u8)
+            .collect::<Vec<_>>();
         super::mac::set_mac_info(&mac, nic);
     }
     Ok(mmio)
@@ -717,7 +756,7 @@ impl EmuDev for VirtioMmio {
 
             let idx = current_cpu().get_gpr(emu_ctx.reg);
             if !self.inner_const.vq[idx].call_notify_handler() {
-                error!("Failed to handle virtio mmio request!");
+                error!("Failed To Handle Virtio Mmio Request!");
             }
         } else if offset == VIRTIO_MMIO_INTERRUPT_STATUS && !write {
             let idx = emu_ctx.reg;
@@ -738,7 +777,7 @@ impl EmuDev for VirtioMmio {
             virtio_mmio_cfg_access(self, emu_ctx, offset, write);
         } else {
             error!(
-                "emu_virtio_mmio_handler: regs wrong {}, address 0x{:x}, offset 0x{:x}",
+                "Regs Wrong {}, Address 0x{:x}, Offset 0x{:x}",
                 if write { "write" } else { "read" },
                 addr,
                 offset

@@ -4,18 +4,18 @@
 
 #[cfg(target_arch = "riscv64")]
 use alloc::borrow::ToOwned;
-use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use fdt::myctypes;
 use vm_fdt::{FdtWriter, FdtWriterResult};
 
-use crate::config::{DtbDevType, VmDtbDevConfig};
 use crate::config::VmConfigEntry;
+use crate::config::{DtbDevType, VmDtbDevConfig};
 use crate::device::EmuDeviceType;
 use crate::error::Result;
-use crate::SYSTEM_FDT;
 use crate::vmm::CPIO_RAMDISK;
+use crate::SYSTEM_FDT;
 
 #[allow(unused_imports)]
 use fdt_print::Fdt;
@@ -59,11 +59,11 @@ pub fn remove_riscv_ext(isa: String, ext: String) -> String {
 }
 
 /// Initializes the Device Tree Blob (DTB) for the primary VM (vm0).
-/// # Safety:
+/// # SAFETY:
 /// Dtb is a valid pointer to a device tree blob
 pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
     use fdt::*;
-    info!("fdt {dtb:p} has original size {}", fdt_size(dtb));
+    info!("Device Tree {dtb:p} Has Original Size {}", fdt_size(dtb));
     #[cfg(feature = "tx2")]
     {
         fdt_pack(dtb);
@@ -116,15 +116,15 @@ pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
         );
         assert_eq!(r, 0);
         let len = fdt_size(dtb);
-        info!("fdt after patched size {}", len);
+        info!("Device Tree After Patched Size {}", len);
         let slice = core::slice::from_raw_parts(dtb as *const u8, len as usize);
 
         SYSTEM_FDT.call_once(|| slice.to_vec());
     }
     #[cfg(feature = "pi4")]
     {
-        use crate::utils::round_up;
         use crate::arch::PAGE_SIZE;
+        use crate::utils::round_up;
         let pi_fdt = PI4_DTB_ADDR as *mut fdt::myctypes::c_void;
         let len = round_up(fdt_size(pi_fdt) as usize, PAGE_SIZE) + PAGE_SIZE;
         info!("fdt original size {}", len);
@@ -180,13 +180,19 @@ pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
         // pass through the only one uart on qemu-system-aarch64
         // assert_eq!(fdt_remove_node(dtb, "/pl011@9000000\0".as_ptr()), 0);
         #[cfg(feature = "gicv3")]
-        assert_eq!(fdt_remove_node(dtb, "/intc@8000000/its@8080000\0".as_ptr()), 0);
+        assert_eq!(
+            fdt_remove_node(dtb, "/intc@8000000/its@8080000\0".as_ptr()),
+            0
+        );
         #[cfg(not(feature = "gicv3"))]
-        assert_eq!(fdt_remove_node(dtb, "/intc@8000000/v2m@8020000\0".as_ptr()), 0);
+        assert_eq!(
+            fdt_remove_node(dtb, "/intc@8000000/v2m@8020000\0".as_ptr()),
+            0
+        );
         //assert_eq!(fdt_remove_node(dtb, "/flash@0\0".as_ptr()), 0);
 
         let len = fdt_size(dtb) as usize;
-        info!("fdt patched size {}", len);
+        info!("Device Tree Patched Size {}", len);
         let slice = core::slice::from_raw_parts(dtb as *const u8, len);
         SYSTEM_FDT.call_once(|| slice.to_vec());
     }
@@ -261,8 +267,8 @@ pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
     }
     #[cfg(feature = "rk3588")]
     {
-        use fdt::binding::Fdt;
         use crate::alloc::borrow::ToOwned;
+        use fdt::binding::Fdt;
         let mut fdt = Fdt::from_ptr(dtb as *const u8).to_owned();
         crate::config::patch_fdt(&mut fdt)?;
         SYSTEM_FDT.call_once(move || fdt.into_inner());
@@ -296,7 +302,12 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
     create_memory_node(&mut fdt, config.clone())?;
 
     // todo: fix create_chosen_node size
-    create_chosen_node(&mut fdt, &config.cmdline, config.ramdisk_load_ipa(), CPIO_RAMDISK.len())?;
+    create_chosen_node(
+        &mut fdt,
+        &config.cmdline,
+        config.ramdisk_load_ipa(),
+        CPIO_RAMDISK.len(),
+    )?;
 
     create_cpu_node_riscv(&mut fdt, config)?;
 
@@ -315,7 +326,10 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             EmuDeviceType::EmuDeviceTVirtioBlk
             | EmuDeviceType::EmuDeviceTVirtioNet
             | EmuDeviceType::EmuDeviceTVirtioConsole => {
-                info!("virtio fdt node init {} {:x}", emu_cfg.name, emu_cfg.base_ipa);
+                info!(
+                    "Virtio Device Tree Node Init {} {:x}",
+                    emu_cfg.name, emu_cfg.base_ipa
+                );
                 create_virtio_node_riscv64(
                     &mut fdt,
                     &emu_cfg.name,
@@ -325,7 +339,7 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
                 )?;
             }
             EmuDeviceType::EmuDeviceTTinyvm => {
-                info!("tinyvm fdt node init {:x}", emu_cfg.base_ipa);
+                info!("Device Tree Node Init {:x}", emu_cfg.base_ipa);
                 create_tinyvm_node(
                     &mut fdt,
                     &emu_cfg.name,
@@ -335,12 +349,30 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
                 )?;
             }
             EmuDeviceType::EmuDeviceTPlic => {
-                info!("plic fdt node init {:x} for {}", emu_cfg.base_ipa, &emu_cfg.name);
-                create_plic_node(&mut fdt, &emu_cfg.name, emu_cfg.base_ipa, emu_cfg.length, ncpu)?;
+                info!(
+                    "PLIC Device Tree Node Init {:x} For {}",
+                    emu_cfg.base_ipa, &emu_cfg.name
+                );
+                create_plic_node(
+                    &mut fdt,
+                    &emu_cfg.name,
+                    emu_cfg.base_ipa,
+                    emu_cfg.length,
+                    ncpu,
+                )?;
             }
             EmuDeviceType::EmuDeviceTAPlic => {
-                info!("aplic fdt node init {:x} for {}", emu_cfg.base_ipa, &emu_cfg.name);
-                create_aplic_node(&mut fdt, &emu_cfg.name, emu_cfg.base_ipa, emu_cfg.length, ncpu)?;
+                info!(
+                    "APLIC Device Tree Node Init {:x} For {}",
+                    emu_cfg.base_ipa, &emu_cfg.name
+                );
+                create_aplic_node(
+                    &mut fdt,
+                    &emu_cfg.name,
+                    emu_cfg.base_ipa,
+                    emu_cfg.length,
+                    ncpu,
+                )?;
             }
             _ => {}
         }
@@ -355,7 +387,13 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
     fdt.finish()
 }
 
-fn create_plic_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize, ncpu: u32) -> FdtWriterResult<()> {
+fn create_plic_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    address: usize,
+    len: usize,
+    ncpu: u32,
+) -> FdtWriterResult<()> {
     let plic = fdt.begin_node(name)?;
     let plic_phandle = riscv_plic_phandle(ncpu);
 
@@ -382,7 +420,13 @@ fn create_plic_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize,
     Ok(())
 }
 
-fn create_aplic_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize, ncpu: u32) -> FdtWriterResult<()> {
+fn create_aplic_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    address: usize,
+    len: usize,
+    ncpu: u32,
+) -> FdtWriterResult<()> {
     let aplic = fdt.begin_node(name)?;
     let aplic_phandle = riscv_aplic_phandle(ncpu);
     let msi_parent = riscv_imsic_phandle(ncpu);
@@ -401,7 +445,13 @@ fn create_aplic_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize
     Ok(())
 }
 
-fn create_imsics_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize, ncpu: u32) -> FdtWriterResult<()> {
+fn create_imsics_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    address: usize,
+    len: usize,
+    ncpu: u32,
+) -> FdtWriterResult<()> {
     let imsic = fdt.begin_node(name)?;
     let imsic_phandle = riscv_imsic_phandle(ncpu);
     // This value is related to the 'aia-guests' startup parameter
@@ -429,7 +479,13 @@ fn create_imsics_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usiz
     Ok(())
 }
 
-fn create_clint_node(fdt: &mut FdtWriter, name: &str, address: usize, len: usize, ncpu: u32) -> FdtWriterResult<()> {
+fn create_clint_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    address: usize,
+    len: usize,
+    ncpu: u32,
+) -> FdtWriterResult<()> {
     let clint = fdt.begin_node(name)?;
 
     let mut interrupts: Vec<u32> = Vec::new();
@@ -472,7 +528,12 @@ pub fn create_fdt_aarch64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
         create_timer_node(&mut fdt, 0x8)?;
     }
     // todo: fix create_chosen_node size
-    create_chosen_node(&mut fdt, &config.cmdline, config.ramdisk_load_ipa(), CPIO_RAMDISK.len())?;
+    create_chosen_node(
+        &mut fdt,
+        &config.cmdline,
+        config.ramdisk_load_ipa(),
+        CPIO_RAMDISK.len(),
+    )?;
     create_cpu_node(&mut fdt, config)?;
     if !config.dtb_device_list().is_empty() {
         create_serial_node(&mut fdt, config.dtb_device_list())?;
@@ -494,11 +555,14 @@ pub fn create_fdt_aarch64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             EmuDeviceType::EmuDeviceTVirtioBlk
             | EmuDeviceType::EmuDeviceTVirtioNet
             | EmuDeviceType::EmuDeviceTVirtioConsole => {
-                info!("virtio fdt node init {} {:x}", emu_cfg.name, emu_cfg.base_ipa);
+                info!(
+                    "Virtio Device Tree Node Init {} {:x}",
+                    emu_cfg.name, emu_cfg.base_ipa
+                );
                 create_virtio_node(&mut fdt, &emu_cfg.name, emu_cfg.irq_id, emu_cfg.base_ipa)?;
             }
             EmuDeviceType::EmuDeviceTTinyvm => {
-                info!("tinyvm fdt node init {:x}", emu_cfg.base_ipa);
+                info!("Device Tree Node Init {:x}", emu_cfg.base_ipa);
                 create_tinyvm_node(
                     &mut fdt,
                     &emu_cfg.name,
@@ -526,7 +590,10 @@ fn create_pinctrl_node(fdt: &mut FdtWriter) -> FdtWriterResult<()> {
     let uart0 = fdt.begin_node("uart0")?;
 
     let uart0m1 = fdt.begin_node("uart0m0-xfer")?;
-    fdt.property_array_u32("rockchip,pins", &[0x04, 0x19, 0x0a, 0x179, 0x04, 0x18, 0x0a, 0x179])?;
+    fdt.property_array_u32(
+        "rockchip,pins",
+        &[0x04, 0x19, 0x0a, 0x179, 0x04, 0x18, 0x0a, 0x179],
+    )?;
     fdt.property_u32("phandle", 0x14d)?;
     fdt.end_node(uart0m1)?;
 
@@ -540,7 +607,7 @@ fn create_pinctrl_node(fdt: &mut FdtWriter) -> FdtWriterResult<()> {
 // hard code for tx2 vm1
 fn create_memory_node(fdt: &mut FdtWriter, config: VmConfigEntry) -> FdtWriterResult<()> {
     if config.memory_region().is_empty() {
-        panic!("create_memory_node memory region num 0");
+        panic!("create_memory_node Memory Region Num 0");
     }
     let memory_name = format!("memory@{:x}", config.memory_region()[0].ipa_start);
     let memory = fdt.begin_node(&memory_name)?;
@@ -712,7 +779,12 @@ fn create_serial_node(fdt: &mut FdtWriter, devs_config: &[VmDtbDevConfig]) -> Fd
 }
 
 /// Creates the chosen node in the Device Tree for the VM based on the provided configuration.
-fn create_chosen_node(fdt: &mut FdtWriter, cmdline: &str, ipa: usize, size: usize) -> FdtWriterResult<()> {
+fn create_chosen_node(
+    fdt: &mut FdtWriter,
+    cmdline: &str,
+    ipa: usize,
+    size: usize,
+) -> FdtWriterResult<()> {
     let chosen = fdt.begin_node("chosen")?;
     fdt.property_string("bootargs", cmdline)?;
     fdt.property_u32("linux,initrd-start", ipa as u32)?;
@@ -737,13 +809,20 @@ fn create_gic_node(fdt: &mut FdtWriter, gicc_addr: usize, gicd_addr: usize) -> F
 }
 
 /// Creates the GICv3 (Generic Interrupt Controller version 3) node in the Device Tree for the VM based on the provided configuration.
-fn create_gicv3_node(fdt: &mut FdtWriter, gicr_addr: usize, gicd_addr: usize) -> FdtWriterResult<()> {
+fn create_gicv3_node(
+    fdt: &mut FdtWriter,
+    gicr_addr: usize,
+    gicd_addr: usize,
+) -> FdtWriterResult<()> {
     info!("create_gicv3_node");
     let gic_name = format!("interrupt-controller@{:x}", gicd_addr);
     let gic = fdt.begin_node(&gic_name)?;
 
     fdt.property_u32("phandle", 0x8001)?;
-    fdt.property_array_u64("reg", &[gicd_addr as u64, 0x10000, gicr_addr as u64, 0x100000])?;
+    fdt.property_array_u64(
+        "reg",
+        &[gicd_addr as u64, 0x10000, gicr_addr as u64, 0x100000],
+    )?;
     fdt.property_string("compatible", "arm,gic-v3")?;
     fdt.property_u32("#interrupt-cells", 0x03)?;
     fdt.property_null("interrupt-controller")?;
@@ -754,7 +833,12 @@ fn create_gicv3_node(fdt: &mut FdtWriter, gicr_addr: usize, gicd_addr: usize) ->
 }
 
 /// Creates a Virtio node in the Device Tree for the VM based on the provided configuration.
-fn create_virtio_node(fdt: &mut FdtWriter, name: &str, irq: usize, address: usize) -> FdtWriterResult<()> {
+fn create_virtio_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    irq: usize,
+    address: usize,
+) -> FdtWriterResult<()> {
     let virtio = fdt.begin_node(name)?;
     fdt.property_null("dma-coherent")?;
     fdt.property_string("compatible", "virtio,mmio")?;
@@ -786,7 +870,13 @@ fn create_virtio_node_riscv64(
 }
 
 /// Creates a Tinyvm (Sample Hypervisor) node in the Device Tree for the VM based on the provided configuration.
-fn create_tinyvm_node(fdt: &mut FdtWriter, name: &str, irq: usize, address: usize, len: usize) -> FdtWriterResult<()> {
+fn create_tinyvm_node(
+    fdt: &mut FdtWriter,
+    name: &str,
+    irq: usize,
+    address: usize,
+    len: usize,
+) -> FdtWriterResult<()> {
     let tinyvm = fdt.begin_node(name)?;
     fdt.property_string("compatible", "tinyvm")?;
     fdt.property_array_u32("interrupts", &[0, irq as u32 - 32, 0x1])?;

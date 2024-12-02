@@ -14,8 +14,8 @@ use alloc::vec::Vec;
 use spin::mutex::Mutex;
 
 use crate::device::{
-    BlkIov, mediated_blk_read, mediated_blk_write, virtio_blk_notify_handler, VIRTIO_BLK_T_IN, VIRTIO_BLK_T_OUT,
-    VirtioMmio, Virtq,
+    mediated_blk_read, mediated_blk_write, virtio_blk_notify_handler, BlkIov, VirtioMmio, Virtq,
+    VIRTIO_BLK_T_IN, VIRTIO_BLK_T_OUT,
 };
 use crate::kernel::{active_vm_id, ipi_send_msg, IpiInnerMsg, IpiMediatedMsg, IpiType};
 use crate::utils::{memcpy, sleep, trace};
@@ -60,7 +60,8 @@ pub enum AsyncExeStatus {
 pub static ASYNC_EXE_STATUS: Mutex<AsyncExeStatus> = Mutex::new(AsyncExeStatus::Pending);
 pub static ASYNC_IPI_TASK_LIST: Mutex<LinkedList<AsyncTask>> = Mutex::new(LinkedList::new());
 pub static ASYNC_IO_TASK_LIST: Mutex<FairQueue<AsyncTask>> = Mutex::new(FairQueue::new());
-pub static ASYNC_USED_INFO_LIST: Mutex<BTreeMap<usize, LinkedList<UsedInfo>>> = Mutex::new(BTreeMap::new());
+pub static ASYNC_USED_INFO_LIST: Mutex<BTreeMap<usize, LinkedList<UsedInfo>>> =
+    Mutex::new(BTreeMap::new());
 
 /// trait for determining the owner of a task
 pub trait TaskOwner {
@@ -249,7 +250,7 @@ impl AsyncTask {
 pub async fn async_ipi_req() {
     let ipi_list = ASYNC_IPI_TASK_LIST.lock();
     if ipi_list.is_empty() {
-        panic!("ipi_list should not be empty");
+        panic!("IPI List Should Not Be Empty");
     }
     let task = ipi_list.front().unwrap().clone();
     drop(ipi_list);
@@ -270,7 +271,7 @@ pub async fn async_blk_id_req() {}
 pub async fn async_blk_io_req() {
     let io_list = ASYNC_IO_TASK_LIST.lock();
     if io_list.is_empty() {
-        panic!("io_list should not be empty");
+        panic!("IO List Should Not Be Empty");
     }
     let task = io_list.front().unwrap().clone();
     drop(io_list);
@@ -286,7 +287,7 @@ pub async fn async_blk_io_req() {
                     let len = msg.iov_list[idx].len as usize;
 
                     if cache_ptr < 0x1000 || data_bg < 0x1000 {
-                        panic!("illegal des addr {:x}, src addr {:x}", cache_ptr, data_bg);
+                        panic!("Illegal Des Addr {:x}, Src Addr {:x}", cache_ptr, data_bg);
                     }
                     // SAFETY:
                     // We have both read and write access to the src and dst memory regions.
@@ -299,7 +300,7 @@ pub async fn async_blk_io_req() {
                 mediated_blk_write(msg.blk_id, msg.sector, msg.count);
             }
             _ => {
-                panic!("illegal mediated blk req type {}", msg.io_type);
+                panic!("Illegal Mediated Blk Req Type {}", msg.io_type);
             }
         }
     }
@@ -311,7 +312,7 @@ pub fn set_front_io_task_state(state: AsyncTaskState) {
     let io_list = ASYNC_IO_TASK_LIST.lock();
     match io_list.front() {
         None => {
-            panic!("front io task is none");
+            panic!("Front IO Task Is None");
         }
         Some(task) => {
             task.set_state(state);
@@ -413,9 +414,13 @@ pub fn async_task_exe() {
 pub fn finish_async_task(ipi: bool) {
     let mut ipi_list = ASYNC_IPI_TASK_LIST.lock();
     let mut io_list = ASYNC_IO_TASK_LIST.lock();
-    let task = match if ipi { ipi_list.pop_front() } else { io_list.pop_front() } {
+    let task = match if ipi {
+        ipi_list.pop_front()
+    } else {
+        io_list.pop_front()
+    } {
         None => {
-            panic!("there is no {} task", if ipi { "ipi" } else { "io" })
+            panic!("There Is No {} Task", if ipi { "IPI" } else { "IO" })
         }
         Some(t) => t,
     };
@@ -431,7 +436,7 @@ pub fn finish_async_task(ipi: bool) {
                     let data_bg = args.iov_list[idx].data_bg;
                     let len = args.iov_list[idx].len as usize;
                     if trace() && (data_bg < 0x1000 || cache_ptr < 0x1000) {
-                        panic!("illegal des addr {:x}, src addr {:x}", data_bg, cache_ptr);
+                        panic!("Illegal Des Addr {:x}, Src Addr {:x}", data_bg, cache_ptr);
                     }
                     // SAFETY:
                     // We have both read and write access to the src and dst memory regions.
@@ -464,7 +469,7 @@ pub fn push_used_info(desc_chain_head_idx: u32, used_len: u32, src_vmid: usize) 
             });
         }
         None => {
-            error!("async_push_used_info: src_vmid {} not existed", src_vmid);
+            error!("Source Vmid {} Not Existed", src_vmid);
         }
     }
 }
@@ -477,7 +482,7 @@ fn update_used_info(vq: Arc<Virtq>, src_vmid: usize) {
             vq.update_used_ring(info.used_len, info.desc_chain_head_idx);
         }
         None => {
-            error!("async_push_used_info: src_vmid {} not existed", src_vmid);
+            error!("Source Vmid {} Not Existed", src_vmid);
         }
     }
 }
@@ -490,12 +495,13 @@ pub fn add_async_used_info(vm_id: usize) {
 pub fn remove_async_used_info(vm_id: usize) {
     let mut used_info_list = ASYNC_USED_INFO_LIST.lock();
     used_info_list.remove(&vm_id);
-    // println!("VM[{}] remove async used info", vm_id);
 }
 
 pub fn remove_vm_async_task(vm_id: usize) {
     let mut io_list = ASYNC_IO_TASK_LIST.lock();
     let mut ipi_list = ASYNC_IPI_TASK_LIST.lock();
     io_list.remove(vm_id);
-    *ipi_list = ipi_list.extract_if(|x| x.src_vmid == vm_id).collect::<LinkedList<_>>();
+    *ipi_list = ipi_list
+        .extract_if(|x| x.src_vmid == vm_id)
+        .collect::<LinkedList<_>>();
 }

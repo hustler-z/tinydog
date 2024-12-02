@@ -14,7 +14,7 @@ pub const VM_MEM_REGION_MAX: usize = 4;
 pub fn mem_init() {
     mem_vm_region_init();
     mem_shared_mem_init();
-    info!("Mem init ok");
+    info!("Mem Init Ok");
 }
 
 fn mem_vm_region_init() {
@@ -44,12 +44,11 @@ fn mem_vm_region_init() {
     }
 
     info!(
-        "Memory VM regions: total {} region, size {} MB / {} pages",
+        "Virtual Memory Regions: Total {} Region, Size {} MB / {} Pages",
         vm_region_num,
         pages * PAGE_SIZE / (1024 * 1024),
         pages
     );
-    info!("Memory VM regions init ok!");
 }
 
 #[derive(Debug)]
@@ -128,11 +127,15 @@ pub fn mem_vm_region_free(start: usize, size: usize) {
                 let size = region.size;
                 vm_region.region[merge_idx].size += size;
                 vm_region.region[merge_idx].free += size;
-                free_idx = Some(if merge_idx < idx { merge_idx } else { merge_idx - 1 });
+                free_idx = Some(if merge_idx < idx {
+                    merge_idx
+                } else {
+                    merge_idx - 1
+                });
                 vm_region.region.remove(idx);
                 break;
             }
         }
     }
-    info!("Free mem from pa 0x{:x} to 0x{:x}", start, start + size);
+    info!("Free Mem From Pa 0x{:x} To 0x{:x}", start, start + size);
 }

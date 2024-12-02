@@ -6,7 +6,7 @@ use alloc::sync::Arc;
 use crate::arch::traits::InterruptController;
 use crate::board::PLAT_DESC;
 use crate::device::{VirtioMmio, Virtq};
-use crate::kernel::{CPU_IF_LIST, current_cpu, interrupt_cpu_ipi_send};
+use crate::kernel::{current_cpu, interrupt_cpu_ipi_send, CPU_IF_LIST};
 use crate::vmm::{VmmEvent, VmmPercoreEvent};
 
 use super::Vm;
@@ -168,7 +168,7 @@ pub fn ipi_irq_handler() {
         if let Some(handler) = IPI_HANDLER_LIST.get(ipi_type) {
             handler(ipi_msg);
         } else {
-            error!("illegal ipi type {}", ipi_type)
+            error!("Illegal IPI Type {}", ipi_type)
         }
         let mut cpu_if_list = CPU_IF_LIST.lock();
         msg = cpu_if_list[cpu_id].pop();
@@ -177,7 +177,7 @@ pub fn ipi_irq_handler() {
 
 fn ipi_send(target_id: usize, msg: IpiMessage) -> bool {
     if target_id >= PLAT_DESC.cpu_desc.num {
-        warn!("ipi_send: core {} not exist", target_id);
+        warn!("Target IPI Core {} Not Exist", target_id);
         return false;
     }
 
@@ -197,7 +197,10 @@ fn ipi_send(target_id: usize, msg: IpiMessage) -> bool {
 
 /// send ipi to target cpu
 pub fn ipi_send_msg(target_id: usize, ipi_type: IpiType, ipi_message: IpiInnerMsg) -> bool {
-    let msg = IpiMessage { ipi_type, ipi_message };
+    let msg = IpiMessage {
+        ipi_type,
+        ipi_message,
+    };
     ipi_send(target_id, msg)
 }
 
@@ -209,7 +212,7 @@ pub fn ipi_intra_broadcast_msg(vm: &Vm, ipi_type: IpiType, msg: IpiInnerMsg) -> 
             n += 1;
             if !ipi_send_msg(i, ipi_type, msg.clone()) {
                 error!(
-                    "ipi_intra_broadcast_msg: Failed to send ipi request, cpu {} type {}",
+                    "Failed To Send IPI Request, Cpu {} Type {}",
                     i, ipi_type as usize
                 );
                 return false;

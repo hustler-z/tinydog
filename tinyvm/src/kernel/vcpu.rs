@@ -2,23 +2,25 @@
 //
 // Self-Education Only
 
+use crate::arch::traits::VmContextTrait;
 use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 #[cfg(target_arch = "riscv64")]
-use riscv::register::{hgatp, hstatus, sie};
-#[cfg(target_arch = "riscv64")]
 use core::arch::riscv64::hlv_wu;
 use core::mem::size_of;
-use spin::Mutex;
-use crate::arch::traits::VmContextTrait;
-
-use crate::arch::{ArchTrait, ContextFrame, ContextFrameTrait, GicContext, VmContext};
 #[cfg(target_arch = "riscv64")]
-use crate::arch::{get_trapframe_for_hart, SSTATUS_FS, SSTATUS_SPIE, SSTATUS_SPP, SSTATUS_VS, TP_NUM};
+use riscv::register::{hgatp, hstatus, sie};
+use spin::Mutex;
+
+#[cfg(target_arch = "riscv64")]
+use crate::arch::{
+    get_trapframe_for_hart, SSTATUS_FS, SSTATUS_SPIE, SSTATUS_SPP, SSTATUS_VS, TP_NUM,
+};
+use crate::arch::{ArchTrait, ContextFrame, ContextFrameTrait, GicContext, VmContext};
 use crate::board::{PlatOperation, PLATFORM_CPU_NUM_MAX};
 use crate::config::VmConfigEntry;
-use crate::kernel::{current_cpu, interrupt_vm_inject, vm_if_set_state};
 use crate::kernel::{active_vcpu_id, active_vm_id};
+use crate::kernel::{current_cpu, interrupt_vm_inject, vm_if_set_state};
 use crate::utils::memcpy;
 
 use super::{CpuState, Vm, VmType};
@@ -132,7 +134,7 @@ impl Vcpu {
         let inner = self.inner.inner_mut.lock();
         match current_cpu().ctx_ptr() {
             None => {
-                error!("save_cpu_ctx: cpu{} ctx is NULL", current_cpu().id);
+                error!("Cpu{} Ctx Is NULL", current_cpu().id);
             }
             // SAFETY:
             // We have both read and write access to the src and dst memory regions.
@@ -151,7 +153,7 @@ impl Vcpu {
         let inner = self.inner.inner_mut.lock();
         match current_cpu().ctx_ptr() {
             None => {
-                error!("restore_cpu_ctx: cpu{} ctx is NULL", current_cpu().id);
+                error!("Cpu{} Ctx Is NULL", current_cpu().id);
             }
             // SAFETY:
             // We have both read and write access to the src and dst memory regions.
@@ -207,7 +209,7 @@ impl Vcpu {
         let vm_id = self.vm().unwrap().id();
         use crate::kernel::vm_if_get_type;
         if vm_if_get_type(vm_id) == VmType::VmTBma {
-            debug!("vm {} bma ctx restore", vm_id);
+            debug!("Vm[{}] Bma Ctx Restore", vm_id);
             inner.vm_ctx.reset();
             drop(inner);
             self.context_ext_regs_store();
@@ -290,33 +292,39 @@ fn idle_thread() {
     }
 }
 
-static IDLE_THREAD: spin::Lazy<[Option<IdleThread>; PLATFORM_CPU_NUM_MAX]> = spin::Lazy::new(|| {
-    const ARRAY_REPEAT_VALUE: Option<IdleThread> = None;
-    let mut idle_threads: [Option<IdleThread>; PLATFORM_CPU_NUM_MAX] = [ARRAY_REPEAT_VALUE; PLATFORM_CPU_NUM_MAX];
-    for i in 0..PLATFORM_CPU_NUM_MAX {
-        let mut ctx = ContextFrame::new(idle_thread as usize, current_cpu().stack_top(), 0);
-        ctx.set_exception_pc(idle_thread as usize);
-        // Set the next state to jump to the S-mode
+static IDLE_THREAD: spin::Lazy<[Option<IdleThread>; PLATFORM_CPU_NUM_MAX]> =
+    spin::Lazy::new(|| {
+        const ARRAY_REPEAT_VALUE: Option<IdleThread> = None;
+        let mut idle_threads: [Option<IdleThread>; PLATFORM_CPU_NUM_MAX] =
+            [ARRAY_REPEAT_VALUE; PLATFORM_CPU_NUM_MAX];
+        for i in 0..PLATFORM_CPU_NUM_MAX {
+            let mut ctx = ContextFrame::new(idle_thread as usize, current_cpu().stack_top(), 0);
+            ctx.set_exception_pc(idle_thread as usize);
+            // Set the next state to jump to the S-mode
 
-        #[cfg(target_arch = "riscv64")]
-        {
-            ctx.sstatus = SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS | SSTATUS_VS;
-            ctx.gpr[TP_NUM] = crate::kernel::get_cpu_info_addr(i);
+            #[cfg(target_arch = "riscv64")]
+            {
+                ctx.sstatus = SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS | SSTATUS_VS;
+                ctx.gpr[TP_NUM] = crate::kernel::get_cpu_info_addr(i);
+            }
+
+            #[cfg(target_arch = "aarch64")]
+            {
+                use cortex_a::registers::SPSR_EL2;
+                ctx.spsr = (SPSR_EL2::M::EL2h
+                    + SPSR_EL2::F::Masked
+                    + SPSR_EL2::A::Masked
+                    + SPSR_EL2::D::Masked)
+                    .value;
+            }
+            idle_threads[i] = Some(IdleThread { ctx });
         }
 
-        #[cfg(target_arch = "aarch64")]
-        {
-            use cortex_a::registers::SPSR_EL2;
-            ctx.spsr = (SPSR_EL2::M::EL2h + SPSR_EL2::F::Masked + SPSR_EL2::A::Masked + SPSR_EL2::D::Masked).value;
-        }
-        idle_threads[i] = Some(IdleThread { ctx });
-    }
-
-    idle_threads
-});
+        idle_threads
+    });
 
 pub fn run_idle_thread() {
-    trace!("Core {} idle", current_cpu().id);
+    trace!("Core {} Idle", current_cpu().id);
     current_cpu().cpu_state = CpuState::CpuIdle;
     // SAFETY:
     // We have both read and write access to the src and dst memory regions.
@@ -383,12 +391,12 @@ pub fn vcpu_run(announce: bool) -> ! {
         // set ssratch, used to save VM's TrapFrame
         current_cpu().ctx_mut().unwrap().sscratch = get_trapframe_for_hart(current_cpu().id);
 
-        trace!("Prepare to enter context vm entry...");
+        trace!("Prepare To Enter Context Vm Entry");
         let sepc = current_cpu().ctx_mut().unwrap().sepc;
         let sscratch = current_cpu().ctx_mut().unwrap().sscratch;
         vcpu_set_vgein();
         trace!(
-            "sepc: {:#x}, sscratch: {:#x}, hgatp: {:#x}, hstatus: {:#x}, sstatus: {:#x}, sie: {:#x}",
+            "SEPC: {:#x}, Sscratch: {:#x}, Hgatp: {:#x}, Hstatus: {:#x}, Sstatus: {:#x}, Sie: {:#x}",
             sepc,
             sscratch,
             hgatp::read(),
@@ -396,13 +404,17 @@ pub fn vcpu_run(announce: bool) -> ! {
             current_cpu().ctx_mut().unwrap().sstatus,
             sie::read().bits()
         );
-        trace!("ctx: \n{}", current_cpu().ctx_mut().unwrap());
+        trace!("Ctx: \n{}", current_cpu().ctx_mut().unwrap());
 
         let val;
         unsafe {
             val = hlv_wu(sepc as *const u32);
         }
-        trace!("test entry_point(sepc) memory: hlv_wu(*0x{:#08x}): {:#010x}", sepc, val);
+        trace!(
+            "test entry_point(sepc) memory: hlv_wu(*0x{:#08x}): {:#010x}",
+            sepc,
+            val
+        );
     }
 
     extern "C" {

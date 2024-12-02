@@ -32,8 +32,11 @@ pub fn timer_init() {
 
     if is_boot_core(current_cpu().id) {
         crate::kernel::interrupt_reserve_int(IntCtrl::IRQ_HYPERVISOR_TIMER, timer_irq_handler);
-        info!("Timer frequency: {}Hz", crate::arch::timer_arch_get_frequency());
-        info!("Timer init ok");
+        info!(
+            "Timer Frequency: {}Hz",
+            crate::arch::timer_arch_get_frequency()
+        );
+        info!("Timer Init Ok");
     }
 }
 
@@ -75,7 +78,11 @@ pub fn timer_irq_handler() {
             // In this case, no clock interrupt is triggered
             if next_timer <= crate::arch::timer_arch_get_counter() as u64 && next_timer != 0 {
                 // Timer is expired, inject interrupt!
-                crate::arch::IntCtrl::vm_inject(vcpu.vm().as_ref().unwrap(), vcpu, crate::arch::IRQ_GUEST_TIMER);
+                crate::arch::IntCtrl::vm_inject(
+                    vcpu.vm().as_ref().unwrap(),
+                    vcpu,
+                    crate::arch::IRQ_GUEST_TIMER,
+                );
             }
         }
     }

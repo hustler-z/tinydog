@@ -6,22 +6,23 @@ use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use spin::{Mutex, Once};
 
-#[cfg(target_arch = "aarch64")]
-use crate::arch::Vgic;
-#[cfg(all(feature = "plic", target_arch = "riscv64"))]
-use crate::arch::VPlic;
+use super::vcpu::Vcpu;
 #[cfg(all(feature = "aia", target_arch = "riscv64"))]
 use crate::arch::VAPlic;
-use crate::arch::{PAGE_SIZE, emu_intc_init, PageTable};
+#[cfg(all(feature = "plic", target_arch = "riscv64"))]
+use crate::arch::VPlic;
+#[cfg(target_arch = "aarch64")]
+use crate::arch::Vgic;
+use crate::arch::{emu_intc_init, PageTable, PAGE_SIZE};
 use crate::config::VmConfigEntry;
-use crate::device::{EmuDev, emu_virtio_mmio_init};
-use crate::kernel::{tinyvm_init, emu_iommu_init};
-use crate::utils::*;
+use crate::device::{emu_virtio_mmio_init, EmuDev};
+use crate::kernel::{emu_iommu_init, tinyvm_init};
 use crate::mm::PageFrame;
-use super::vcpu::Vcpu;
+use crate::utils::*;
 
 pub const VM_NUM_MAX: usize = 8;
-pub static VM_IF_LIST: [Mutex<VmInterface>; VM_NUM_MAX] = [const { Mutex::new(VmInterface::default()) }; VM_NUM_MAX];
+pub static VM_IF_LIST: [Mutex<VmInterface>; VM_NUM_MAX] =
+    [const { Mutex::new(VmInterface::default()) }; VM_NUM_MAX];
 
 pub fn vm_if_reset(vm_id: usize) {
     let mut vm_if = VM_IF_LIST[vm_id].lock();
@@ -51,10 +52,7 @@ pub fn vm_if_get_type(vm_id: usize) -> VmType {
 fn vm_if_set_cpu_id(vm_id: usize, master_cpu_id: usize) {
     let vm_if = VM_IF_LIST[vm_id].lock();
     vm_if.master_cpu_id.call_once(|| master_cpu_id);
-    debug!(
-        "vm_if_list_set_cpu_id vm [{}] set master_cpu_id {}",
-        vm_id, master_cpu_id
-    );
+    debug!("Vm[{}] set master_cpu_id {}", vm_id, master_cpu_id);
 }
 
 pub fn vm_if_get_cpu_id(vm_id: usize) -> Option<usize> {
@@ -103,7 +101,7 @@ impl From<usize> for VmType {
         match value {
             0 => Self::VmTOs,
             1 => Self::VmTBma,
-            _ => panic!("Unknown VmType value: {}", value),
+            _ => panic!("Unknown VmType Value: {}", value),
         }
     }
 }
@@ -198,7 +196,7 @@ struct VmInnerMut {
 impl VmInnerConst {
     fn new(id: usize, config: VmConfigEntry, vm: Weak<Vm>) -> VmInnerConst {
         let phys_id_list = cal_phys_id_list(&config);
-        info!("VM[{}] phys_id_list {:?}", id, phys_id_list);
+        info!("Vm[{}] Physical CPU List {:?}", id, phys_id_list);
 
         // cpu total number count must equal to the number of cpu in config
         assert_eq!(phys_id_list.len(), config.cpu_num());
@@ -247,7 +245,8 @@ impl VmInnerConst {
                 EmuDeviceTAPlic => {
                     self.intc_type = IntCtrlType::Emulated;
                     emu_intc_init(emu_cfg, &self.vcpu_list).map(|vaplic| {
-                        self.arch_intc_dev = vaplic.clone().into_any_arc().downcast::<VAPlic>().ok();
+                        self.arch_intc_dev =
+                            vaplic.clone().into_any_arc().downcast::<VAPlic>().ok();
                         vaplic
                     })
                 }
@@ -270,7 +269,7 @@ impl VmInnerConst {
                 EmuDeviceTIOMMU => emu_iommu_init(emu_cfg),
                 EmuDeviceTTinyvm => tinyvm_init(vm.clone(), emu_cfg.base_ipa, emu_cfg.length),
                 _ => {
-                    panic!("init_device: unknown emu dev type {:?}", emu_cfg.emu_type);
+                    panic!("Unknown Emu Dev Type {:?}", emu_cfg.emu_type);
                 }
             };
             // Then add the dev to the emu_devs list
@@ -280,21 +279,21 @@ impl VmInnerConst {
                         || dev.address_range().contains(&emu_dev.address_range().start)
                 }) {
                     panic!(
-                        "duplicated emul address region: prev address {:x?}",
+                        "Duplicated Emu Address Region: Prev Address {:x?}",
                         emu_dev.address_range(),
                     );
                 } else {
                     self.emu_devs.push(emu_dev);
                 }
             } else {
-                panic!("init_device: failed to init emu dev");
+                panic!("Failed To Init Emulate Dev");
             }
             // Then init int_bitmap
             if emu_cfg.irq_id != 0 {
                 self.int_bitmap.set(emu_cfg.irq_id);
             }
             info!(
-                "VM {} registers emulated device: id=<{}>, name=\"{:?}\", ipa=<{:#x}>",
+                "Vm[{}] Emulated Device: [ID={}, Name=\"{:?}\", IPA={:#x}]",
                 self.id, idx, emu_cfg.emu_type, emu_cfg.base_ipa
             );
         }
@@ -368,7 +367,7 @@ impl Vm {
         let vm_inner = self.inner_mut.lock();
         match vm_inner.iommu_ctx_id {
             None => {
-                panic!("vm {} do not have iommu context bank", self.id());
+                panic!("Vm[{}] Do Not Have Iommu Context Bank", self.id());
             }
             Some(id) => id,
         }
@@ -377,7 +376,7 @@ impl Vm {
     pub fn med_blk_id(&self) -> usize {
         match self.config().mediated_block_index() {
             None => {
-                panic!("vm {} do not have mediated blk", self.id());
+                panic!("Vm[{}] Do Not Have Mediated Blk", self.id());
             }
             Some(idx) => idx,
         }
@@ -401,7 +400,7 @@ impl Vm {
             }
             None => {
                 error!(
-                    "vcpu idx {} is to large than vcpu_list len {}",
+                    "vCpu[{}] Is To Large Than vCpu List Length {}",
                     index,
                     self.vcpu_list().len()
                 );
@@ -423,7 +422,7 @@ impl Vm {
         match &vm_inner.pt {
             Some(pt) => pt.pt_map_range(ipa, len, pa, pte, map_block),
             None => {
-                panic!("Vm::pt_map_range: vm{} pt is empty", self.id());
+                panic!("Vm[{}] Page Table Is Empty", self.id());
             }
         }
     }
@@ -433,7 +432,7 @@ impl Vm {
         match &vm_inner.pt {
             Some(pt) => pt.pt_unmap_range(ipa, len, map_block),
             None => {
-                panic!("Vm::pt_umnmap_range: vm{} pt is empty", self.id());
+                panic!("Vm[{}] Page Table Is Empty", self.id());
             }
         }
     }
@@ -444,7 +443,7 @@ impl Vm {
         match &vm_inner.pt {
             Some(pt) => pt.access_permission(ipa, PAGE_SIZE, ap),
             None => {
-                panic!("pt_set_access_permission: vm{} pt is empty", self.id());
+                panic!("Vm[{}] Page Table Is Empty", self.id());
             }
         }
     }
@@ -459,7 +458,7 @@ impl Vm {
         match &vm_inner.pt {
             Some(pt) => pt.base_pa(),
             None => {
-                panic!("Vm::pt_dir: vm{} pt is empty", self.id());
+                panic!("Vm[{}] Page Table Is Empty", self.id());
             }
         }
     }
@@ -566,11 +565,17 @@ impl Vm {
     }
 
     pub fn vcpuid_to_vcpu(&self, vcpuid: usize) -> Option<Vcpu> {
-        self.vcpu_list().iter().find(|vcpu| vcpu.id() == vcpuid).cloned()
+        self.vcpu_list()
+            .iter()
+            .find(|vcpu| vcpu.id() == vcpuid)
+            .cloned()
     }
 
     pub fn vcpuid_to_pcpuid(&self, vcpuid: usize) -> Result<usize, ()> {
-        self.vcpu_list().get(vcpuid).map(|vcpu| vcpu.phys_id()).ok_or(())
+        self.vcpu_list()
+            .get(vcpuid)
+            .map(|vcpu| vcpu.phys_id())
+            .ok_or(())
     }
 
     pub fn pcpuid_to_vcpuid(&self, pcpuid: usize) -> Result<usize, ()> {
@@ -619,12 +624,15 @@ impl Vm {
         } else {
             mpdir & 0xff
         };
-        self.vcpu_list().iter().find(|vcpu| vcpu.id() == cpuid).cloned()
+        self.vcpu_list()
+            .iter()
+            .find(|vcpu| vcpu.id() == cpuid)
+            .cloned()
     }
 
     pub fn ipa2pa(&self, ipa: usize) -> usize {
         if ipa == 0 {
-            error!("vm_ipa2pa: VM {} access invalid ipa {:x}", self.id(), ipa);
+            error!("Vm[{}] Access Invalid Ipa {:x}", self.id(), ipa);
             return 0;
         }
 
@@ -638,7 +646,7 @@ impl Vm {
             }
         }
 
-        error!("vm_ipa2pa: VM {} access invalid ipa {:x}", self.id(), ipa);
+        error!("Vm[{}] Access Invalid Ipa {:x}", self.id(), ipa);
         0
     }
 }
@@ -659,7 +667,7 @@ where
 pub fn push_vm(id: usize, config: VmConfigEntry) -> Result<Arc<Vm>, ()> {
     let mut vm_list = VM_LIST.lock();
     if vm_list.iter().any(|x| x.id() == id) {
-        error!("push_vm: vm {} already exists", id);
+        error!("Vm[{}] Already Exists", id);
         Err(())
     } else {
         let vm = Vm::new(id, config);
@@ -672,7 +680,7 @@ pub fn remove_vm(id: usize) -> Arc<Vm> {
     let mut vm_list = VM_LIST.lock();
     match vm_list.iter().position(|x| x.id() == id) {
         None => {
-            panic!("VM[{}] not exist in VM LIST", id);
+            panic!("Vm[{}] Not Exist In Vm List", id);
         }
         Some(idx) => vm_list.remove(idx),
     }
@@ -690,7 +698,7 @@ pub fn vm_list_size() -> usize {
 
 pub fn vm_ipa2pa(vm: &Vm, ipa: usize) -> usize {
     if ipa == 0 {
-        error!("vm_ipa2pa: VM {} access invalid ipa {:x}", vm.id(), ipa);
+        error!("Vm[{}] Access Invalid Ipa {:x}", vm.id(), ipa);
         return 0;
     }
 
@@ -704,7 +712,7 @@ pub fn vm_ipa2pa(vm: &Vm, ipa: usize) -> usize {
         }
     }
 
-    error!("vm_ipa2pa: VM {} access invalid ipa {:x}", vm.id(), ipa);
+    error!("Vm[{}] Access Invalid Ipa {:x}", vm.id(), ipa);
     0
 }
 

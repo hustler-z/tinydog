@@ -7,14 +7,14 @@ use core::ptr;
 
 use spin::Mutex;
 
-use crate::arch::{is_boot_core, set_current_cpu, Arch, ArchTrait, PAGE_SIZE};
 use crate::arch::ContextFrame;
 use crate::arch::ContextFrameTrait;
+use crate::arch::{is_boot_core, set_current_cpu, Arch, ArchTrait, PAGE_SIZE};
 // use core::ops::{Deref, DerefMut};
 use crate::arch::{cpu_interrupt_unmask, current_cpu_arch};
-use crate::board::{PLATFORM_CPU_NUM_MAX, Platform, PlatOperation};
-use crate::kernel::{SchedType, Vcpu, VcpuArray, VcpuState, Vm, Scheduler};
+use crate::board::{PlatOperation, Platform, PLATFORM_CPU_NUM_MAX};
 use crate::kernel::IpiMessage;
+use crate::kernel::{SchedType, Scheduler, Vcpu, VcpuArray, VcpuState, Vm};
 use crate::utils::trace;
 
 pub const CPU_MASTER: usize = 0;
@@ -153,7 +153,7 @@ impl Cpu {
             None
         } else {
             if trace() && (self.ctx as usize) < 0x1000 {
-                panic!("illegal ctx addr {:p}", self.ctx);
+                panic!("Illegal Ctx Addr {:p}", self.ctx);
             }
             Some(self.ctx)
         }
@@ -215,7 +215,7 @@ impl Cpu {
     /// get this cpu's scheduler
     pub fn scheduler(&mut self) -> &mut impl Scheduler {
         match &mut self.sched {
-            SchedType::None => panic!("scheduler is None"),
+            SchedType::None => panic!("Scheduler Is None"),
             SchedType::SchedRR(rr) => rr,
         }
     }
@@ -286,8 +286,7 @@ pub fn cpu_init() {
         // println!("after barrier cpu init");
         use crate::board::PLAT_DESC;
         if is_boot_core(cpu_id) {
-            info!("Bring up {} cores", PLAT_DESC.cpu_desc.num);
-            info!("Cpu init ok");
+            info!("Bring Up {} Cores", PLAT_DESC.cpu_desc.num);
         }
     }
 }
@@ -298,13 +297,14 @@ pub fn cpu_idle() -> ! {
     current_cpu().cpu_state = state;
     cpu_interrupt_unmask();
     loop {
-        info!("[idle] prepare to idle...");
+        info!("Cpu Ready To [IDLE]");
         crate::arch::Arch::wait_for_interrupt();
     }
 }
 
 /// store all cpu's CPU struct in this array
-pub static mut CPU_LIST: [Cpu; PLATFORM_CPU_NUM_MAX] = [const { Cpu::default() }; PLATFORM_CPU_NUM_MAX];
+pub static mut CPU_LIST: [Cpu; PLATFORM_CPU_NUM_MAX] =
+    [const { Cpu::default() }; PLATFORM_CPU_NUM_MAX];
 pub extern "C" fn cpu_map_self(mpidr: usize) {
     let cpu_id = Platform::mpidr2cpuid(mpidr);
     // SAFETY:

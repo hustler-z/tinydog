@@ -3,8 +3,8 @@
 // Self-Education Only
 
 // rCore buddy system allocator
-use core::sync::atomic::{AtomicBool, Ordering};
 use buddy_system_allocator::{Heap, LockedHeapWithRescue};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{arch::PAGE_SIZE, board::PLAT_DESC, utils::round_up};
 
@@ -28,8 +28,8 @@ pub fn heap_init() {
     // SAFEFY:
     // HEAP_REGION is aligned and HEAP_SIZE is a multiple of PAGE_SIZE
     unsafe {
-        println!(
-            "init buddy system, heap start from {:x} with size {} MB",
+        info!(
+            "Init Buddy System, Heap Start From {:x} With Size {} MB",
             HEAP_REGION.0.as_mut_ptr() as usize,
             HEAP_SIZE / (1024 * 1024)
         );
@@ -60,5 +60,8 @@ fn heap_rescue(heap: &mut Heap<32>, layout: &core::alloc::Layout) {
 
 #[alloc_error_handler]
 fn alloc_error_handler(layout: core::alloc::Layout) -> ! {
-    panic!("Out Of Memory: Heap allocation error, layout = {:x?}", layout);
+    panic!(
+        "Out Of Memory: Heap allocation error, layout = {:x?}",
+        layout
+    );
 }

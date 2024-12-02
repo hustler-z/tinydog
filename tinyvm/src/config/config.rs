@@ -14,9 +14,9 @@ use core::ffi::CStr;
 use spin::Mutex;
 
 // use crate::board::*;
-use crate::device::{EmuDeviceType, mediated_blk_free, mediated_blk_request};
-use crate::kernel::{active_vm, vm, Vm, vm_ipa2pa, VM_NUM_MAX, VmType};
-use crate::utils::{BitAlloc, BitAlloc16, memcpy};
+use crate::device::{mediated_blk_free, mediated_blk_request, EmuDeviceType};
+use crate::kernel::{active_vm, vm, vm_ipa2pa, Vm, VmType, VM_NUM_MAX};
+use crate::utils::{memcpy, BitAlloc, BitAlloc16};
 use crate::vmm::vmm_init_gvm;
 
 /// The maximum length of a VM name.
@@ -47,7 +47,7 @@ impl From<usize> for DtbDevType {
             3 => DtbDevType::DevGicr,
             4 => DtbDevType::DevPlic,
             5 => DtbDevType::DevAPlic,
-            _ => panic!("Unknown DtbDevType value: {}", value),
+            _ => panic!("Unknown DtbDevType Value: {}", value),
         }
     }
 }
@@ -136,7 +136,11 @@ pub struct VmImageConfig {
 
 impl VmImageConfig {
     /// Constructor for VmImageConfig with essential parameters.
-    pub fn new(kernel_load_ipa: usize, device_tree_load_ipa: usize, ramdisk_load_ipa: usize) -> VmImageConfig {
+    pub fn new(
+        kernel_load_ipa: usize,
+        device_tree_load_ipa: usize,
+        ramdisk_load_ipa: usize,
+    ) -> VmImageConfig {
         VmImageConfig {
             kernel_img_name: None,
             kernel_load_ipa,
@@ -351,7 +355,12 @@ impl VmConfigEntry {
     }
 
     /// Adds a passthrough device region with the specified IPA start, PA start, and length.
-    pub fn add_passthrough_device_region(&mut self, base_ipa: usize, base_pa: usize, length: usize) {
+    pub fn add_passthrough_device_region(
+        &mut self,
+        base_ipa: usize,
+        base_pa: usize,
+        length: usize,
+    ) {
         self.vm_pt_dev_confg.regions.push(PassthroughRegion {
             ipa: base_ipa,
             pa: base_pa,
@@ -446,7 +455,7 @@ impl VmConfigTable {
     /// Removes a VM ID from the bitmap.
     pub fn remove_vm_id(&mut self, vm_id: usize) {
         if vm_id >= VM_NUM_MAX || self.vm_bitmap.get(vm_id) == 0 {
-            error!("illegal vm id {}", vm_id);
+            error!("Illegal Vm Id {}", vm_id);
         }
         self.vm_bitmap.clear(vm_id);
     }
@@ -475,7 +484,7 @@ pub fn vm_type(vmid: usize) -> VmType {
             return vm_cfg_entry.os_type;
         }
     }
-    error!("failed to find VM[{}] in vm cfg entry list", vmid);
+    error!("Failed To Find Vm[{}] in Vm Cfg Entry List", vmid);
     VmType::VmTOs
 }
 
@@ -497,7 +506,7 @@ pub fn vm_cfg_entry(vmid: usize) -> Option<VmConfigEntry> {
             return Some(vm_cfg_entry.clone());
         }
     }
-    error!("failed to find VM[{}] in vm cfg entry list", vmid);
+    error!("Failed To Find Vm[{}] In Vm Cfg Entry List", vmid);
     None
 }
 
@@ -511,7 +520,7 @@ where
             return editor(vm_cfg_entry);
         }
     }
-    error!("failed to find VM[{}] in vm cfg entry list", vmid);
+    error!("Failed To Find Vm[{}] In Vm Cfg Entry List", vmid);
     Err(())
 }
 
@@ -521,14 +530,14 @@ pub fn vm_cfg_add_vm_entry(mut vm_cfg_entry: VmConfigEntry) -> Result<usize, ()>
     match vm_config.generate_vm_id() {
         Ok(vm_id) => {
             if vm_id == 0 && (!vm_config.entries.is_empty() || vm_config.vm_num > 0) {
-                panic!("error in mvm config init, the def vm config table is not empty");
+                panic!("Error In Mvm Config Init, The Def Vm Config Table Is Not Empty");
             }
             vm_cfg_entry.set_id(vm_id);
             vm_config.vm_num += 1;
             vm_config.entries.push(vm_cfg_entry.clone());
             info!(
-                "\nSuccessfully add {}[{}] name {:?}, currently vm_num {}",
-                if vm_id == 0 { "MVM" } else { "GVM" },
+                "{}[{}] [{:?}], Currently Active Virtual Machines {}",
+                if vm_id == 0 { "Mvm" } else { "Gvm" },
                 vm_cfg_entry.id(),
                 vm_cfg_entry.name,
                 vm_config.vm_num
@@ -537,7 +546,7 @@ pub fn vm_cfg_add_vm_entry(mut vm_cfg_entry: VmConfigEntry) -> Result<usize, ()>
             Ok(vm_id)
         }
         Err(_) => {
-            error!("vm_cfg_add_vm_entry, vm num reached max value");
+            error!("Reached Max Virtual Machine Number");
             Err(())
         }
     }
@@ -561,7 +570,7 @@ pub fn vm_cfg_remove_vm_entry(vm_id: usize) {
             return;
         }
     }
-    error!("VM[{}] config not found in vm-config-table", vm_id);
+    error!("Vm[{}] Config Not Found In Vm-Config-Table", vm_id);
 }
 
 /// Generates a new VM Config Entry and sets basic values.
@@ -571,12 +580,12 @@ pub fn vm_cfg_add_vm(config_ipa: usize) -> Result<usize, ()> {
     // And in the function, vm_ipa2pa, it is checked whether the config_pa is in the memory region of the VM.
     let [vm_name_ipa, _vm_name_length, vm_type, cmdline_ipa, _cmdline_length, kernel_load_ipa, device_tree_load_ipa, ramdisk_load_ipa] =
         unsafe { *(config_pa as *const _) };
-    info!("\n\nStart to prepare configuration for new VM");
+    info!("\n\nStart To Prepare Configuration For New Vm");
 
     // Copy VM name from user ipa.
     let vm_name_pa = vm_ipa2pa(&active_vm().unwrap(), vm_name_ipa);
     if vm_name_pa == 0 {
-        error!("illegal vm_name_ipa {:x}", vm_name_ipa);
+        error!("Illegal vm_name_ipa {:x}", vm_name_ipa);
         return Err(());
     }
     // SAFETY: We have checked the vm_name_pa is in the memory region of the VM by vm_ipa2pa.
@@ -587,7 +596,7 @@ pub fn vm_cfg_add_vm(config_ipa: usize) -> Result<usize, ()> {
     // Copy VM cmdline from user ipa.
     let cmdline_pa = vm_ipa2pa(&active_vm().unwrap(), cmdline_ipa);
     if cmdline_pa == 0 {
-        error!("illegal cmdline_ipa {:x}", cmdline_ipa);
+        error!("Illegal cmdline_ipa {:x}", cmdline_ipa);
         return Err(());
     }
     // SAFETY: We have checked the cmdline_pa is in the memory region of the VM by vm_ipa2pa.
@@ -605,15 +614,15 @@ pub fn vm_cfg_add_vm(config_ipa: usize) -> Result<usize, ()> {
         ramdisk_load_ipa,
     );
 
-    debug!("      VM name is [{:?}]", new_vm_cfg.name);
-    debug!("      cmdline is [{:?}]", new_vm_cfg.cmdline);
-    debug!("      ramdisk is [0x{:x}]", new_vm_cfg.ramdisk_load_ipa());
+    info!("      Vm Name Is [{:?}]", new_vm_cfg.name);
+    info!("      Cmdline Is [{:?}]", new_vm_cfg.cmdline);
+    info!("      Ramdisk Is [0x{:x}]", new_vm_cfg.ramdisk_load_ipa());
     vm_cfg_add_vm_entry(new_vm_cfg)
 }
 
 /// Deletes a VM config entry.
 pub fn vm_cfg_del_vm(vmid: usize) -> Result<usize, ()> {
-    info!("VM[{}] delete config entry", vmid);
+    info!("Vm[{}] Delete Config Entry", vmid);
     vm_cfg_remove_vm_entry(vmid);
     Ok(0)
 }
@@ -623,7 +632,7 @@ pub fn vm_cfg_add_mem_region(vmid: usize, ipa_start: usize, length: usize) -> Re
     vm_cfg_editor(vmid, |vm_cfg| {
         vm_cfg.add_memory_cfg(ipa_start, length);
         info!(
-            "\nVM[{}] vm_cfg_add_mem_region: add region start_ipa {:x} length {:x}",
+            "\nVm[{}] Add Region Start IPA {:x} Length {:x}",
             vmid, ipa_start, length
         );
         Ok(0)
@@ -631,12 +640,17 @@ pub fn vm_cfg_add_mem_region(vmid: usize, ipa_start: usize, length: usize) -> Re
 }
 
 /// Set VM CPU config according to VM id.
-pub fn vm_cfg_set_cpu(vmid: usize, num: usize, allocate_bitmap: usize, master: usize) -> Result<usize, ()> {
+pub fn vm_cfg_set_cpu(
+    vmid: usize,
+    num: usize,
+    allocate_bitmap: usize,
+    master: usize,
+) -> Result<usize, ()> {
     vm_cfg_editor(vmid, |vm_cfg| {
         vm_cfg.set_cpu_cfg(num, allocate_bitmap, master);
 
         info!(
-            "\nVM[{}] vm_cfg_set_cpu: num {} allocate_bitmap {} master {:?}",
+            "\nVm[{}] Cpu: {} allocate_bitmap {} Master {:?}",
             vmid,
             vm_cfg.cpu_num(),
             vm_cfg.cpu_allocated_bitmap(),
@@ -663,7 +677,7 @@ pub fn vm_cfg_add_emu_dev(
         // Copy emu device name from user ipa.
         let name_pa = vm_ipa2pa(&active_vm().unwrap(), name_ipa);
         if name_pa == 0 {
-            error!("illegal emulated device name_ipa {:x}", name_ipa);
+            error!("Illegal Emulated Device name_ipa {:x}", name_ipa);
             return Err(());
         }
         // SAFETY:
@@ -674,7 +688,7 @@ pub fn vm_cfg_add_emu_dev(
         // Copy emu device cfg list from user ipa.
         let cfg_list_pa = vm_ipa2pa(&active_vm().unwrap(), cfg_list_ipa);
         if cfg_list_pa == 0 {
-            error!("illegal emulated device cfg_list_ipa {:x}", cfg_list_ipa);
+            error!("Illegal Emulated Device cfg_list_ipa {:x}", cfg_list_ipa);
             return Err(());
         }
         let cfg_list = vec![0_usize; CFG_MAX_NUM];
@@ -691,10 +705,10 @@ pub fn vm_cfg_add_emu_dev(
 
         info!(
             concat!(
-                "\nVM[{}] vm_cfg_add_emu_dev: ori emu dev num {}\n",
-                "    name {:?}\n",
-                "     cfg_list {:?}\n",
-                "     base ipa {:x} length {:x} irq_id {} emu_type {}"
+                "\nVm[{}] Origin Emulated Device Number {}\n",
+                "    Name {:?}\n",
+                "    cfg_list {:?}\n",
+                "    Base IPA {:x} Length {:x} IRQ {} EmuType {}"
             ),
             vmid,
             emu_cfg_list.len(),
@@ -729,7 +743,7 @@ pub fn vm_cfg_add_emu_dev(
             let med_blk_index = match mediated_blk_request() {
                 Ok(idx) => idx,
                 Err(_) => {
-                    error!("no more medaited blk for vm {}", vmid);
+                    error!("No More Medaited Blk For Vm[{}]", vmid);
                     return Err(());
                 }
             };
@@ -750,10 +764,7 @@ pub fn vm_cfg_add_passthrough_device_region(
     // Get VM config entry.
     vm_cfg_editor(vmid, |vm_cfg| {
         info!(
-            concat!(
-                "\nVM[{}] vm_cfg_add_pt_dev: \n",
-                "     base_ipa {:x} base_pa {:x} length {:x}"
-            ),
+            concat!("\nVm[{}] [Base IPA {:x} Base PA {:x} Length {:x}]"),
             vmid, base_ipa, base_pa, length
         );
 
@@ -763,16 +774,20 @@ pub fn vm_cfg_add_passthrough_device_region(
 }
 
 /// Add passthrough device config irqs for VM.
-pub fn vm_cfg_add_passthrough_device_irqs(vmid: usize, irqs_base_ipa: usize, irqs_length: usize) -> Result<usize, ()> {
+pub fn vm_cfg_add_passthrough_device_irqs(
+    vmid: usize,
+    irqs_base_ipa: usize,
+    irqs_length: usize,
+) -> Result<usize, ()> {
     info!(
-        "\nVM[{}] vm_cfg_add_pt_dev irqs:\n     base_ipa {:x} length {:x}",
+        "\nVm[{}] Base IPA {:x} Length {:x}",
         vmid, irqs_base_ipa, irqs_length
     );
 
     // Copy passthrough device irqs from user ipa.
     let irqs_base_pa = vm_ipa2pa(&active_vm().unwrap(), irqs_base_ipa);
     if irqs_base_pa == 0 {
-        error!("illegal irqs_base_ipa {:x}", irqs_base_ipa);
+        error!("Illegal IRQs Base IPA {:x}", irqs_base_ipa);
         return Err(());
     }
     let mut irqs = vec![0_usize; irqs_length];
@@ -788,7 +803,7 @@ pub fn vm_cfg_add_passthrough_device_irqs(vmid: usize, irqs_base_ipa: usize, irq
             );
         }
     }
-    debug!("      irqs {:?}", irqs);
+    debug!("      IRQs {:?}", irqs);
 
     vm_cfg_editor(vmid, |vm_cfg| {
         vm_cfg.add_passthrough_device_irqs(&mut irqs);
@@ -803,14 +818,14 @@ pub fn vm_cfg_add_passthrough_device_streams_ids(
     streams_ids_length: usize,
 ) -> Result<usize, ()> {
     info!(
-        "\nVM[{}] vm_cfg_add_pt_dev streams ids:\n     streams_ids_base_ipa {:x} streams_ids_length {:x}",
+        "\nVm[{}] streams_ids_base_ipa {:x} streams_ids_length {:x}",
         vmid, streams_ids_base_ipa, streams_ids_length
     );
 
     // Copy passthrough device streams ids from user ipa.
     let streams_ids_base_pa = vm_ipa2pa(&active_vm().unwrap(), streams_ids_base_ipa);
     if streams_ids_base_pa == 0 {
-        error!("illegal streams_ids_base_ipa {:x}", streams_ids_base_ipa);
+        error!("Illegal streams_ids_base_ipa {:x}", streams_ids_base_ipa);
         return Err(());
     }
     let mut streams_ids = vec![0_usize, streams_ids_length];
@@ -826,7 +841,7 @@ pub fn vm_cfg_add_passthrough_device_streams_ids(
             );
         }
     }
-    debug!("      get streams_ids {:?}", streams_ids);
+    debug!("      Get streams_ids {:?}", streams_ids);
 
     vm_cfg_editor(vmid, |vm_cfg| {
         vm_cfg.add_passthrough_device_streams_ids(&mut streams_ids);
@@ -845,26 +860,26 @@ pub fn vm_cfg_add_dtb_dev(
     addr_region_length: usize,
 ) -> Result<usize, ()> {
     info!(
-        "\nVM[{}] vm_cfg_add_dtb_dev:\n     dev_type {} irq_list_length {} addr_region_ipa {:x} addr_region_length {:x}",
+        "\nVm[{}] dev_type {} irq_list_length {} addr_region_ipa {:x} addr_region_length {:x}",
         vmid, dev_type, irq_list_length, addr_region_ipa, addr_region_length
     );
 
     // Copy DTB device name from user ipa.
     let name_pa = vm_ipa2pa(&active_vm().unwrap(), name_ipa);
     if name_pa == 0 {
-        error!("illegal dtb_dev name ipa {:x}", name_ipa);
+        error!("Illegal dtb_dev Name IPA {:x}", name_ipa);
         return Err(());
     }
     // SAFETY: We have checked the name_pa is in the memory region of the VM by vm_ipa2pa.
     let dtb_dev_name_str = unsafe { CStr::from_ptr(name_pa as *const _) }
         .to_string_lossy()
         .to_string();
-    debug!("      get dtb dev name {:?}", dtb_dev_name_str);
+    debug!("      Get DTB Device Name {:?}", dtb_dev_name_str);
 
     // Copy DTB device irq list from user ipa.
     let irq_list_pa = vm_ipa2pa(&active_vm().unwrap(), irq_list_ipa);
     if irq_list_pa == 0 {
-        error!("illegal dtb_dev irq list ipa {:x}", irq_list_ipa);
+        error!("Illegal dtb_dev IRQ List IPA {:x}", irq_list_ipa);
         return Err(());
     }
     let mut dtb_irq_list: Vec<usize> = Vec::new();
@@ -885,7 +900,7 @@ pub fn vm_cfg_add_dtb_dev(
             dtb_irq_list.push(tmp_dtb_irq_list[i]);
         }
     }
-    debug!("      get dtb dev dtb_irq_list {:?}", dtb_irq_list);
+    debug!("      Get dtb_irq_list {:?}", dtb_irq_list);
 
     let vm_dtb_dev = VmDtbDevConfig {
         name: dtb_dev_name_str,
@@ -914,7 +929,7 @@ fn vm_cfg_finish_configuration(vmid: usize, _img_size: usize) -> alloc::sync::Ar
     // Get VM structure.
     match vm(vmid) {
         None => {
-            panic!("vm_cfg_upload_kernel_image:failed to init VM[{}]", vmid);
+            panic!("Failed To Init Vm[{}]", vmid);
         }
         Some(vm) => vm,
     }
@@ -934,10 +949,7 @@ pub fn vm_cfg_upload_kernel_image(
     // Before upload kernel image, set GVM.
     let vm = match vm(vmid) {
         None => {
-            info!(
-                "\nSuccessfully add configuration file for VM [{}]\nStart to init...",
-                vmid
-            );
+            info!("\nConfiguration File For Vm[{}]", vmid);
             // This code should only run once.
             vm_cfg_finish_configuration(vmid, img_size)
         }
@@ -946,7 +958,7 @@ pub fn vm_cfg_upload_kernel_image(
     let config = vm.config();
 
     info!(
-        "VM[{}] Upload kernel image. cache_ipa:{:x} load_offset:{:x} load_size:{:x}",
+        "Vm[{}] Upload Kernel Image [Cache IPA:{:x} Load Offset:{:x} Load Size:{:x}]",
         vmid, cache_ipa, load_offset, load_size
     );
     // Get cache pa.
@@ -957,7 +969,7 @@ pub fn vm_cfg_upload_kernel_image(
     let dest_pa = vm.ipa2pa(config.kernel_load_ipa() + load_offset);
 
     if cache_pa == 0 {
-        error!("illegal cache ipa {:x}", cache_ipa);
+        error!("Illegal Cache IPA {:x}", cache_ipa);
         return Err(());
     }
     // SAFETY: We have checked the cache_pa is in the memory region of the VM by vm_ipa2pa.
@@ -977,13 +989,13 @@ pub fn vm_cfg_upload_device_tree(
     load_size: usize,
 ) -> Result<usize, ()> {
     info!(
-        "vm_cfg_upload_device_tree: VM[{}] upload device tree. cache_ipa: {:x} load_offset: {:x} load_size: {}",
+        "Vm[{}] Upload Device Tree [Cache IPA: {:x} Load Offset: {:x} Load Size: {}]",
         vmid, cache_ipa, load_offset, load_size,
     );
 
     let cache_pa = vm_ipa2pa(&active_vm().unwrap(), cache_ipa);
     if cache_pa == 0 {
-        error!("illegal cache ipa {:x}", cache_ipa);
+        error!("Illegal Cache IPA {:x}", cache_ipa);
         return Err(());
     }
 

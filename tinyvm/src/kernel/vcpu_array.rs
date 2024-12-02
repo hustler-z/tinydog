@@ -2,9 +2,9 @@
 //
 // Self-Education Only
 
+use crate::board::{SchedRule, PLAT_DESC};
+use crate::kernel::{current_cpu, interrupt_cpu_enable, SchedType, SchedulerRR, Vcpu, VM_NUM_MAX};
 use alloc::slice::{Iter, IterMut};
-use crate::board::{PLAT_DESC, SchedRule};
-use crate::kernel::{current_cpu, SchedType, SchedulerRR, Vcpu, VM_NUM_MAX, interrupt_cpu_enable};
 
 /// vcpu array for storing vcpu objects
 pub struct VcpuArray {
@@ -85,11 +85,11 @@ impl VcpuArray {
     }
 }
 
-// Todo: add config for base slice
+// TODO: add config for base slice
 pub fn cpu_sched_init() {
     match PLAT_DESC.cpu_desc.core_list[current_cpu().id].sched {
         SchedRule::RoundRobin => {
-            info!("cpu[{}] init Round Robin Scheduler", current_cpu().id);
+            info!("Round-Robin Scheduler Registered");
             current_cpu().sched = SchedType::SchedRR(SchedulerRR::new(1));
         }
         _ => {

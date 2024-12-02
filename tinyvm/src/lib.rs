@@ -142,14 +142,30 @@ mod built_info {
 pub static SYSTEM_FDT: spin::Once<alloc::vec::Vec<u8>> = spin::Once::new();
 
 fn print_built_info() {
+    // @Hustler
+    //
+    // Add the tag at the very beginning, on my personal interest.
     println!(
-        "Welcome to {} {} {}!",
+        r#"
+    ____            _
+    \_  \()/\/\/\/\/ \/\    /\/\
+     / // /\   \  // /_ \/\/_/ /
+     \/ \/  \/\/_/__/_/\_/\/ \/ @2024
+        "#
+    );
+    println!(
+        "Board {} {} {} Lauching Now",
         env!("BOARD"),
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
     println!(
-        "Built at {build_time} by {hostname}\nCompiler: {rustc_version}\nFeatures: {features:?}\nCommit: {commit_hash}",
+        r#"
+Built At {build_time} By {hostname}
+Compiler: {rustc_version}
+Features: {features:?}
+CommitID: {commit_hash}
+        "#,
         build_time = env!("BUILD_TIME"),
         hostname = env!("HOSTNAME"),
         commit_hash = env!("GIT_COMMIT"),
@@ -170,8 +186,11 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
     }
 
     heap_init();
+
     kernel::logger_init().unwrap();
+
     mem_init();
+
     // SAFETY:
     // DTB is saved value from boot_stage
     // And it is passed by bootloader
@@ -179,24 +198,23 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
         init_vm0_dtb(dtb).unwrap();
     }
     iommu_init();
+
     cpu_init();
-    info!("cpu init ok");
 
     interrupt_init();
-    info!("interrupt init ok");
 
     timer_init();
+
     cpu_sched_init();
-    info!("sched init ok");
+    info!("Sched Init Ok");
 
     #[cfg(not(feature = "secondary_start"))]
     crate::utils::barrier();
 
     vm_init();
-    info!(
-        "{} Hypervisor init ok\n\nStart booting Monitor VM ...",
-        env!("CARGO_PKG_NAME")
-    );
+
+    info!("Start Booting Virtual Machine ...");
+
     vmm_boot_vm(0);
 
     loop {
@@ -206,14 +224,16 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
 
 // Other cores will execute this function
 pub fn secondary_init(mpidr: usize) {
-    info!("secondary core {:#x} init", mpidr);
+    info!("Secondary Core {:#x} Init", mpidr);
     cpu_init();
-    interrupt_init();
-    info!("secondary core {:#x} interrupt init", mpidr);
-    timer_init();
-    cpu_sched_init();
 
-    info!("[boot] sched init ok at core {:#x}", mpidr);
+    interrupt_init();
+    info!("Secondary Core {:#x} IRQ Init", mpidr);
+
+    timer_init();
+
+    cpu_sched_init();
+    info!("Sched Init Ok @ Core {:#x}", mpidr);
 
     #[cfg(not(feature = "secondary_start"))]
     crate::utils::barrier();

@@ -3,13 +3,15 @@
 // Self-Education Only
 
 use crate::arch::{gic_cpu_init, gicc_clear_current_irq};
-use crate::board::{Platform, PlatOperation};
-use crate::kernel::{cpu_idle, current_cpu, ipi_intra_broadcast_msg, Scheduler, timer_enable, Vcpu, VcpuState, Vm};
-use crate::kernel::{active_vm, ipi_send_msg, IpiInnerMsg, IpiPowerMessage, IpiType, PowerEvent};
+use crate::board::{PlatOperation, Platform};
+use crate::kernel::vm;
 use crate::kernel::CpuState;
 use crate::kernel::IpiMessage;
+use crate::kernel::{active_vm, ipi_send_msg, IpiInnerMsg, IpiPowerMessage, IpiType, PowerEvent};
+use crate::kernel::{
+    cpu_idle, current_cpu, ipi_intra_broadcast_msg, timer_enable, Scheduler, Vcpu, VcpuState, Vm,
+};
 use crate::vmm::vmm_reboot;
-use crate::kernel::vm;
 use smccc::psci::{LowestAffinityLevel, SuspendMode};
 use smccc::{self, Smc};
 
@@ -70,7 +72,7 @@ pub fn power_arch_vm_shutdown_secondary_cores(vm: &Vm) {
     };
 
     if !ipi_intra_broadcast_msg(vm, IpiType::IpiTPower, IpiInnerMsg::Power(m)) {
-        warn!("power_arch_vm_shutdown_secondary_cores: fail to ipi_intra_broadcast_msg");
+        warn!("Fail To ipi_intra_broadcast_msg");
     }
 }
 
@@ -119,7 +121,7 @@ fn psci_guest_sys_reset() {
 #[inline(never)]
 pub fn smc_guest_handler(fid: usize, x1: usize, x2: usize, x3: usize) -> bool {
     debug!(
-        "smc_guest_handler: fid 0x{:x}, x1 0x{:x}, x2 0x{:x}, x3 0x{:x}",
+        "Fid 0x{:x}, x1 0x{:x}, x2 0x{:x}, x3 0x{:x}",
         fid, x1, x2, x3
     );
     let r = match fid {
@@ -179,10 +181,12 @@ pub fn smc_guest_handler(fid: usize, x1: usize, x2: usize, x3: usize) -> bool {
             Ok(res) => res as usize,
             _ => PSCI_E_NOT_SUPPORTED,
         },
-        PSCI_MEM_PROTECT_CHECK_RANGE_64 => match smccc::psci::mem_protect_check_range::<Smc>(x1 as u64, x2 as u64) {
-            Ok(()) => PSCI_E_SUCCESS,
-            _ => PSCI_E_NOT_SUPPORTED,
-        },
+        PSCI_MEM_PROTECT_CHECK_RANGE_64 => {
+            match smccc::psci::mem_protect_check_range::<Smc>(x1 as u64, x2 as u64) {
+                Ok(()) => PSCI_E_SUCCESS,
+                _ => PSCI_E_NOT_SUPPORTED,
+            }
+        }
         #[cfg(feature = "tx2")]
         TEGRA_SIP_GET_ACTMON_CLK_COUNTERS => {
             let result = unsafe { smc_call(fid, x1, x2, x3) };
@@ -198,10 +202,12 @@ pub fn smc_guest_handler(fid: usize, x1: usize, x2: usize, x3: usize) -> bool {
             Ok(()) => PSCI_E_SUCCESS,
             _ => PSCI_E_NOT_SUPPORTED,
         },
-        PSCI_CPU_DEFAULT_SUSPEND_64 => match smccc::psci::cpu_default_suspend::<Smc>(x1 as u64, x2 as u64) {
-            Ok(()) => PSCI_E_SUCCESS,
-            _ => PSCI_E_NOT_SUPPORTED,
-        },
+        PSCI_CPU_DEFAULT_SUSPEND_64 => {
+            match smccc::psci::cpu_default_suspend::<Smc>(x1 as u64, x2 as u64) {
+                Ok(()) => PSCI_E_SUCCESS,
+                _ => PSCI_E_NOT_SUPPORTED,
+            }
+        }
         PSCI_NODE_HW_STATE_64 => match smccc::psci::node_hw_state::<Smc>(x1 as u64, x2 as u32) {
             Ok(res) => res as usize,
             _ => PSCI_E_NOT_SUPPORTED,
@@ -238,7 +244,7 @@ pub fn smc_guest_handler(fid: usize, x1: usize, x2: usize, x3: usize) -> bool {
 fn psci_vcpu_on(vcpu: &Vcpu, entry: usize, ctx: usize) {
     if vcpu.phys_id() != current_cpu().id {
         panic!(
-            "cannot psci on vcpu on cpu {} by cpu {}",
+            "Cannot PSCI On vCpu On Cpu {} By Cpu {}",
             vcpu.phys_id(),
             current_cpu().id
         );
@@ -273,10 +279,13 @@ pub fn psci_ipi_handler(msg: IpiMessage) {
                 let vcpu = vm.vcpuid_to_vcpu(power_msg.vcpuid).unwrap();
                 current_cpu().vcpu_array.append_vcpu(vcpu);
             }
-            let trgt_vcpu = match current_cpu().vcpu_array.pop_vcpu_through_vmid(power_msg.src) {
+            let trgt_vcpu = match current_cpu()
+                .vcpu_array
+                .pop_vcpu_through_vmid(power_msg.src)
+            {
                 None => {
                     warn!(
-                        "Core {} failed to find target vcpu, source vmid {}",
+                        "Core {} Failed To Find Target vCpu, Source VmId {}",
                         current_cpu().id,
                         power_msg.src
                     );
@@ -288,14 +297,14 @@ pub fn psci_ipi_handler(msg: IpiMessage) {
                 PowerEvent::PsciIpiCpuOn => {
                     if trgt_vcpu.state() as usize != VcpuState::Invalid as usize {
                         warn!(
-                            "psci_ipi_handler: target VCPU {} in VM {} is already running",
+                            "Target vCpu {} In Vm[{}] Is Already Running",
                             trgt_vcpu.id(),
                             trgt_vcpu.vm().unwrap().id()
                         );
                         return;
                     }
                     info!(
-                        "Core {} (vm {}, vcpu {}) is woke up",
+                        "Core {} (Vm {}, vCpu {}) Is Woke Up",
                         current_cpu().id,
                         trgt_vcpu.vm().unwrap().id(),
                         trgt_vcpu.id()
@@ -313,10 +322,7 @@ pub fn psci_ipi_handler(msg: IpiMessage) {
             }
         }
         _ => {
-            panic!(
-                "psci_ipi_handler: cpu{} receive illegal psci ipi type",
-                current_cpu().id
-            );
+            panic!("Cpu{} Receive Illegal PSCI IPI Type", current_cpu().id);
         }
     }
 }
@@ -328,16 +334,16 @@ pub fn psci_guest_cpu_on(vmpidr: usize, entry: usize, ctx: usize) -> usize {
     let physical_linear_id = vm.vcpuid_to_pcpuid(vcpu_id);
 
     if vcpu_id >= vm.cpu_num() || physical_linear_id.is_err() {
-        warn!("psci_guest_cpu_on: target vcpu {} not exist", vcpu_id);
+        warn!("[vCpu] Target vCpu {} Not Exist", vcpu_id);
         return usize::MAX - 1;
     }
 
     let cpu_idx = physical_linear_id.unwrap();
 
-    debug!("[psci_guest_cpu_on] {vmpidr}, {cpu_idx}");
+    debug!("[vCpu] {vmpidr}, {cpu_idx}");
 
-    use crate::kernel::CPU_IF_LIST;
     use crate::kernel::StartReason;
+    use crate::kernel::CPU_IF_LIST;
     let state = CPU_IF_LIST.lock().get(cpu_idx).unwrap().state_for_start;
     let mut r = 0;
     if state == CpuState::CpuInv {
@@ -362,7 +368,7 @@ pub fn psci_guest_cpu_on(vmpidr: usize, entry: usize, ctx: usize) -> usize {
             r = power_arch_cpu_on(mpidr, entry_point, cpu_idx);
         }
         debug!(
-            "start to power_arch_cpu_on! mpidr={:X}, entry_point={:X}",
+            "Start To Power_Cpu_On! MPIDR={:X}, Entry Point={:X}",
             mpidr, entry_point
         );
     } else {
@@ -374,8 +380,12 @@ pub fn psci_guest_cpu_on(vmpidr: usize, entry: usize, ctx: usize) -> usize {
             context: ctx,
         };
 
-        if !ipi_send_msg(physical_linear_id.unwrap(), IpiType::IpiTPower, IpiInnerMsg::Power(m)) {
-            warn!("psci_guest_cpu_on: fail to send msg");
+        if !ipi_send_msg(
+            physical_linear_id.unwrap(),
+            IpiType::IpiTPower,
+            IpiInnerMsg::Power(m),
+        ) {
+            warn!("Fail To Send Msg");
             return usize::MAX - 1;
         }
     }
@@ -389,14 +399,14 @@ pub fn psci_guest_cpu_on(vmpidr: usize, entry: usize, ctx: usize) -> usize {
     let physical_linear_id = vm.vcpuid_to_pcpuid(vcpu_id);
 
     if vcpu_id >= vm.cpu_num() || physical_linear_id.is_err() {
-        warn!("psci_guest_cpu_on: target vcpu {} not exist", vcpu_id);
+        warn!("Target vCpu {} Not Exist", vcpu_id);
         return usize::MAX - 1;
     }
     #[cfg(feature = "tx2")]
     {
         let cluster = (vmpidr >> 8) & 0xff;
         if vm.id() == 0 && cluster != 1 {
-            warn!("psci_guest_cpu_on: L4T only support cluster #1");
+            warn!("L4T Only Support Cluster #1");
             return usize::MAX - 1;
         }
     }
@@ -409,8 +419,12 @@ pub fn psci_guest_cpu_on(vmpidr: usize, entry: usize, ctx: usize) -> usize {
         context: ctx,
     };
 
-    if !ipi_send_msg(physical_linear_id.unwrap(), IpiType::IpiTPower, IpiInnerMsg::Power(m)) {
-        warn!("psci_guest_cpu_on: fail to send msg");
+    if !ipi_send_msg(
+        physical_linear_id.unwrap(),
+        IpiType::IpiTPower,
+        IpiInnerMsg::Power(m),
+    ) {
+        warn!("Fail To Send Msg");
         return usize::MAX - 1;
     }
 
@@ -423,13 +437,13 @@ pub fn psci_vm_maincpu_on(vmpidr: usize, entry: usize, ctx: usize, vm_id: usize)
     let physical_linear_id = vm.vcpuid_to_pcpuid(vcpu_id);
 
     if vcpu_id >= vm.cpu_num() || physical_linear_id.is_err() {
-        warn!("psci_vm_maincpu_on: target vcpu {} not exist", vcpu_id);
+        warn!("Target vCpu {} Not Exist", vcpu_id);
         return usize::MAX - 1;
     }
 
     let cpu_idx = physical_linear_id.unwrap();
 
-    use crate::kernel::{CPU_IF_LIST, StartReason};
+    use crate::kernel::{StartReason, CPU_IF_LIST};
     let state = CPU_IF_LIST.lock().get(cpu_idx).unwrap().state_for_start;
     let mut r = 0;
     if state == CpuState::CpuInv {
@@ -453,7 +467,7 @@ pub fn psci_vm_maincpu_on(vmpidr: usize, entry: usize, ctx: usize, vm_id: usize)
         // The ctx here is the cpu_idx.
         r = unsafe { power_arch_cpu_on(mpidr, entry_point, cpu_idx) };
         debug!(
-            "start to power_arch_cpu_on! mpidr={:X}, entry_point={:X}",
+            "Start To Power Cpu On: MPIDR={:X}, Entry Point={:X}",
             mpidr, entry_point
         );
     } else {
@@ -465,8 +479,12 @@ pub fn psci_vm_maincpu_on(vmpidr: usize, entry: usize, ctx: usize, vm_id: usize)
             context: ctx,
         };
 
-        if !ipi_send_msg(physical_linear_id.unwrap(), IpiType::IpiTPower, IpiInnerMsg::Power(m)) {
-            warn!("psci_guest_cpu_on: fail to send msg");
+        if !ipi_send_msg(
+            physical_linear_id.unwrap(),
+            IpiType::IpiTPower,
+            IpiInnerMsg::Power(m),
+        ) {
+            warn!("Fail To Send Msg");
             return usize::MAX - 1;
         }
     }
@@ -478,7 +496,7 @@ pub fn psci_vm_maincpu_on(vmpidr: usize, entry: usize, ctx: usize, vm_id: usize)
 pub fn guest_cpu_on(mpidr: usize) {
     let cpu_id = Platform::mpidr2cpuid(mpidr);
 
-    use crate::kernel::{CPU_IF_LIST, StartReason};
+    use crate::kernel::{StartReason, CPU_IF_LIST};
     let cpu_if_list = CPU_IF_LIST.lock();
     let cpu_if = &cpu_if_list[cpu_id];
 
@@ -493,7 +511,7 @@ pub fn guest_cpu_on(mpidr: usize) {
     let vm = vm(vm_id).unwrap();
     let vcpu = vm.vcpuid_to_vcpu(vcpuid).unwrap();
 
-    debug!("now add vcpu={} to mpidr={:X}", vcpu.id(), mpidr);
+    debug!("Now Add vCpu={} To MPIDR={:X}", vcpu.id(), mpidr);
 
     current_cpu().vcpu_array.append_vcpu(vcpu);
 
@@ -506,7 +524,7 @@ pub fn guest_cpu_on(mpidr: usize) {
             if let Some(trgt_vcpu) = current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
                 psci_vcpu_on(trgt_vcpu, entry as usize, ctx as usize);
             } else {
-                error!("pop_vcpu_through_vmid error!");
+                error!("Pop_vCpu_Through_VmId Error!");
             }
         }
         _ => {

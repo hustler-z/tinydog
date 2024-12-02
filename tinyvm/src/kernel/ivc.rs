@@ -2,17 +2,18 @@
 //
 // Self-Education Only
 
-use spin::Mutex;
-use alloc::sync::{Weak, Arc};
+use alloc::sync::{Arc, Weak};
 use core::ops::Range;
+use spin::Mutex;
 
 use crate::arch::PAGE_SIZE;
 use crate::arch::PTE_S2_NORMAL;
+use crate::device::{EmuContext, EmuDev};
 use crate::kernel::{
-    active_vm, current_cpu, mem_pages_alloc, Vm, vm_if_set_ivc_arg, vm_if_set_ivc_arg_ptr, vm_ipa2pa, VM_NUM_MAX,
+    active_vm, current_cpu, mem_pages_alloc, vm_if_set_ivc_arg, vm_if_set_ivc_arg_ptr, vm_ipa2pa,
+    Vm, VM_NUM_MAX,
 };
 use crate::mm::PageFrame;
-use crate::device::{EmuDev, EmuContext};
 
 // todo: need to rewrite for more vm
 pub static SHARED_MEM: Mutex<Option<PageFrame>> = Mutex::new(None);
@@ -26,7 +27,7 @@ pub fn ivc_update_mq(receive_ipa: usize, cfg_ipa: usize) -> bool {
     let cfg_pa = vm_ipa2pa(&vm, cfg_ipa);
 
     if receive_pa == 0 {
-        error!("ivc_update_mq: invalid receive_pa");
+        error!("Invalid Received PA");
         return false;
     }
 
@@ -53,7 +54,6 @@ pub fn mem_shared_mem_init() {
 
 pub fn tinyvm_init(vm: Weak<Vm>, base_ipa: usize, len: usize) -> Result<Arc<dyn EmuDev>, ()> {
     if base_ipa == 0 || len == 0 {
-        info!("vm tinyvm base ipa {:x}, len {:x}", base_ipa, len);
         return Ok(Arc::new(EmuTinyvm { base_ipa, len }));
     }
     let shared_mem = SHARED_MEM.lock();
@@ -66,7 +66,7 @@ pub fn tinyvm_init(vm: Weak<Vm>, base_ipa: usize, len: usize) -> Result<Arc<dyn 
             Ok(Arc::new(EmuTinyvm { base_ipa, len }))
         }
         None => {
-            error!("tinyvm_init: shared mem should not be None");
+            error!("Shared Mem Should Not Be None");
             Err(())
         }
     }
@@ -87,7 +87,7 @@ impl EmuDev for EmuTinyvm {
     }
 
     fn handler(&self, emu_ctx: &EmuContext) -> bool {
-        info!("emu_tinyvm_handler: ipa {:x}", emu_ctx.address);
+        info!("Emulated Context IPA {:x}", emu_ctx.address);
         info!("DO NOTHING");
         true
     }
