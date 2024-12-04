@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//! A [counting semaphore] for use with [`lilos`].
+//! A [counting semaphore] for use with [`tinybm`].
 //!
 //! See the docs on [`Semaphore`] for more details.
 //!
-//! [`lilos`]: https://docs.rs/lilos/
+//! [`tinybm`]: https://docs.rs/tinybm/
 //! [counting semaphore]: https://en.wikipedia.org/wiki/Semaphore_(programming)
 
 #![no_std]
@@ -26,7 +26,7 @@
 
 use core::pin::Pin;
 use portable_atomic::{AtomicUsize, Ordering};
-use lilos_list::List;
+use tinybm_list::List;
 use pin_project::pin_project;
 
 /// A [counting semaphore].
@@ -67,7 +67,7 @@ use pin_project::pin_project;
 ///
 /// # Getting a semaphore
 ///
-/// Like `lilos`'s `Mutex` type, `Semaphore` must be pinned to be useful. So
+/// Like `tinybm`'s `Mutex` type, `Semaphore` must be pinned to be useful. So
 /// generally you'll wind up writing something like this:
 ///
 /// ```
@@ -83,7 +83,7 @@ use pin_project::pin_project;
 /// basically just wraps up the first two lines:
 ///
 /// ```
-/// lilos_semaphore::create_semaphore!(scooters, 5);
+/// tinybm_semaphore::create_semaphore!(scooters, 5);
 ///
 /// // Check out one scooter from the pool.
 /// scooters.acquire().await;

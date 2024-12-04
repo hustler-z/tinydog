@@ -1,13 +1,12 @@
 [package]
-name = "lilos-example-stm32h7-uart-echo"
+name = "tinybm-stm32h7-uart"
 authors = ["Cliff L. Biffle <code@cliffle.com>"]
 version = "0.1.0"
-description = "UART data exchange example for lilos on stm32h7."
+description = "UART data exchange example for tinybm on stm32h7."
 publish = false
 
 edition.workspace = true
 license.workspace = true
-repository.workspace = true
 rust-version.workspace = true
 
 [package.metadata.docs.rs]
@@ -17,11 +16,11 @@ default-target = "thumbv7em-none-eabihf"
 cortex-m.workspace = true
 cortex-m-rt.workspace = true
 futures.workspace = true
-lilos = {workspace = true, features = ["systick", "spsc"]}
+tinybm = {workspace = true, features = ["systick", "spsc"]}
 panic-halt.workspace = true
 stm32-metapac = { workspace = true, features = ["stm32h743zi"] }
 
 [[bin]]
-name = "lilos-example-stm32h7-uart-echo"
+name = "tinybm-stm32h7-uart"
 test = false
 bench = false

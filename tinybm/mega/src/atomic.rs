@@ -16,7 +16,7 @@
 //!    pretty poor interrupt latency/jitter because of uninterruptible
 //!    instructions and lack of BASEPRI. So, not a big loss.
 //!
-//! 2. They don't work in unprivileged mode. But, neither does most of `lilos`.
+//! 2. They don't work in unprivileged mode. But, neither does most of `tinybm`.
 //!
 //! This is exposed so that applications don't have to rewrite it for M0
 //! support.
@@ -58,7 +58,7 @@ mod private {
 /// Basic atomic operations.
 ///
 /// Note that this trait is _sealed,_ meaning it cannot be implemented for
-/// types outside `lilos` itself.
+/// types outside `tinybm` itself.
 ///
 /// @Hustler
 ///
@@ -193,7 +193,7 @@ macro_rules! impl_atomic_polyfills {
         impl<$($param)?> private::Sealed for $t {}
 
         // Native version
-        #[cfg(lilos_has_native_rmw)]
+        #[cfg(tinybm_has_native_rmw)]
         impl<$($param)?> AtomicExt for $t {
             type Value = $v;
 
@@ -226,7 +226,7 @@ macro_rules! impl_atomic_polyfills {
         }
 
         // Non-native version
-        #[cfg(not(lilos_has_native_rmw))]
+        #[cfg(not(tinybm_has_native_rmw))]
         impl<$($param)?> AtomicExt for $t {
             type Value = $v;
 
@@ -298,7 +298,7 @@ impl_atomic_polyfills!(AtomicPtr<T>, *mut T, T);
 macro_rules! impl_atomic_arith_polyfills {
     ($t:ty $(, $param:ident)?) => {
         // Native version
-        #[cfg(lilos_has_native_rmw)]
+        #[cfg(tinybm_has_native_rmw)]
         impl<$($param)?> AtomicArithExt for $t {
             fn fetch_add_polyfill(
                 &self,
@@ -326,7 +326,7 @@ macro_rules! impl_atomic_arith_polyfills {
         }
 
         // Non-native version
-        #[cfg(not(lilos_has_native_rmw))]
+        #[cfg(not(tinybm_has_native_rmw))]
         impl<$($param)?> AtomicArithExt for $t {
             fn fetch_add_polyfill(
                 &self,
@@ -374,7 +374,7 @@ impl_atomic_arith_polyfills!(core::sync::atomic::AtomicIsize);
 impl_atomic_arith_polyfills!(AtomicUsize);
 impl_atomic_arith_polyfills!(AtomicU32);
 
-#[cfg(not(lilos_has_native_rmw))]
+#[cfg(not(tinybm_has_native_rmw))]
 #[inline(always)]
 fn rmw_ordering(o: Ordering) -> (Ordering, Ordering) {
     match o {

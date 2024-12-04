@@ -1,22 +1,22 @@
 [package]
-name = "lilos-handoff"
+name = "tinybm-handoff"
 version = "1.0.1"
 authors = ["Cliff L. Biffle <code@cliffle.com>"]
-description = "Synchronous rendezvous structure for lilos"
+description = "Synchronous rendezvous structure for tinybm"
 keywords = ["async", "embedded", "realtime", "os"]
 categories = ["embedded"]
 readme = "README.mkdn"
 
 edition.workspace = true
 license.workspace = true
-repository.workspace = true
+# repository.workspace = true
 rust-version.workspace = true
 
 [package.metadata.docs.rs]
 default-target = "thumbv7em-none-eabihf"
 
 [dependencies]
-lilos.workspace = true
+tinybm.workspace = true
 scopeguard.workspace = true
 
 [lib]

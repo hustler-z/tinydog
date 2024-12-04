@@ -7,18 +7,18 @@
 //! This provides a lightweight operating environment for running async Rust
 //! code on ARM Cortex-M microprocessors, plus some useful doodads and gizmos.
 //!
-//! `lilos` is deliberately designed to be compact, to avoid the use of proc
+//! `tinybm` is deliberately designed to be compact, to avoid the use of proc
 //! macros, to be highly portable to different microcontrollers, and to be as
 //! statically predictable as possible with no dynamic resource allocation.
 //!
 //! These are the API docs for the OS. If you'd like a higher-level introduction
 //! with worked examples, please have a look at [the intro guide]!
 //!
-//! [the intro guide]: https://github.com/cbiffle/lilos/blob/main/doc/intro.adoc
+//! [the intro guide]: https://github.com/cbiffle/tinybm/blob/main/doc/intro.adoc
 //!
 //! # About the OS
 //!
-//! `lilos` is designed around the notion of a fixed set of concurrent tasks
+//! `tinybm` is designed around the notion of a fixed set of concurrent tasks
 //! that run forever. To use the OS, your application startup routine calls
 //! [`exec::run_tasks`], giving it an array of tasks you've defined; `run_tasks`
 //! never returns.
@@ -43,12 +43,12 @@
 //! For detailed discussion and some cookbook examples, see either [the intro
 //! guide] or [the `examples` directory in the repo][examples].
 //!
-//! [examples]: https://github.com/cbiffle/lilos/tree/main/examples
+//! [examples]: https://github.com/cbiffle/tinybm/tree/main/examples
 //!
 //!
 //! # Feature flags
 //!
-//! `lilos` currently exposes the following Cargo features for
+//! `tinybm` currently exposes the following Cargo features for
 //! enabling/disabling portions of the system:
 //!
 //! - `systick` (on by default). Enables reliance on the ARM M-profile SysTick
@@ -111,7 +111,7 @@
 //! more about this in [The Intro Guide] and the technical note on
 //! [Cancellation].
 //!
-//! `lilos` itself tries to make it easier for you to handle cancellation in
+//! `tinybm` itself tries to make it easier for you to handle cancellation in
 //! your programs, by providing APIs that have reasonable behavior on cancel.
 //! All of the core APIs aim for _strict_ cancel-safety, where dropping a future
 //! and retrying the operation that produced it is equivalent to not dropping
@@ -119,7 +119,7 @@
 //! will take more CPU cycles; that's not what we mean by side effects.)
 //!
 //! If some code is useful, but can't achieve strict cancel safety, it should go
-//! in a separate crate. For example, the `lilos-handoff` crate _used to_ be
+//! in a separate crate. For example, the `tinybm-handoff` crate _used to_ be
 //! part of the core OS, but was evicted because it can only achieve a weaker
 //! notion of cancel safety.
 //!
@@ -128,8 +128,8 @@
 //!
 //! [`select_biased!`]: https://docs.rs/futures/latest/futures/macro.select_biased.html
 //! [`join!`]: https://docs.rs/futures/latest/futures/macro.join.html
-//! [The Intro Guide]: https://github.com/cbiffle/lilos/blob/main/doc/intro.adoc
-//! [Cancellation]: https://github.com/cbiffle/lilos/blob/main/doc/cancellation.adoc
+//! [The Intro Guide]: https://github.com/cbiffle/tinybm/blob/main/doc/intro.adoc
+//! [Cancellation]: https://github.com/cbiffle/tinybm/blob/main/doc/cancellation.adoc
 
 #![no_std]
 
@@ -165,7 +165,7 @@ pub mod atomic;
 pub mod util;
 
 #[macro_use]
-#[deprecated(since = "1.2.0", note = "please move to the lilos-list crate")]
+#[deprecated(since = "1.2.0", note = "please move to the tinybm-list crate")]
 pub mod list;
 
 #[cfg(feature = "systick")]

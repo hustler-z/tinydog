@@ -4,7 +4,7 @@
 
 //! Mechanism for handing data from one task to another, minimizing copies.
 //!
-//! This crate provides the `Handoff` abstraction for `lilos`.
+//! This crate provides the `Handoff` abstraction for `tinybm`.
 //!
 //! There are two sides to a `Handoff<T>`, the sender and the receiver. When both
 //! the sender and receiver are ready, a single `T` gets transferred from the
@@ -44,7 +44,7 @@
 //!
 //! If you would like to be able to push data and go on about your business
 //! without waiting for it to be popped, you want a queue, not a handoff. See
-//! the `lilos::spsc` module.
+//! the `tinybm::spsc` module.
 //!
 //! Note that none of these types are `Send` or `Sync` -- they are very much not
 //! thread safe, so they can be freely used across `async` tasks but cannot be
@@ -55,7 +55,7 @@
 //!
 //! # Cancel safety
 //!
-//! `Handoff` is not strictly cancel-safe, unlike most of `lilos`. Concretely,
+//! `Handoff` is not strictly cancel-safe, unlike most of `tinybm`. Concretely,
 //! dropping a `push` or `pop` future before it resolves can cause the loss of
 //! at most one data item.
 //!
@@ -64,7 +64,7 @@
 //! [`Popper::pop`] carefully or you risk losing data.
 //!
 //! If the push and pop ends of the handoff are "long-lived," held by tasks that
-//! won't be cancelled (such as top-level tasks in `lilos`) and never used in
+//! won't be cancelled (such as top-level tasks in `tinybm`) and never used in
 //! contexts where the future might be cancelled (such as `with_timeout`), then
 //! you don't need to worry about that. This is not a property you can check
 //! with the compiler, though, so again -- be careful.
@@ -90,7 +90,7 @@ use core::ptr::NonNull;
 
 use scopeguard::ScopeGuard;
 
-use lilos::exec::Notify;
+use tinybm::exec::Notify;
 
 /// Shared control block for a `Handoff`. See the module docs for more
 /// information.

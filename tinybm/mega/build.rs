@@ -3,15 +3,15 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 fn main() {
-    println!(r#"cargo:rustc-check-cfg=cfg(lilos_has_basepri)"#);
-    println!(r#"cargo:rustc-check-cfg=cfg(lilos_has_native_rmw)"#);
+    println!(r#"cargo:rustc-check-cfg=cfg(tinybm_has_basepri)"#);
+    println!(r#"cargo:rustc-check-cfg=cfg(tinybm_has_native_rmw)"#);
 
     match std::env::var("TARGET").unwrap().as_str() {
         "thumbv7m-none-eabi" | "thumbv7em-none-eabi" | "thumbv7em-none-eabihf" => {
             // Turn on BASEPRI support for interrupt priority filtering.
-            println!("cargo:rustc-cfg=lilos_has_basepri");
+            println!("cargo:rustc-cfg=tinybm_has_basepri");
             // Use native atomic RMW operations
-            println!("cargo:rustc-cfg=lilos_has_native_rmw");
+            println!("cargo:rustc-cfg=tinybm_has_native_rmw");
         }
         "thumbv6m-none-eabi" => {
             // Don't turn anything on.

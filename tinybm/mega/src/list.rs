@@ -4,7 +4,7 @@
 
 //! Doubly-linked intrusive lists for scheduling and waking (old version).
 //!
-//! **Please use the `lilos_list` crate instead. It's better in literally every
+//! **Please use the `tinybm_list` crate instead. It's better in literally every
 //! way.**
 //!
 //! A [`List<T>`][List] keeps track of nodes (of type [`Node<T>`][Node]) that

@@ -108,7 +108,7 @@
 
 use core::cell::{Cell, RefCell};
 
-use lilos::exec::Notify;
+use tinybm::exec::Notify;
 
 /// Store some data of type `T` and efficiently notify multiple consumers if it
 /// changes.

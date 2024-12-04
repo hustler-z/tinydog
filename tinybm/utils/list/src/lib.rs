@@ -10,12 +10,12 @@
 //!
 //! See the [`List`] type for details.
 //!
-//! This list is used internally by [`lilos`] but may also be useful for
+//! This list is used internally by [`tinybm`] but may also be useful for
 //! applications or crates implementing new synchronization primitives. Because
-//! `lilos`'s internal use of this list is not exposed, it's not important to
+//! `tinybm`'s internal use of this list is not exposed, it's not important to
 //! use exactly the same version, except to conserve flash space.
 //!
-//! [`lilos`]: https://docs.rs/lilos/latest/lilos/
+//! [`tinybm`]: https://docs.rs/tinybm/latest/tinybm/
 
 // IMPLEMENTATION NOTE: for shorthand and to avoid repeating ourselves, the
 // safety comments below refer to something called the Link Valid Invariant.

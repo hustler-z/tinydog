@@ -131,7 +131,7 @@ impl<'s, T> Queue<'s, T> {
 }
 
 /// It's entirely possible to drop a non-empty Queue in correct code, unlike
-/// (say) a `lilos::list`, so we provide a Drop impl that goes through and
+/// (say) a `tinybm::list`, so we provide a Drop impl that goes through and
 /// cleans up queued elements.
 impl<T> Drop for Queue<'_, T> {
     fn drop(&mut self) {
@@ -344,7 +344,7 @@ impl<T> Popper<'_, T> {
     /// resolves to a popped element. If you drop it before it has resolved,
     /// no data is lost.
     pub async fn pop(&mut self) -> T {
-        // NOTE: recognizing this function is what allows lilosdbg to show tasks
+        // NOTE: recognizing this function is what allows tinybmdbg to show tasks
         // waiting to pop from queues -- inlining the contained future will
         // require debugger changes.
         self.q.pushed.until(move || self.try_pop()).await

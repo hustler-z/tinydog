@@ -43,14 +43,14 @@ impl<U: ?Sized, T> Captures<T> for U {}
 /// dependencies a typical application needs to pull in. It's
 /// blanket-implemented for any type that implements `Future`.
 ///
-/// If you `use` both `futures::future::FutureExt` and `lilos::util::FutureExt`
+/// If you `use` both `futures::future::FutureExt` and `tinybm::util::FutureExt`
 /// in the same module, you'll get a compile error because you can't have two
 /// things in scope both named `FutureExt`. The easiest way to resolve this is
 /// to bring the trait operations into scope _without bringing the trait
 /// itself,_ using this syntax:
 ///
 /// ```ignore
-/// use lilos::util::FutureExt as _;
+/// use tinybm::util::FutureExt as _;
 /// ```
 pub trait FutureExt {
     /// Wraps this future such that `action` will be called if it is dropped

@@ -1,15 +1,15 @@
 [package]
-name = "lilos-list"
+name = "tinybm-list"
 version = "0.1.0"
 authors = ["Cliff L. Biffle <code@cliffle.com>"]
-description = "Allocation-free intrusive doubly-linked wait queues for lilos."
+description = "Allocation-free intrusive doubly-linked wait queues for tinybm."
 keywords = ["async", "embedded", "os"]
 categories = ["embedded", "no-std"]
 readme = "README.mkdn"
 
 edition.workspace = true
 license.workspace = true
-repository.workspace = true
+# repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]

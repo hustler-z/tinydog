@@ -7,7 +7,7 @@
 //!
 //! This defaults to using USART3, which is conveniently wired to the "virtual
 //! COM port" exposed over USB by the built-in STLink V3 programmer. Bytes
-//! received at 115200 baud will be retransmitted at the same rate. 
+//! received at 115200 baud will be retransmitted at the same rate.
 //!
 //! Wiring:
 //! - PD8 is USART3 TX
@@ -25,7 +25,7 @@
 //!
 //! Here's what this does:
 //!
-//! - `main` sets up some hardware and then starts the `lilos` executor with two
+//! - `main` sets up some hardware and then starts the `tinybm` executor with two
 //!   root tasks, `heartbeat` and `echo`.
 //! - `heartbeat` periodically blinks an LED forever.
 //! - `echo` configures USART3, creates a shared queue, and then forks into two
@@ -35,7 +35,7 @@
 //! - `echo_tx` wakes when the queue is empty (and the USART's transmit data
 //!   register is empty) and stuffs bytes into the USART.
 //!
-//! Because `lilos` uses `async` for concurrency, the implementation is
+//! Because `tinybm` uses `async` for concurrency, the implementation is
 //! different from what you might see in a traditional RTOS. Each concurrent
 //! process is still written as a straight-line function that loops when needed,
 //! but the way they interact is different:
@@ -62,9 +62,9 @@ use core::future::Future;
 
 use stm32_metapac::{self as device, interrupt, gpio::vals::{Moder, Ot}};
 
-use lilos::exec::Notify;
-use lilos::spsc;
-use lilos::time::{Millis, PeriodicGate};
+use tinybm::exec::Notify;
+use tinybm::spsc;
+use tinybm::time::{Millis, PeriodicGate};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Entry point
@@ -89,10 +89,10 @@ fn main() -> ! {
     ));
 
     // Set up and run the scheduler.
-    lilos::time::initialize_sys_tick(&mut cp.SYST, CLOCK_HZ);
-    lilos::exec::run_tasks_with_idle(
+    tinybm::time::initialize_sys_tick(&mut cp.SYST, CLOCK_HZ);
+    tinybm::exec::run_tasks_with_idle(
         &mut [heartbeat, echo],
-        lilos::exec::ALL_TASKS,
+        tinybm::exec::ALL_TASKS,
         || {
             device::GPIOD.bsrr().write(|w| w.set_br(15, true));
             cortex_m::asm::wfi();
@@ -258,7 +258,7 @@ static TXE: Notify = Notify::new();
 /// NVIC.
 async fn send(usart: device::usart::Usart, c: u8) {
     // Enable the TxE interrupt so the ISR will signal the TXE Notify. Because
-    // we're using lilos in normal (non-preemptive) mode, the ISR will not fire
+    // we're using tinybm in normal (non-preemptive) mode, the ISR will not fire
     // right away.
     usart.cr1().modify(|w| w.set_txeie(true));
     // Block waiting for the TXE Notify to be signaled, which will give the ISR
@@ -280,7 +280,7 @@ static RXNE: Notify = Notify::new();
 /// NVIC.
 async fn recv(usart: device::usart::Usart) -> u8 {
     // Enable the RxNE interrupt so the ISR will signal the RXNE Notify. Because
-    // we're using lilos in normal (non-preemptive) mode, the ISR will not fire
+    // we're using tinybm in normal (non-preemptive) mode, the ISR will not fire
     // right away.
     usart.cr1().modify(|w| w.set_rxneie(true));
     // Block waiting for the RXNE Notify to be signaled, which will give the ISR
