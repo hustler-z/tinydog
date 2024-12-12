@@ -1,9 +1,9 @@
-use tock_registers::interfaces::{Writeable, ReadWriteable};
+use tock_registers::interfaces::{ReadWriteable, Writeable};
 
-use core::arch::asm;
 use crate::arch::PAGE_SIZE;
-use crate::kernel::{cpu_map_self, CPU_STACK_OFFSET, CPU_STACK_SIZE};
 use crate::board::PLAT_DESC;
+use crate::kernel::{cpu_map_self, CPU_STACK_OFFSET, CPU_STACK_SIZE};
+use core::arch::asm;
 
 // XXX: Fixed boot stack size limits the maximum number of cpus, see '_start'.
 const MAX_CPU: usize = 8;
@@ -27,10 +27,19 @@ extern "C" {
     fn vectors();
 }
 
+/// #############################################################
+/// @Hustler
+///
+/// [1] sym <path>   - <path> must refer to a fn or static.
+/// [2] const <expr> - <expr> must be an integer constant
+///                    expression.
+///
+/// #############################################################
+///
+/// The entry point of the kernel.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
-/// The entry point of the kernel.
 pub unsafe extern "C" fn _start() -> ! {
     asm!(
         r#"
@@ -178,7 +187,7 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
 }
 
 fn init_sysregs() {
-    use cortex_a::registers::{HCR_EL2, VBAR_EL2, SCTLR_EL2};
+    use cortex_a::registers::{HCR_EL2, SCTLR_EL2, VBAR_EL2};
     HCR_EL2.write(
         HCR_EL2::VM::Enable
             + HCR_EL2::RW::EL1IsAarch64
@@ -191,7 +200,11 @@ fn init_sysregs() {
 }
 
 unsafe extern "C" fn clear_bss() {
-    core::slice::from_raw_parts_mut(_bss_begin as usize as *mut u8, _bss_end as usize - _bss_begin as usize).fill(0)
+    core::slice::from_raw_parts_mut(
+        _bss_begin as usize as *mut u8,
+        _bss_end as usize - _bss_begin as usize,
+    )
+    .fill(0)
 }
 
 unsafe extern "C" fn cache_invalidate(cache_level: usize) {

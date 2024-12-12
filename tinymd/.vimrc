@@ -1,4 +1,9 @@
-" ---------------------------------------------------------------
+" ###############################################################
+" Hustler [.vimrc]                                     2024/12/10
+"
+" This is my personal vim configuration
+" ###############################################################
+
 call plug#begin('~/.vim/plugged')
 Plug 'jiangmiao/auto-pairs'
 Plug 'Yggdroot/indentLine'
@@ -16,8 +21,11 @@ Plug 'junegunn/fzf.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+Plug 'voldikss/vim-floaterm'
 call plug#end()
-" ---------------------------------------------------------------
+
+" ###############################################################
+
 " syntax on
 set showmatch
 set hlsearch
@@ -26,7 +34,9 @@ set fileencoding=utf-8
 set termguicolors
 set background=dark
 colorscheme moonfly
-" ---------------------------------------------------------------
+
+" ###############################################################
+
 " Try to delete a word by hit the 'dw'
 " replace same patterns with confirmation '%s/**/*/gc', but here
 " we don't offer autocomplete, but
@@ -40,7 +50,9 @@ colorscheme moonfly
 "
 " Remember that 'shift < or >' can do indentation, with '.' you can
 " re-do what you just did again.
-" ---------------------------------------------------------------
+
+" ###############################################################
+
 set breakindent
 set sts=4
 set autoindent
@@ -49,7 +61,7 @@ set expandtab
 set tabstop=4
 set shiftwidth=4
 set laststatus=2
-" set mouse=a
+set mouse=a
 " set signcolumn=yes
 set noswapfile
 set fileformat=unix
@@ -82,7 +94,9 @@ set wildmode=longest,full
 set clipboard+=unnamed,unamedplus
 set backspace=indent,eol,start
 syntax sync minlines=256
-" ---------------------------------------------------------------
+
+" ###############################################################
+
 let NERDTreeWinPos = "right"
 let g:NERDTreeShowHidden = 1
 let NERDTreeWinSize = 45
@@ -91,26 +105,36 @@ let g:indentLine_enabled = 1
 let g:rainbow_active = 1
 let g:rustfmt_autosave = 1
 let g:rustfmt_command = "rustfmt"
-" ---------------------------------------------------------------
-nnoremap <silent> <leader>t :vert ter<CR>
-nnoremap <silent> <leader>v :NERDTreeToggle<CR>
+
+" ###############################################################
+
+nnoremap <silent> <leader>t :FloatermToggle<CR>
+nnoremap <silent> <leader>n :NERDTreeToggle<CR>
 nnoremap <silent> <leader>r :NERDTreeRefreshRoot<CR>
+" Now this is for ctags, which we can use it to jump to definition
 nnoremap <silent> <leader>g g<C-]>
 nnoremap <silent> <leader>b <C-o>
+nnoremap <silent> <leader>s <C-w><C-w>
+nnoremap <silent> <leader>u ~
 " Now 'zz' to move to the center
-nnoremap <silent> <leader>d <C-d>zz
-nnoremap <silent> <leader>u <C-u>zz
+" Enhancement of j,k
+nnoremap <silent> <leader>j <C-d>zz
+nnoremap <silent> <leader>k <C-u>zz
 " C - change to the end of the line
-" D - Delete to the end of the line
-" Y - yank to the end of the line
-nnoremap <silent> <leader>c C
+" D - Delete to the end of the Line
+" O - Insert above the cursor
+" E - Go to the end of next chunk of word
 nnoremap <silent> <leader>e E
-nnoremap <silent> <leader>o O
+" W - Go to next chunk of word
 nnoremap <silent> <leader>w W
-" Append at the end of the line
+" B - Go to the beginning of previous chunk of word
+" Y - yank to the end of the line
+" A - Append at the end of the line
 nnoremap <silent> <leader>a A
 " Insert at the beginning of the line
 nnoremap <silent> <leader>i I
+
+" ###############################################################
 
 " P                         - paste thing with losing the buffer
 " Ctrl + [double-clicked]w
@@ -118,21 +142,17 @@ nnoremap <silent> <leader>i I
 " nnoremap <silent> <leader>s :w<CR>
 " To be able copy things to the system clipboard, below keybindings
 " are handy.
-
-" b - beginning of word
-" e - end of word
-" w - next word
-"
 " #G/#gg - e.g. 99G to Line 99
 " A      - Insert at the end of line.
-" nnoremap <silent> <leader>a :set mouse=a<CR>:set relativenumber<CR>:IndentLinesToggle<CR>:set number<CR>
-" nnoremap <silent> <leader>p :set mouse=r<CR>:set norelativenumber<CR>:IndentLinesToggle<CR>:set nonumber<CR>
+nnoremap <silent> <leader>[ :set mouse=a<CR>:set relativenumber<CR>:IndentLinesEnable<CR>:set number<CR>:set signcolumn=yes<CR>
+nnoremap <silent> <leader>] :set mouse=r<CR>:set norelativenumber<CR>:IndentLinesDisable<CR>:set nonumber<CR>:set signcolumn=no<CR>
 " Ctrl + n/p => Word Completion in vim, but with pattern already
 " exist
 " Comment out the whole line by press: 'gcc' [toggle]
-nnoremap <silent> <leader>n <C-n>
+
+" ###############################################################
+
 nnoremap <silent> <leader>f :Files<CR>
-tnoremap <silent> <leader>[ <C-w>N
 
 inoremap <silent><expr> <TAB>
       \ coc#pum#visible() ? coc#pum#next(1) :
@@ -150,26 +170,31 @@ function! CheckBackspace() abort
       return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
 
+" ###############################################################
+
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
-" ---------------------------------------------------------------
+
+" ###############################################################
+
 let g:which_key_map = {}
 let g:which_key_map.t = 'Open Float Terminal'
-let g:which_key_map.v = 'Explore the Source Tree'
-let g:which_key_map.b = 'Back to Previous Tag'
-let g:which_key_map.c = 'Change to End of Line'
-let g:which_key_map.r = 'Refresh the Source Tree'
-let g:which_key_map.w = ''
-let g:which_key_map.e = 'Go to the End of Next Chunk'
-let g:which_key_map.n = 'Auto Completion'
+let g:which_key_map.n = 'NERDTree Toggle'
+let g:which_key_map.r = 'NERDTree Refresh'
 let g:which_key_map.f = 'Fuzzy Finder'
-let g:which_key_map.a = 'Append to End of Line'
 let g:which_key_map.g = 'Go to Definition for CTAGS'
-let g:which_key_map.w = 'Go to Next Chunk'
+let g:which_key_map.b = 'Back to Previous Tag'
+let g:which_key_map.s = 'Switch Among Tabs'
+let g:which_key_map.j = 'Jump down half page'
+let g:which_key_map.k = 'Climb up half page'
+let g:which_key_map.a = 'Append at the end of line'
+let g:which_key_map.i = 'Insert at the beginning of line'
 
-" ---------------------------------------------------------------
+" ###############################################################
+
 call which_key#register('<Space>', "g:which_key_map")
 nnoremap <silent> <leader> :WhichKey '<space>'<CR>
-" ---------------------------------------------------------------
+
+" ###############################################################

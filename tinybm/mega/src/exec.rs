@@ -227,6 +227,14 @@ fn extract_mask(waker: &Waker) -> usize {
     // Waker. That direction is safe -- it's a fancy version of casting a
     // pointer to an integer. Transmuting the _other_ direction would be very
     // unsafe.
+    //
+    // ##########################################################
+    // @Hustler
+    //
+    // In other word, `transmute` reinterprets the bits of a value
+    // of one type as another type.
+    //
+    // ##########################################################
     let ptr_first = unsafe {
         let (cell0, _) = mem::transmute::<Waker, (usize, usize)>(Waker::from_raw(RawWaker::new(
             1234 as *const (),

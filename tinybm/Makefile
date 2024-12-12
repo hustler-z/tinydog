@@ -18,10 +18,18 @@ endif
 
 ############################################################
 
+ifeq ($(R), 1)
+EXTRA               := --release
+else
+EXTRA               :=
+endif
+
+############################################################
+
 tinybm:
 	$(Q)cargo build --no-default-features \
 			--features mutex,spsc,systick \
-			--target $(TAR)
+			--target $(TAR) $(EXTRA)
 
 clean:
 	$(Q)cargo clean
