@@ -6,7 +6,7 @@ use spin::Mutex;
 
 use crate::config::VmEmulatedDeviceConfig;
 // use crate::device::add_mediated_dev;
-use crate::device::{net_features, blk_features, NetDesc};
+use crate::device::{blk_features, net_features, NetDesc};
 use crate::device::{console_features, ConsoleDesc};
 use crate::device::{BlkDesc, VirtioBlkReq};
 
@@ -54,12 +54,15 @@ impl VirtDev {
                 (desc, features, None)
             }
             VirtioDeviceType::Console => {
-                let desc = DevDesc::ConsoleDesc(ConsoleDesc::new(config.cfg_list[0] as u16, config.cfg_list[1] as u64));
+                let desc = DevDesc::ConsoleDesc(ConsoleDesc::new(
+                    config.cfg_list[0] as u16,
+                    config.cfg_list[1] as u64,
+                ));
                 let features = console_features();
                 (desc, features, None)
             }
             _ => {
-                panic!("ERROR: Wrong virtio device type");
+                panic!("ERROR: wrong virtio device type");
             }
         };
         Self {

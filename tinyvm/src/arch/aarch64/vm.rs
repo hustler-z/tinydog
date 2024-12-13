@@ -18,12 +18,20 @@ impl Vm {
             ),
             IntCtrlType::Passthrough => (
                 (GICC_CTLR_EN_BIT) as u32,
-                (HCR_EL2::VM::Enable + HCR_EL2::RW::EL1IsAarch64 + HCR_EL2::TSC::EnableTrapEl1SmcToEl2).value,
+                (HCR_EL2::VM::Enable
+                    + HCR_EL2::RW::EL1IsAarch64
+                    + HCR_EL2::TSC::EnableTrapEl1SmcToEl2)
+                    .value,
             ),
         };
 
         for vcpu in self.vcpu_list() {
-            debug!("vm {} vcpu {} set {:?} hcr", self.id(), vcpu.id(), intc_type);
+            debug!(
+                "vm[{}] vcpu {} set {:?} hcr",
+                self.id(),
+                vcpu.id(),
+                intc_type
+            );
             vcpu.set_gich_ctlr(gich_ctlr);
             vcpu.set_hcr(hcr);
         }

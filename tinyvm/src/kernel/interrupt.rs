@@ -44,7 +44,7 @@ pub fn interrupt_init() {
     if is_boot_core(cpu_id) {
         interrupt_reserve_int(IntCtrl::IRQ_IPI, ipi_irq_handler);
 
-        info!("Boot Core IRQ Init Ok");
+        info!("boot hcpu interrupt init");
     }
     interrupt_cpu_enable(IntCtrl::IRQ_IPI, true);
 }
@@ -54,7 +54,8 @@ pub fn interrupt_vm_register(vm: &Vm, id: usize) -> bool {
     // println!("VM {} register interrupt {}", vm.id(), id);
     let mut glb_bitmap_lock = INTERRUPT_GLB_BITMAP.lock();
     if glb_bitmap_lock.get(id) != 0 && id >= IntCtrl::PRI_NUN_MAX {
-        warn!("Vm[{}] Interrupts Conflict, Id = {}", vm.id(), id);
+        warn!("vm[{}] interrupts conflict, id: {}", vm.id(), id);
+
         return false;
     }
 
@@ -77,7 +78,7 @@ pub fn interrupt_vm_remove(_vm: &Vm, id: usize) {
 pub fn interrupt_vm_inject(vm: &Vm, vcpu: &Vcpu, int_id: usize) {
     if vcpu.phys_id() != current_cpu().id {
         error!(
-            "Core {} Failed To Find Target (vCpu {} Vm {})",
+            "hcpu[{}] failed to find target (vcpu {} vm {})",
             current_cpu().id,
             vcpu.id(),
             vm.id()
@@ -126,7 +127,7 @@ pub fn interrupt_handler(int_id: usize) -> bool {
     }
 
     warn!(
-        "Core {} Receive Unsupported IRQ {}",
+        "hcpu[{}] receive unsupported interrupt {}",
         current_cpu().id,
         int_id
     );
@@ -141,7 +142,11 @@ pub fn interrupt_inject_ipi_handler(msg: IpiMessage) {
             let int_id = int_msg.int_id;
             match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
                 None => {
-                    panic!("Inject IRQ {} To Illegal Cpu {}", int_id, current_cpu().id);
+                    panic!(
+                        "inject interrupt {} to illegal hcpu[{}]",
+                        int_id,
+                        current_cpu().id
+                    );
                 }
                 Some(vcpu) => {
                     interrupt_vm_inject(&vcpu.vm().unwrap(), vcpu, int_id);
@@ -149,7 +154,7 @@ pub fn interrupt_inject_ipi_handler(msg: IpiMessage) {
             }
         }
         _ => {
-            error!("Illegal IPI Type");
+            error!("illegal IPI type");
         }
     }
 }

@@ -168,7 +168,7 @@ pub fn ipi_irq_handler() {
         if let Some(handler) = IPI_HANDLER_LIST.get(ipi_type) {
             handler(ipi_msg);
         } else {
-            error!("Illegal IPI Type {}", ipi_type)
+            error!("illegal IPI type {}", ipi_type)
         }
         let mut cpu_if_list = CPU_IF_LIST.lock();
         msg = cpu_if_list[cpu_id].pop();
@@ -177,7 +177,7 @@ pub fn ipi_irq_handler() {
 
 fn ipi_send(target_id: usize, msg: IpiMessage) -> bool {
     if target_id >= PLAT_DESC.cpu_desc.num {
-        warn!("Target IPI Core {} Not Exist", target_id);
+        warn!("target IPI core {} not exist", target_id);
         return false;
     }
 
@@ -212,7 +212,7 @@ pub fn ipi_intra_broadcast_msg(vm: &Vm, ipi_type: IpiType, msg: IpiInnerMsg) -> 
             n += 1;
             if !ipi_send_msg(i, ipi_type, msg.clone()) {
                 error!(
-                    "Failed To Send IPI Request, Cpu {} Type {}",
+                    "failed to send IPI request, cpu {} type {}",
                     i, ipi_type as usize
                 );
                 return false;

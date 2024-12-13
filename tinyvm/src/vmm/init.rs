@@ -58,7 +58,7 @@ fn vmm_init_memory(vm: Arc<Vm>) -> bool {
         vm.set_pt(pt_dir_frame);
         vm.set_mem_region_num(config.memory_region().len());
     } else {
-        error!("Page Allocation Failed");
+        error!("page allocation failed");
         return false;
     }
 
@@ -66,14 +66,15 @@ fn vmm_init_memory(vm: Arc<Vm>) -> bool {
         let pa = mem_vm_region_alloc(vm_region.length);
 
         if pa == 0 {
-            error!("Vm Memory Region Is Not Large Enough");
+            error!("virtual memory region is not large enough");
             return false;
         }
 
         info!(
-            "Vm[{}] Memory Region: [IPA=0x{:x}, PA=0x{:x}, Size=0x{:x}]",
+            "vm[{}] memory region: [ipa=0x{:08x}, pa=0x{:08x}, size=0x{:08x}]",
             vm_id, vm_region.ipa_start, pa, vm_region.length
         );
+
         vm.pt_map_range(
             vm_region.ipa_start,
             vm_region.length,
@@ -102,14 +103,15 @@ pub fn vmm_load_image(vm: &Vm, bin: &[u8]) {
 
         let offset = load_ipa - region.ipa_start;
         info!(
-            "Vm[{}] Load Kernel: [IPA=0x{:x}, PA=0x{:x}, Size={}K]",
+            "vm[{}] load kernel:   [ipa=0x{:08x}, pa=0x{:08x}, size=0x{:08x}]",
             vm.id(),
             load_ipa,
             vm.pa_start(idx) + offset,
-            size / 1024
+            size
         );
+
         if trace() && vm.pa_start(idx) + offset < 0x1000 {
-            panic!("Illegal Addr {:x}", vm.pa_start(idx) + offset);
+            panic!("illegal addr {:08x}", vm.pa_start(idx) + offset);
         }
         // SAFETY:
         // The 'vm.pa_start(idx) + offset' is in range of our memory configuration.
@@ -120,7 +122,7 @@ pub fn vmm_load_image(vm: &Vm, bin: &[u8]) {
         dst.clone_from_slice(bin);
 
         trace!(
-            "Image Dst Bytes: [{:#x} {:#x} {:#x} {:#x}]",
+            "image dst bytes: [{:#08x} {:#08x} {:#08x} {:#08x}]",
             dst[0],
             dst[1],
             dst[2],
@@ -129,17 +131,19 @@ pub fn vmm_load_image(vm: &Vm, bin: &[u8]) {
 
         return;
     }
-    panic!("Image Config Conflicts With Memory Config");
+
+    panic!("image config conflicts with memory config");
 }
 
 fn overlay_fdt(vm: &Vm, dtb: &[u8], overlay: &mut [u8]) -> Result<FdtBuf> {
     let fdt = Fdt::from_bytes(dtb)?;
-    debug!("Vm[{}] DTB Old Size {}", vm.id(), fdt.len());
+    debug!("vm[{}] dtb old size {}", vm.id(), fdt.len());
     let mut buf = FdtBuf::from_fdt_capacity(fdt, (dtb.len() + overlay.len()) * 2)?;
     let fdt_overlay = Fdt::from_bytes_mut(overlay)?;
     buf.overlay_apply(fdt_overlay)?;
     buf.pack()?;
-    debug!("Vm[{}] DTB New Size {}", vm.id(), buf.len());
+    debug!("vm[{}] dtb new size {}", vm.id(), buf.len());
+
     Ok(buf)
 }
 
@@ -148,7 +152,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
     let config = vm.config();
 
     if config.kernel_load_ipa() == 0 {
-        error!("Kernel Load Ipa Is Null");
+        error!("kernel load ipa is null");
         return false;
     }
 
@@ -159,13 +163,14 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
             Some(name) => {
                 #[cfg(any(feature = "qemu"))]
                 if name.is_empty() {
-                    panic!("Kernel Image Name Empty")
+                    panic!("kernel image name empty")
                 } else {
                     extern "C" {
                         fn _binary_vm0_start();
                         fn _binary_vm0_size();
                     }
-                    info!("Mvm[{}] Loading Image [@_<]", vm.id());
+                    // @Hustler
+
                     // SAFETY:
                     // The '_binary_vm0_start' and '_binary_vm0_size' are valid from linker script.
                     let vm0image = unsafe {
@@ -178,7 +183,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
                 }
                 #[cfg(feature = "rk3588")]
                 if name == "Linux-5.10" {
-                    info!("Mvm[{}] Loading Image [>_@]", vm.id());
+                    // @Hustler
                     extern "C" {
                         fn _binary_vm0_start();
                         fn _binary_vm0_size();
@@ -192,14 +197,8 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
                         )
                     };
                     vmm_load_image(vm, vm0image);
-                } else if name == "Image_vanilla" {
-                    info!("Vm[{}] Loading Default Linux Image [>_<]", vm.id());
-                    #[cfg(feature = "static-config")]
-                    vmm_load_image(vm, include_bytes!("../../image/Image_vanilla"));
-                    #[cfg(not(feature = "static-config"))]
-                    info!("*** Please Enable Feature `static-config`");
                 } else {
-                    panic!("Kernel Image Name Empty")
+                    panic!("kernel image name empty")
                 }
             }
             None => {
@@ -221,7 +220,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
             unsafe {
                 let src = SYSTEM_FDT.get().unwrap();
                 let len = src.len();
-                trace!("FDT Length: {:08x}", len);
+                trace!("fdt length: {:08x}", len);
                 let dst =
                     core::slice::from_raw_parts_mut((vm.pa_start(0) + offset) as *mut u8, len);
                 dst.clone_from_slice(src);
@@ -236,7 +235,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
                         config.device_tree_load_ipa() - vm.config().memory_region()[0].ipa_start;
                     let target = (vm.pa_start(0) + offset) as *mut u8;
                     debug!(
-                        "Gvm[{}] DTB Addr 0x{:x} Overlay {}",
+                        "gvm[{}] dtb addr 0x{:x} overlay {}",
                         vm.id(),
                         target as usize,
                         overlay.len()
@@ -252,7 +251,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
                         let buf = match overlay_fdt(vm, &dtb, &mut overlay) {
                             Ok(x) => x,
                             Err(e) => {
-                                error!("overlay_fdt Failed: {:?}", e);
+                                error!("overlay_fdt failed: {:?}", e);
                                 return false;
                             }
                         };
@@ -267,13 +266,13 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
                     }
                 }
                 Err(err) => {
-                    panic!("Create FDT For Vm[{}] Failed, Err: {}", vm.id(), err);
+                    panic!("create fdt for vm[{}] failed, err: {}", vm.id(), err);
                 }
             }
         }
     } else {
         warn!(
-            "Vm[{}] {} Device Tree Load IPA Is Not Set",
+            "vm[{}] {} device tree load ipa is not set",
             vm_id,
             vm.config().vm_name()
         );
@@ -283,7 +282,7 @@ pub fn vmm_init_image(vm: &Vm) -> bool {
     // TODO: support loading ramdisk from MVM tinyvm-cli.
     // ...
     if config.ramdisk_load_ipa() != 0 {
-        info!("Vm[{}] Use Ramdisk CPIO_RAMDISK", vm_id);
+        info!("vm[{}] use ramdisk cpio_ramdisk", vm_id);
         let offset = config.ramdisk_load_ipa() - config.memory_region()[0].ipa_start;
         let len = CPIO_RAMDISK.len();
         // SAFETY:
@@ -314,7 +313,7 @@ fn vmm_init_passthrough_device(vm: Arc<Vm>) -> bool {
         }
 
         debug!(
-            "Vm[{}] Passthrough Device: [IPA=0x{:x}, PA=0x{:x}, Size=0x{:x}, {}]",
+            "vm[{}] passthrough device: [ipa=0x{:08x}, pa=0x{:08x}, size=0x{:08x}, {}]",
             vm.id(),
             region.ipa,
             region.pa,
@@ -370,7 +369,7 @@ unsafe fn fdt_add_virtio_riscv64(
 ) {
     let node = fdt_create_node(dtb, "/soc\0".as_ptr(), name.as_ptr());
     if node < 0 {
-        panic!("Device Tree Create Node Failed {}", node);
+        panic!("device tree create node failed {}", node);
     }
 
     #[cfg(feature = "plic")]
@@ -378,7 +377,7 @@ unsafe fn fdt_add_virtio_riscv64(
         let int_phandle_id = 9_u32;
         let ret = fdt_add_property_u32(dtb, node, "interrupts\0".as_ptr(), irq_id);
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
 
         let ret = fdt_add_property_u32(
@@ -388,9 +387,10 @@ unsafe fn fdt_add_virtio_riscv64(
             int_phandle_id, // phandle id
         );
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
     }
+
     #[cfg(feature = "aia")]
     {
         let int_phandle_id = 12_u32;
@@ -403,7 +403,7 @@ unsafe fn fdt_add_virtio_riscv64(
             2,
         );
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
 
         let ret = fdt_add_property_u32(
@@ -413,18 +413,18 @@ unsafe fn fdt_add_virtio_riscv64(
             int_phandle_id, // phandle id
         );
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
     }
 
     let mut regs = [base_ipa, length];
     let ret = fdt_add_property_u64_array(dtb, node, "reg\0".as_ptr(), regs.as_mut_ptr(), 2);
     if ret < 0 {
-        panic!("Device Tree Add Property Failed {}", ret);
+        panic!("device tree add property failed {}", ret);
     }
 
     fdt_add_property_string(dtb, node, "compatible\0".as_ptr(), "virtio,mmio\0".as_ptr());
-    trace!("Device Tree Add VirtIO: {} IRQ = {}", name, irq_id);
+    trace!("device tree add virtio: {} irq = {}", name, irq_id);
 }
 
 /// Add a vm_service node to fdt for riscv64
@@ -432,6 +432,7 @@ unsafe fn fdt_add_virtio_riscv64(
 /// 1. 'dtb' is a valid pointer to a device tree blob
 /// 2. 'irq_id' is a valid interrupt id
 /// 3. 'base_ipa' is a valid ipa
+#[cfg(target_arch = "riscv64")]
 unsafe fn fdt_add_vm_service_riscv64(
     dtb: *mut fdt::myctypes::c_void,
     irq_id: u32,
@@ -440,12 +441,12 @@ unsafe fn fdt_add_vm_service_riscv64(
 ) {
     let node = fdt_create_node(dtb, "/soc\0".as_ptr(), "vm_service\0".as_ptr());
     if node < 0 {
-        panic!("Device Tree Add Property Failed {}", node);
+        panic!("device tree add property failed {}", node);
     }
 
     let ret = fdt_add_property_string(dtb, node, "compatible\0".as_ptr(), "tinyvm\0".as_ptr());
     if ret < 0 {
-        panic!("Device Tree Add Property Failed {}", ret);
+        panic!("device tree add property failed {}", ret);
     }
 
     #[cfg(feature = "plic")]
@@ -478,7 +479,7 @@ unsafe fn fdt_add_vm_service_riscv64(
             2,
         );
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
 
         let ret = fdt_add_property_u32(
@@ -488,14 +489,14 @@ unsafe fn fdt_add_vm_service_riscv64(
             int_phandle_id, // phandle id
         );
         if ret < 0 {
-            panic!("Device Tree Add Property Failed {}", ret);
+            panic!("device tree add property failed {}", ret);
         }
     }
 
     let mut regs = [base_ipa, length];
     let ret = fdt_add_property_u64_array(dtb, node, "reg\0".as_ptr(), regs.as_mut_ptr(), 2);
     if ret < 0 {
-        panic!("Device Tree Add Property Failed {}", ret);
+        panic!("device tree add property failed {}", ret);
     }
 }
 
@@ -512,20 +513,6 @@ pub unsafe fn vmm_setup_fdt(config: &VmConfigEntry, dtb: *mut fdt::myctypes::c_v
             length: r.length as u64,
         });
     }
-    #[cfg(feature = "tx2")]
-    fdt_set_memory(
-        dtb,
-        mr.len() as u64,
-        mr.as_ptr(),
-        "memory@90000000\0".as_ptr(),
-    );
-    #[cfg(feature = "pi4")]
-    fdt_set_memory(
-        dtb,
-        mr.len() as u64,
-        mr.as_ptr(),
-        "memory@200000\0".as_ptr(),
-    );
     #[cfg(all(feature = "qemu", target_arch = "aarch64"))]
     fdt_set_memory(
         dtb,
@@ -548,11 +535,10 @@ pub unsafe fn vmm_setup_fdt(config: &VmConfigEntry, dtb: *mut fdt::myctypes::c_v
         "memory@10000000\0".as_ptr(),
     );
     // FDT+TIMER
-    //fdt_add_timer(dtb, 0x04);
+    // fdt_add_timer(dtb, 0x04);
     // FDT+BOOTCMD
     fdt_set_bootcmd(dtb, config.cmdline.as_ptr());
-    #[cfg(feature = "tx2")]
-    fdt_set_stdout_path(dtb, "/serial@3100000\0".as_ptr());
+
     #[cfg(feature = "rk3588")]
     fdt_set_stdout_path(dtb, "/serial@feba0000\0".as_ptr());
 
@@ -561,31 +547,24 @@ pub unsafe fn vmm_setup_fdt(config: &VmConfigEntry, dtb: *mut fdt::myctypes::c_v
             match emu_cfg.emu_type {
                 EmuDeviceTGicd | EmuDeviceTGPPT => {
                     #[cfg(not(feature = "gicv3"))]
-                    #[cfg(any(feature = "tx2", feature = "qemu"))]
+                    #[cfg(feature = "qemu")]
                     fdt_setup_gic(
                         dtb,
                         Platform::GICD_BASE as u64,
                         Platform::GICC_BASE as u64,
                         emu_cfg.name.as_ptr(),
                     );
-                    #[cfg(feature = "pi4")]
-                    let _r = fdt_setup_gic(
-                        dtb,
-                        (Platform::GICD_BASE | 0xF_0000_0000) as u64,
-                        (Platform::GICC_BASE | 0xF_0000_0000) as u64,
-                        emu_cfg.name.as_ptr(),
-                    );
                 }
                 EmuDeviceTVirtioNet | EmuDeviceTVirtioConsole => {
                     cfg_if::cfg_if! {
-                        if #[cfg(all(any(feature = "tx2", feature = "qemu", feature = "rk3588"), target_arch = "aarch64"))] {
+                        // @Hustler
+                        if #[cfg(all(any(feature = "qemu", feature = "rk3588"), target_arch = "aarch64"))] {
                             fdt_add_virtio(
                                 dtb,
                                 emu_cfg.name.as_ptr(),
                                 emu_cfg.irq_id as u32 - 0x20,
                                 emu_cfg.base_ipa as u64,
                             );
-                            info!("Currently Aarch64 Applied");
                         } else if #[cfg(target_arch = "riscv64")] {
                             fdt_add_virtio_riscv64(
                                 dtb,
@@ -599,10 +578,10 @@ pub unsafe fn vmm_setup_fdt(config: &VmConfigEntry, dtb: *mut fdt::myctypes::c_v
                 }
                 EmuDeviceTTinyvm => {
                     // Add vm_service node, in order to provide kernel module information about irq_id
-                    info!("Device Tree Add vm_service IRQ = {}", emu_cfg.irq_id);
+                    info!("device tree vm service IRQ {}", emu_cfg.irq_id);
 
                     cfg_if::cfg_if! {
-                        if #[cfg(all(any(feature = "tx2", feature = "qemu", feature = "rk3588"), target_arch = "aarch64"))] {
+                        if #[cfg(all(any(feature = "qemu", feature = "rk3588"), target_arch = "aarch64"))] {
                             fdt_add_vm_service(
                                 dtb,
                                 emu_cfg.irq_id as u32 - 0x20,
@@ -623,10 +602,10 @@ pub unsafe fn vmm_setup_fdt(config: &VmConfigEntry, dtb: *mut fdt::myctypes::c_v
             }
         }
     }
-    debug!("After DTB Size {}", fdt_size(dtb));
+    debug!("after dtb size {}", fdt_size(dtb));
     // Print the device_tree after adding new nodes
     let host_fdt = unsafe { fdt_print::Fdt::from_ptr(dtb as *const u8) }.unwrap();
-    debug!("After Add FDT: {:?}", host_fdt);
+    debug!("after add fdt: {:?}", host_fdt);
 }
 
 /* Setup VM Configuration before boot.
@@ -640,12 +619,12 @@ pub fn vmm_setup_config(vm: Arc<Vm>) {
     let config = match vm_cfg_entry(vm_id) {
         Some(config) => config,
         None => {
-            panic!("Vm[{}] Config Doesn't Exist", vm_id);
+            panic!("vm[{}] config [>_<]", vm_id);
         }
     };
 
     debug!(
-        "Vm[{}] Name {:?} Current Core {}",
+        "vm[{}] name {:?} current hcpu[{}]",
         vm_id,
         config.name,
         current_cpu().id
@@ -655,29 +634,33 @@ pub fn vmm_setup_config(vm: Arc<Vm>) {
     vmm_init_cpu(vm.clone());
 
     if vm_id >= VM_NUM_MAX {
-        panic!("Running Out Of Vm");
+        panic!("running out of vm");
     }
+
     if !vmm_init_memory(vm.clone()) {
-        panic!("vmm_init_memory Failed");
+        panic!("vmm init memory failed");
     }
 
     if !vmm_init_image(&vm) {
-        panic!("vmm_init_image Failed");
+        panic!("vmm init image failed");
     }
+
     if !vmm_init_passthrough_device(vm.clone()) {
-        panic!("vmm_init_passthrough_device Failed");
+        panic!("vmm init passthrough device failed");
     }
+
     if !vmm_init_iommu_device(vm.clone()) {
-        panic!("vmm_init_iommu_device Failed");
+        panic!("vmm init iommu device failed");
     }
 
     add_async_used_info(vm_id);
-    info!("Vm[{}] {} Init Ok", vm.id(), vm.config().name);
+
+    info!("vm[{}] {} configured", vm.id(), vm.config().name);
 }
 
 fn vmm_init_cpu(vm: Arc<Vm>) {
     info!(
-        "Vm[{}] Init Cpu: [cores={}, allocat_bits={:#b}]",
+        "vm[{}] init cpu [cores={} bits={:#04b}]",
         vm.id(),
         vm.config().cpu_num(),
         vm.config().cpu_allocated_bitmap()
@@ -695,7 +678,7 @@ fn vmm_init_cpu(vm: Arc<Vm>) {
                 IpiType::IpiTVMM,
                 IpiInnerMsg::VmmPercoreMsg(m),
             ) {
-                error!("Failed To Send IPI To Core {}", target_cpu_id);
+                error!("failed to send IPI to core {}", target_cpu_id);
             }
         } else {
             vmm_assign_vcpu_percore(&vm);
@@ -706,21 +689,21 @@ fn vmm_init_cpu(vm: Arc<Vm>) {
 pub fn vmm_assign_vcpu_percore(vm: &Vm) {
     let cpu_id = current_cpu().id;
     if current_cpu().assigned() {
-        debug!("Vm[{}] Cpu {} Is Assigned", vm.id(), cpu_id);
+        debug!("vm[{}] cpu {} is assigned", vm.id(), cpu_id);
     }
 
     for vcpu in vm.vcpu_list() {
         if vcpu.phys_id() == current_cpu().id {
             if vcpu.id() == 0 {
                 info!(
-                    "[@_@] Core {} Assigned To [Vm {} vCpu {}]",
+                    "hcpu[{}] assigned to [vm {} vcpu {}]",
                     cpu_id,
                     vm.id(),
                     vcpu.id()
                 );
             } else {
                 info!(
-                    "[@_@] Core {} Assigned To [Vm {} vCpu {}]",
+                    "hcpu[{}] assigned to [vm {} vcpu {}]",
                     cpu_id,
                     vm.id(),
                     vcpu.id()
@@ -749,13 +732,16 @@ pub fn vm_init() {
     }
 }
 
+/// @Hustler
+///
+///
 pub fn vmm_boot() {
     if current_cpu().assigned() && active_vcpu_id() == 0 {
-        info!("Core {} Start Running", current_cpu().id);
+        // @Hustler
         vcpu_run(false);
     } else {
         // If there is no available vm(vcpu), just go idle
-        info!("Core {} Idle", current_cpu().id);
+        // @Hustler
         cpu_idle();
     }
 }

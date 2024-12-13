@@ -142,7 +142,7 @@ pub struct MemRsvError();
 
 impl Display for MemRsvError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        write!(f, "Memory reservation block error")
+        write!(f, "memory reservation block error")
     }
 }
 

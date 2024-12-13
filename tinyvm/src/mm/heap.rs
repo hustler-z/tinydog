@@ -29,7 +29,7 @@ pub fn heap_init() {
     // HEAP_REGION is aligned and HEAP_SIZE is a multiple of PAGE_SIZE
     unsafe {
         info!(
-            "Init Buddy System, Heap Start From {:x} With Size {} MB",
+            "heap memory region @ 0x{:08x} with {} mb",
             HEAP_REGION.0.as_mut_ptr() as usize,
             HEAP_SIZE / (1024 * 1024)
         );
@@ -52,7 +52,7 @@ fn heap_rescue(heap: &mut Heap<32>, layout: &core::alloc::Layout) {
         }
     } else {
         panic!(
-            "Rescure failed! MemoryRegion_0 has been exhausted\nOut Of Memory: Heap allocation error, layout = {:x?}",
+            "rescure failed! memoryRegion_0 has been exhausted\nout of memory: heap allocation error, layout = {:x?}",
             layout
         )
     }
@@ -61,7 +61,7 @@ fn heap_rescue(heap: &mut Heap<32>, layout: &core::alloc::Layout) {
 #[alloc_error_handler]
 fn alloc_error_handler(layout: core::alloc::Layout) -> ! {
     panic!(
-        "Out Of Memory: Heap allocation error, layout = {:x?}",
+        "out of memory: heap allocation error, layout = {:x?}",
         layout
     );
 }

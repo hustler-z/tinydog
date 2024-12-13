@@ -153,7 +153,7 @@ impl Cpu {
             None
         } else {
             if trace() && (self.ctx as usize) < 0x1000 {
-                panic!("Illegal Ctx Addr {:p}", self.ctx);
+                panic!("illegal context addr {:p}", self.ctx);
             }
             Some(self.ctx)
         }
@@ -215,7 +215,7 @@ impl Cpu {
     /// get this cpu's scheduler
     pub fn scheduler(&mut self) -> &mut impl Scheduler {
         match &mut self.sched {
-            SchedType::None => panic!("Scheduler Is None"),
+            SchedType::None => panic!("scheduler is none"),
             SchedType::SchedRR(rr) => rr,
         }
     }
@@ -277,16 +277,16 @@ pub fn cpu_init() {
     let size = core::mem::size_of::<ContextFrame>();
     // SAFETY: Sp is valid when boot_stage setting
     unsafe {
-        // The space of the ContextFrame size at the top of the CPU stack is used to store the current cpu context
+        // The space of the ContextFrame size at the top of the CPU stack is
+        // used to store the current cpu context
         current_cpu().set_ctx((sp - size) as *mut _);
     }
 
     if cfg!(not(feature = "secondary_start")) {
         crate::utils::barrier();
-        // println!("after barrier cpu init");
         use crate::board::PLAT_DESC;
         if is_boot_core(cpu_id) {
-            info!("Bring Up {} Cores", PLAT_DESC.cpu_desc.num);
+            info!("bring up {} cores", PLAT_DESC.cpu_desc.num);
         }
     }
 }
@@ -297,7 +297,7 @@ pub fn cpu_idle() -> ! {
     current_cpu().cpu_state = state;
     cpu_interrupt_unmask();
     loop {
-        info!("Cpu Ready To [IDLE]");
+        info!("hcpu [idle] mode");
         crate::arch::Arch::wait_for_interrupt();
     }
 }

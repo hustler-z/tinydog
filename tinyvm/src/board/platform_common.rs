@@ -119,7 +119,11 @@ pub trait PlatOperation {
                 // Entry is a valid address with executable permission.
                 // The 'i' is a valid cpu_idx for ctx.
                 unsafe {
-                    Self::cpu_on(PLAT_DESC.cpu_desc.core_list[i].mpidr, _secondary_start as usize, i);
+                    Self::cpu_on(
+                        PLAT_DESC.cpu_desc.core_list[i].mpidr,
+                        _secondary_start as usize,
+                        i,
+                    );
                 }
             }
         }
@@ -133,7 +137,7 @@ pub trait PlatOperation {
     /// # Safety:
     /// The caller must ensure that the system can be reboot
     unsafe fn sys_reboot() -> ! {
-        info!("Hypervisor reset...");
+        info!("hypervisor reset ...");
         // SAFETY: We are ready to reset the system when rebooting.
         unsafe {
             crate::arch::power_arch_sys_reset();
@@ -147,7 +151,7 @@ pub trait PlatOperation {
     /// # Safety:
     /// The caller must ensure that the system can be shutdown
     unsafe fn sys_shutdown() -> ! {
-        info!("Hypervisor shutdown...");
+        info!("hypervisor shutdown...");
         crate::arch::power_arch_sys_shutdown();
         loop {
             core::hint::spin_loop();

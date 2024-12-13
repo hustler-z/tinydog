@@ -54,7 +54,7 @@ LD                  := ${CROSS_COMPILE}ld
 
 ############################################################
 
-GIC_VERSION         ?= 2
+GIC_VERSION         ?= 3
 
 ifeq ($(GIC_VERSION),3)
 override FEATURES   += ,gicv3,
@@ -69,6 +69,12 @@ ifeq ($(IRQ), plic)
 FEATURES            += plic
 else ifeq ($(IRQ), aia)
 FEATURES            += aia
+endif
+
+DEBUG               := on
+
+ifeq ($(DEBUG), on)
+FEATURES            += ,tinydebug
 endif
 
 RELOCATE_IMAGE      := libtinyvm.a

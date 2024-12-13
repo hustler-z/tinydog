@@ -16,9 +16,9 @@ use crate::device::EmuDeviceType;
 use crate::kernel::VmType;
 
 use super::{
-    PassthroughRegion, VmConfigEntry, VmCpuConfig, VMDtbDevConfigList, VmEmulatedDeviceConfig,
-    VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig, VmPassthroughDeviceConfig, VmRegion, VmDtbDevConfig,
-    AddrRegions, DtbDevType,
+    AddrRegions, DtbDevType, PassthroughRegion, VMDtbDevConfigList, VmConfigEntry, VmCpuConfig,
+    VmDtbDevConfig, VmEmulatedDeviceConfig, VmEmulatedDeviceConfigList, VmImageConfig,
+    VmMemoryConfig, VmPassthroughDeviceConfig, VmRegion,
 };
 
 /// Initializes temporary configuration for the first bare metal app (BMA1).

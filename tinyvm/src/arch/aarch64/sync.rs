@@ -2,16 +2,18 @@
 //
 // Self-Education Only
 
-use crate::arch::{
-    exception_data_abort_access_is_sign_ext, exception_data_abort_access_is_write, exception_data_abort_access_reg,
-    exception_data_abort_access_reg_width, exception_data_abort_access_width, exception_data_abort_handleable,
-    exception_data_abort_is_permission_fault, exception_data_abort_is_translate_fault, exception_iss, smc_call,
-};
-use crate::arch::{exception_esr, exception_fault_addr};
 use crate::arch::exception_next_instruction_step;
 use crate::arch::smc_guest_handler;
+use crate::arch::{
+    exception_data_abort_access_is_sign_ext, exception_data_abort_access_is_write,
+    exception_data_abort_access_reg, exception_data_abort_access_reg_width,
+    exception_data_abort_access_width, exception_data_abort_handleable,
+    exception_data_abort_is_permission_fault, exception_data_abort_is_translate_fault,
+    exception_iss, smc_call,
+};
+use crate::arch::{exception_esr, exception_fault_addr};
 use crate::device::{emu_handler, emu_reg_handler, EmuContext};
-use crate::kernel::{active_vm, current_cpu, hvc_guest_handler, active_vm_id};
+use crate::kernel::{active_vm, active_vm_id, current_cpu, hvc_guest_handler};
 
 pub const HVC_RETURN_REG: usize = 0;
 
@@ -29,7 +31,7 @@ pub fn data_abort_handler() {
 
     if !exception_data_abort_handleable() {
         panic!(
-            "Core {} data abort not handleable 0x{:x}, esr 0x{:x}",
+            "hcpu[{}] data abort not handleable 0x{:x}, esr 0x{:x}",
             current_cpu().id,
             exception_fault_addr(),
             exception_esr()
@@ -41,7 +43,7 @@ pub fn data_abort_handler() {
             return;
         } else {
             panic!(
-                "Core {} data abort is not translate fault 0x{:x}",
+                "hcpu[{}] data abort is not translate fault 0x{:x}",
                 current_cpu().id,
                 exception_fault_addr(),
             );
@@ -120,7 +122,10 @@ pub fn hvc_handler() {
             current_cpu().set_gpr(HVC_RETURN_REG, val);
         }
         Err(_) => {
-            warn!("Failed to handle hvc request fid 0x{:x} event 0x{:x}", hvc_type, event);
+            warn!(
+                "failed to handle hvc request fid 0x{:x} event 0x{:x}",
+                hvc_type, event
+            );
             current_cpu().set_gpr(HVC_RETURN_REG, usize::MAX);
         }
     }

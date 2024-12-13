@@ -14,16 +14,15 @@ pub const VM_MEM_REGION_MAX: usize = 4;
 pub fn mem_init() {
     mem_vm_region_init();
     mem_shared_mem_init();
-    info!("Mem Init Ok");
 }
 
 fn mem_vm_region_init() {
     if PLAT_DESC.mem_desc.regions.is_empty() {
-        panic!("Platform Vm Memory Regions Overrun!");
+        panic!("platform vm memory regions overrun!");
     }
 
     if PLAT_DESC.mem_desc.regions.len() <= 1 {
-        panic!("Platform has no VM memory region!");
+        panic!("platform has no vm memory region!");
     }
 
     let mut pages: usize = 0;
@@ -44,7 +43,7 @@ fn mem_vm_region_init() {
     }
 
     info!(
-        "Virtual Memory Regions: Total {} Region, Size {} MB / {} Pages",
+        "virtual memory region [{}] {} mb {} pages",
         vm_region_num,
         pages * PAGE_SIZE / (1024 * 1024),
         pages
@@ -137,5 +136,6 @@ pub fn mem_vm_region_free(start: usize, size: usize) {
             }
         }
     }
-    info!("Free Mem From Pa 0x{:x} To 0x{:x}", start, start + size);
+
+    info!("free pa [0x{:x} - 0x{:x}]", start, start + size);
 }

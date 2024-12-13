@@ -31,7 +31,7 @@ impl PageFrame {
                 Ok(Self::new(pa, layout))
             }
             Err(err) => {
-                error!("alloc_pages: Layout error {}", err);
+                error!("allocate pages layout error {}", err);
                 Err(AllocError::OutOfFrame)
             }
         }
@@ -45,7 +45,7 @@ impl PageFrame {
 impl Drop for PageFrame {
     fn drop(&mut self) {
         debug!(
-            "drop page frame: {:#x}, with Layput {:x?} page(s)",
+            "drop page frame: {:#x}, with layput {:x?} page(s)",
             self.pa, self.layout
         );
         unsafe { alloc::dealloc(self.pa as *mut u8, self.layout) }

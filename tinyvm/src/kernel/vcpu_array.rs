@@ -69,7 +69,7 @@ impl VcpuArray {
                 Some(vcpu)
             }
             None => panic!(
-                "no vcpu from vm[{}] exist in Core[{}] vcpu_pool",
+                "no vcpu from vm[{}] exist in core[{}] vcpu_pool",
                 vm_id,
                 current_cpu().id
             ),
@@ -89,7 +89,6 @@ impl VcpuArray {
 pub fn cpu_sched_init() {
     match PLAT_DESC.cpu_desc.core_list[current_cpu().id].sched {
         SchedRule::RoundRobin => {
-            info!("Round-Robin Scheduler Registered");
             current_cpu().sched = SchedType::SchedRR(SchedulerRR::new(1));
         }
         _ => {
@@ -102,12 +101,10 @@ pub fn cpu_sched_init() {
 pub fn restore_vcpu_gic(cur_vcpu: Option<Vcpu>, trgt_vcpu: Vcpu) {
     match cur_vcpu {
         None => {
-            // println!("None cur vmid trgt {}", trgt_vcpu.vm_id());
             trgt_vcpu.gic_restore_context();
         }
         Some(active_vcpu) => {
             if trgt_vcpu.vm_id() != active_vcpu.vm_id() {
-                // println!("different vm_id cur {}, trgt {}", active_vcpu.vm_id(), trgt_vcpu.vm_id());
                 active_vcpu.gic_save_context();
                 trgt_vcpu.gic_restore_context();
             }

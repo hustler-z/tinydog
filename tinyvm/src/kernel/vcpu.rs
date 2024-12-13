@@ -81,7 +81,7 @@ impl Vcpu {
     /// shutdown this vcpu
     pub fn shutdown(&self) {
         info!(
-            "Core {} (vm {} vcpu {}) shutdown ok",
+            "hcpu[{}] (vm {} vcpu {}) shutdown",
             current_cpu().id,
             active_vm_id(),
             active_vcpu_id()
@@ -134,7 +134,7 @@ impl Vcpu {
         let inner = self.inner.inner_mut.lock();
         match current_cpu().ctx_ptr() {
             None => {
-                error!("Cpu{} Ctx Is NULL", current_cpu().id);
+                error!("hcpu[{}] context is null", current_cpu().id);
             }
             // SAFETY:
             // We have both read and write access to the src and dst memory regions.
@@ -153,7 +153,7 @@ impl Vcpu {
         let inner = self.inner.inner_mut.lock();
         match current_cpu().ctx_ptr() {
             None => {
-                error!("Cpu{} Ctx Is NULL", current_cpu().id);
+                error!("hcpu[{}] context is null", current_cpu().id);
             }
             // SAFETY:
             // We have both read and write access to the src and dst memory regions.
@@ -209,7 +209,7 @@ impl Vcpu {
         let vm_id = self.vm().unwrap().id();
         use crate::kernel::vm_if_get_type;
         if vm_if_get_type(vm_id) == VmType::VmTBma {
-            debug!("Vm[{}] Bma Ctx Restore", vm_id);
+            debug!("vm[{}] bma context restore", vm_id);
             inner.vm_ctx.reset();
             drop(inner);
             self.context_ext_regs_store();
@@ -272,9 +272,6 @@ impl Vcpu {
         1 << 31
             | if cfg!(feature = "rk3588") {
                 0x100_0000 | (self.id() << 8)
-            } else if cfg!(feature = "tx2") && self.vm_id() == 0 {
-                // A57 is cluster #1 for L4T
-                0x100 | self.id()
             } else {
                 self.id()
             }
@@ -324,7 +321,7 @@ static IDLE_THREAD: spin::Lazy<[Option<IdleThread>; PLATFORM_CPU_NUM_MAX]> =
     });
 
 pub fn run_idle_thread() {
-    trace!("Core {} Idle", current_cpu().id);
+    trace!("hcpu[{}] idle", current_cpu().id);
     current_cpu().cpu_state = CpuState::CpuIdle;
     // SAFETY:
     // We have both read and write access to the src and dst memory regions.

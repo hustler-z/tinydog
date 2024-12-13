@@ -154,17 +154,17 @@ fn print_built_info() {
         "#
     );
     println!(
-        "Board {} {} {} Lauching Now",
+        "board {} {} {} lauching currently",
         env!("BOARD"),
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
     println!(
         r#"
-Built At {build_time} By {hostname}
-Compiler: {rustc_version}
-Features: {features:?}
-CommitID: {commit_hash}
+built:    {build_time} By {hostname}
+compiler: {rustc_version}
+features: {features:?}
+commitid: {commit_hash}
         "#,
         build_time = env!("BUILD_TIME"),
         hostname = env!("HOSTNAME"),
@@ -179,15 +179,9 @@ CommitID: {commit_hash}
 pub fn init(dtb: &mut fdt::myctypes::c_void) {
     print_built_info();
 
-    #[cfg(feature = "pi4")]
-    {
-        crate::driver::gpio_select_function(0, 4);
-        crate::driver::gpio_select_function(1, 4);
-    }
+    kernel::logger_init().unwrap();
 
     heap_init();
-
-    kernel::logger_init().unwrap();
 
     mem_init();
 
@@ -206,14 +200,13 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
     timer_init();
 
     cpu_sched_init();
-    info!("Sched Init Ok");
 
     #[cfg(not(feature = "secondary_start"))]
     crate::utils::barrier();
 
     vm_init();
 
-    info!("Start Booting Virtual Machine ...");
+    info!("start booting guest kernel");
 
     vmm_boot_vm(0);
 
@@ -224,16 +217,15 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
 
 // Other cores will execute this function
 pub fn secondary_init(mpidr: usize) {
-    info!("Secondary Core {:#x} Init", mpidr);
+    info!("secondary hcpu @ {:#x} init", mpidr);
+
     cpu_init();
 
     interrupt_init();
-    info!("Secondary Core {:#x} IRQ Init", mpidr);
 
     timer_init();
 
     cpu_sched_init();
-    info!("Sched Init Ok @ Core {:#x}", mpidr);
 
     #[cfg(not(feature = "secondary_start"))]
     crate::utils::barrier();

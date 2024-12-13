@@ -7,11 +7,12 @@ use alloc::vec::Vec;
 
 use crate::board::*;
 use crate::device::EmuDeviceType;
-use crate::kernel::{HVC_IRQ, VmType};
+use crate::kernel::{VmType, HVC_IRQ};
 
 use super::{
-    VmConfigEntry, VmCpuConfig, VmEmulatedDeviceConfig, VmImageConfig, VmMemoryConfig, VmPassthroughDeviceConfig,
-    VmRegion, vm_cfg_set_config_name, PassthroughRegion, vm_cfg_add_vm_entry, VmEmulatedDeviceConfigList,
+    vm_cfg_add_vm_entry, vm_cfg_set_config_name, PassthroughRegion, VmConfigEntry, VmCpuConfig,
+    VmEmulatedDeviceConfig, VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig,
+    VmPassthroughDeviceConfig, VmRegion,
 };
 
 /// Initializes the configuration for the manager VM (VM0).
@@ -97,7 +98,7 @@ pub fn mvm_config_init() {
     ];
 
     // vm0 config
-    let mvm_config_entry =VmConfigEntry {
+    let mvm_config_entry = VmConfigEntry {
         id: 0,
         name: String::from("supervisor"),
         os_type: VmType::VmTOs,

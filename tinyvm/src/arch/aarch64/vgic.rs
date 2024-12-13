@@ -119,7 +119,6 @@ impl VgicInt {
 
     fn clear_owner(&self) {
         let mut vgic_int = self.inner.lock();
-        // println!("clear owner get lock");
         vgic_int.owner = None;
     }
 
@@ -192,7 +191,7 @@ impl VgicInt {
         match &vgic_int.owner {
             Some(owner) => Some(owner.id()),
             None => {
-                warn!("owner_id is None");
+                warn!("owner id is none");
                 None
             }
         }
@@ -519,19 +518,16 @@ impl Vgic {
 
             if (interrupt.state().to_num() & 1 != 0) && interrupt.enabled() {
                 let hcr = GICH.hcr();
-                /*
-                NPIE, bit [3]
-                No Pending Interrupt Enable. Enables the signaling of a maintenance interrupt while no pending interrupts are present in the List registers:
-
-                NPIE	Meaning
-                0
-                Maintenance interrupt disabled.
-
-                1
-                Maintenance interrupt signaled while the List registers contain no interrupts in the pending state.
-
-                When this register has an architecturally-defined reset value, this field resets to 0.
-                                 */
+                // NPIE, bit [3]
+                // No Pending Interrupt Enable. Enables the signaling of a maintenance interrupt while no
+                // pending interrupts are present in the List registers:
+                //
+                // NPIE	Meaning
+                // 0
+                // Maintenance interrupt disabled.
+                // 1
+                // Maintenance interrupt signaled while the List registers contain no interrupts in the pending state.
+                // When this register has an architecturally-defined reset value, this field resets to 0.
                 GICH.set_hcr(hcr | (1 << 3));
             }
             return true;
@@ -693,6 +689,7 @@ impl Vgic {
             int.in_lr = true;
             int.lr = lr_ind as u16;
         });
+
         self.set_cpu_priv_curr_lrs(vcpu_id, lr_ind, int_id as u16);
         GICH.set_lr(lr_ind, lr as u32);
 
@@ -724,6 +721,7 @@ impl Vgic {
                 val: 0,
             };
             vgic_int_yield_owner(vcpu, interrupt);
+
             ipi_intra_broadcast_msg(
                 &active_vm().unwrap(),
                 IpiType::IpiTIntc,
@@ -763,7 +761,7 @@ impl Vgic {
                     };
                     if !ipi_send_msg(int_phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(ipi_msg)) {
                         error!(
-                            "Failed To Send IPI Message, Target {} Type {}",
+                            "failed to send IPI message, target {} type {}",
                             int_phys_id, 0
                         );
                     }
@@ -771,7 +769,7 @@ impl Vgic {
                 drop(interrupt_lock);
             }
             None => {
-                error!("Interrupt {} Is Illegal", int_id);
+                error!("interrupt {} is illegal", int_id);
             }
         }
     }
@@ -823,12 +821,12 @@ impl Vgic {
 
                         drop(interrupt_lock);
                         if !ipi_send_msg(phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(m)) {
-                            error!("Failed To Send IPI Message, Target {} Type {}", phys_id, 0);
+                            error!("failed to send IPI message, target {} type {}", phys_id, 0);
                         }
                     }
                     None => {
                         panic!(
-                            "Core {} Int {} Has No Owner",
+                            "core {} int {} has no owner",
                             current_cpu().id,
                             interrupt.id()
                         );
@@ -869,7 +867,7 @@ impl Vgic {
                 };
                 let phys_id = interrupt.owner_phys_id().unwrap();
                 if !ipi_send_msg(phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(m)) {
-                    error!("Failed To Send IPI Message, Target {} Type {}", phys_id, 0);
+                    error!("failed to send IPI message, target {} type {}", phys_id, 0);
                 }
             }
             drop(interrupt_lock);
@@ -898,7 +896,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     error!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed to send IPI message, target {} type {}",
                         interrupt.owner_phys_id().unwrap(),
                         0
                     );
@@ -937,6 +935,7 @@ impl Vgic {
             } else {
                 pendstate & !(1 << source) as u8
             };
+
             // state changed ,the two state isn`t equal
             if (pendstate ^ new_pendstate) != 0 {
                 self.set_cpu_priv_sgis_pend(vcpu_id, vgic_int_id, new_pendstate);
@@ -951,7 +950,7 @@ impl Vgic {
 
                 match interrupt.state() {
                     IrqState::IrqSInactive => {
-                        debug!("Inactive");
+                        debug!("--> inactive");
                     }
                     _ => {
                         self.add_lr(vcpu, interrupt);
@@ -960,7 +959,7 @@ impl Vgic {
             }
             drop(interrupt_lock);
         } else {
-            error!("Interrupt {} Is None", bit_extract(int_id, 0, 10));
+            error!("interrupt {} is none", bit_extract(int_id, 0, 10));
         }
     }
 
@@ -997,7 +996,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     error!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed To send IPI message, target {} type {}",
                         interrupt.owner_phys_id().unwrap(),
                         0
                     );
@@ -1045,7 +1044,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     error!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed to send IPI message, target {} type {}",
                         interrupt.owner_phys_id().unwrap(),
                         0
                     );
@@ -1116,7 +1115,7 @@ impl Vgic {
             let val = self.vgicd_typer() as usize;
             current_cpu().set_gpr(idx, val);
         } else {
-            warn!("Can't Write To Read Only Reg");
+            warn!("can't write to read only reg");
         }
     }
 
@@ -1126,12 +1125,11 @@ impl Vgic {
             let val = self.vgicd_iidr() as usize;
             current_cpu().set_gpr(idx, val);
         } else {
-            warn!("Can't Write To Read Only Reg");
+            warn!("can't write to read only reg");
         }
     }
 
     fn emu_isenabler_access(&self, emu_ctx: &EmuContext) {
-        // println!("DEBUG: in emu_isenabler_access");
         let reg_idx = (emu_ctx.address & 0b1111111) / 4;
         let idx = emu_ctx.reg;
         let mut val = if emu_ctx.write {
@@ -1144,7 +1142,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1156,7 +1154,7 @@ impl Vgic {
             }
         }
         if first_int >= 16 && !vm_has_interrupt_flag {
-            error!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+            error!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
             return;
         }
 
@@ -1182,7 +1180,6 @@ impl Vgic {
     }
 
     fn emu_pendr_access(&self, emu_ctx: &EmuContext, set: bool) {
-        trace!("emu_pendr_access");
         let reg_idx = (emu_ctx.address & 0b1111111) / 4;
         let idx = emu_ctx.reg;
         let mut val = if emu_ctx.write {
@@ -1195,7 +1192,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1207,7 +1204,7 @@ impl Vgic {
             }
         }
         if first_int >= 16 && !vm_has_interrupt_flag {
-            error!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+            error!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
             return;
         }
 
@@ -1244,7 +1241,6 @@ impl Vgic {
     }
 
     fn emu_activer_access(&self, emu_ctx: &EmuContext, set: bool) {
-        // println!("DEBUG: in emu_activer_access");
         let reg_idx = (emu_ctx.address & 0b1111111) / 4;
         let idx = emu_ctx.reg;
         let mut val = if emu_ctx.write {
@@ -1257,7 +1253,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1269,7 +1265,7 @@ impl Vgic {
             }
         }
         if first_int >= 16 && !vm_has_interrupt_flag {
-            warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+            warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
             return;
         }
 
@@ -1318,7 +1314,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1331,7 +1327,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1371,7 +1367,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1384,7 +1380,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1429,7 +1425,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
 
@@ -1437,7 +1433,6 @@ impl Vgic {
             if emu_ctx.write {
                 let sgir_trglstflt = bit_extract(val, 24, 2);
                 let mut trgtlist = 0;
-                // println!("addr {:x}, sgir trglst flt {}, vtrgt {}", emu_ctx.address, sgir_trglstflt, bit_extract(val, 16, 8));
                 match sgir_trglstflt {
                     0 => {
                         trgtlist = vgic_target_translate(&vm, bit_extract(val, 16, 8) as u32, true)
@@ -1464,14 +1459,14 @@ impl Vgic {
                             val: true as u8,
                         };
                         if !ipi_send_msg(i, IpiType::IpiTIntc, IpiInnerMsg::Initc(m)) {
-                            error!("Failed To Send IPI Message, Target {} Type {}", i, 0);
+                            error!("failed to send IPI message, target {} type {}", i, 0);
                         }
                     }
                 }
             }
         } else {
             // TODO: CPENDSGIR and SPENDSGIR access
-            warn!("Unimplemented: CPENDSGIR And SPENDSGIR Access");
+            warn!("unimplemented: CPENDSGIR And SPENDSGIR access");
         }
     }
 
@@ -1487,7 +1482,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1500,7 +1495,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1636,13 +1631,11 @@ impl Vgic {
 
             match interrupt_opt {
                 Some(interrupt) => {
-                    // println!("refill int {}", interrupt.id());
                     vgic_int_get_owner(vcpu, interrupt);
                     self.write_lr(vcpu, interrupt, lr_idx_opt.unwrap());
                     has_pending = has_pending || prev_pend;
                 }
                 None => {
-                    // println!("no int to refill");
                     let hcr = GICH.hcr();
                     GICH.set_hcr(hcr & !(1 << 3));
                     break;
@@ -1694,7 +1687,7 @@ fn vgic_target_translate(vm: &Vm, trgt: u32, v2p: bool) -> u32 {
     {
         result |= *val << (8 * idx);
         if idx >= 4 {
-            panic!("Illegal Idx, From Len {}", from.len());
+            panic!("illegal idx, from len {}", from.len());
         }
     }
     result
@@ -1797,7 +1790,7 @@ pub fn gic_maintenance_handler() {
     let vm = match active_vm() {
         Some(vm) => vm,
         None => {
-            panic!("Current vcpu.vm Is None");
+            panic!("current vcpu.vm is none");
         }
     };
     let vgic = vm.vgic();
@@ -1876,7 +1869,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
         let trgt_vcpu = match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
             None => {
                 error!(
-                    "Core {} Received vGic Msg From Unknown Vm[{}]",
+                    "core {} received vgic message from unknown vm[{}]",
                     current_cpu().id,
                     vm_id
                 );
@@ -1888,7 +1881,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
 
         let vm = match trgt_vcpu.vm() {
             None => {
-                panic!("Vm Is None");
+                panic!("vm is none");
             }
             Some(x) => x,
         };
@@ -1896,7 +1889,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
 
         if vm_id != vm.id() {
             error!(
-                "Vm[{}] Received vGic Msg From Another Vm[{}]",
+                "vm[{}] received vgic message from another vm[{}]",
                 vm.id(),
                 vm_id
             );
@@ -1938,12 +1931,12 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
                 }
             }
             _ => {
-                error!("Core {} Received Unknown Event", current_cpu().id)
+                error!("core {} received unknown event", current_cpu().id)
             }
         }
         save_vcpu_gic(current_cpu().active_vcpu.clone(), trgt_vcpu);
     } else {
-        error!("Illegal IPI");
+        error!("--> illegal IPI");
     }
 }
 
@@ -1952,7 +1945,7 @@ pub fn emu_intc_init(
     vcpu_list: &[Vcpu],
 ) -> Result<Arc<dyn EmuDev>, ()> {
     if emu_cfg.emu_type != EmuDeviceType::EmuDeviceTGicd {
-        error!("Emu Type Is Not EmuDeviceTGicd");
+        error!("emulate type is not EmuDeviceTGicd");
         return Err(());
     }
 
@@ -2025,12 +2018,13 @@ impl EmuDev for Vgic {
         }
 
         trace!(
-            "Current Cpu{} => Offset:{:#x} Is Write:{},Val:{:#x}",
+            "hcpu[{}]: offset:{:#x} is write:{},val:{:#x}",
             current_cpu().id,
             emu_ctx.address,
             emu_ctx.write,
             current_cpu().get_gpr(emu_ctx.reg)
         );
+
         match vgicd_offset_prefix {
             VGICD_REG_OFFSET_PREFIX_ISENABLER => {
                 self.emu_isenabler_access(emu_ctx);

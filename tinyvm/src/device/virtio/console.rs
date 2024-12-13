@@ -7,9 +7,9 @@ use alloc::sync::Arc;
 use spin::Mutex;
 
 use crate::arch::PAGE_SIZE;
-use crate::device::{VirtioMmio, Virtq};
 use crate::device::DevDesc;
 use crate::device::VirtioIov;
+use crate::device::{VirtioMmio, Virtq};
 use crate::kernel::vm;
 use crate::kernel::Vm;
 use crate::utils::round_down;
@@ -109,13 +109,17 @@ pub fn console_features() -> usize {
 /// Handles notification for a Virtio console request on the specified Virtqueue (`vq`), Virtio console device (`console`), and virtual machine (`vm`).
 /// This function processes the available descriptors in the Virtqueue and performs necessary operations.
 /// Returns `true` upon successful handling.
-pub fn virtio_console_notify_handler(vq: Arc<Virtq>, console: Arc<VirtioMmio>, vm: Arc<Vm>) -> bool {
+pub fn virtio_console_notify_handler(
+    vq: Arc<Virtq>,
+    console: Arc<VirtioMmio>,
+    vm: Arc<Vm>,
+) -> bool {
     if vq.vq_indx() % 4 != 1 {
         return true;
     }
 
     if vq.ready() == 0 {
-        error!("virtio_console_notify_handler: console virt_queue is not ready!");
+        error!("console virt_queue is not ready!");
         return false;
     }
 
@@ -124,7 +128,7 @@ pub fn virtio_console_notify_handler(vq: Arc<Virtq>, console: Arc<VirtioMmio>, v
     let (trgt_vmid, trgt_console_ipa) = match dev.desc() {
         DevDesc::ConsoleDesc(desc) => desc.target_console(),
         _ => {
-            error!("virtio_console_notify_handler: console desc should not be None");
+            error!("console desc should not be none");
             return false;
         }
     };
@@ -139,7 +143,7 @@ pub fn virtio_console_notify_handler(vq: Arc<Virtq>, console: Arc<VirtioMmio>, v
         loop {
             let addr = vm.ipa2pa(vq.desc_addr(idx));
             if addr == 0 {
-                error!("virtio_console_notify_handler: failed to desc addr");
+                error!("failed to desc addr");
                 return false;
             }
             tx_iov.push_data(addr, vq.desc_len(idx) as usize);
@@ -152,7 +156,7 @@ pub fn virtio_console_notify_handler(vq: Arc<Virtq>, console: Arc<VirtioMmio>, v
         }
 
         if !virtio_console_recv(trgt_vmid, trgt_console_ipa, tx_iov, len) {
-            error!("virtio_console_notify_handler: failed send");
+            error!("failed send");
         }
         if !vq.update_used_ring(len as u32, next_desc_idx_opt.unwrap() as u32) {
             return false;
@@ -173,7 +177,12 @@ pub fn virtio_console_notify_handler(vq: Arc<Virtq>, console: Arc<VirtioMmio>, v
 
 /// Receives Virtio console data for the target VM with specified VM ID (`trgt_vmid`), console IPA (`trgt_console_ipa`), I/O vector (`tx_iov`), and length (`len`).
 /// Returns `true` upon successful reception.
-fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov, len: usize) -> bool {
+fn virtio_console_recv(
+    trgt_vmid: u16,
+    trgt_console_ipa: u64,
+    tx_iov: VirtioIov,
+    len: usize,
+) -> bool {
     let trgt_vm = match vm(trgt_vmid as usize) {
         None => {
             warn!("target vm [{}] is not ready or not exist", trgt_vmid);
@@ -187,20 +196,14 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
         .and_then(|dev| dev.into_any_arc().downcast::<VirtioMmio>().ok())
     {
         None => {
-            error!(
-                "virtio_console_recv: trgt_vm[{}] failed to get virtio console dev",
-                trgt_vmid
-            );
+            error!("trgt_vm[{}] failed to get virtio console dev", trgt_vmid);
             return true;
         }
         Some(vm) => vm,
     };
 
     if !console.dev().activated() {
-        warn!(
-            "virtio_console_recv: trgt_vm[{}] virtio console dev is not ready",
-            trgt_vmid
-        );
+        warn!("trgt_vm[{}] virtio console dev is not ready", trgt_vmid);
         return false;
     }
 
@@ -208,7 +211,7 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
         Ok(x) => x,
         Err(_) => {
             error!(
-                "virtio_console_recv: trgt_vm[{}] failed to get virtio console rx virt queue",
+                "trgt_vm[{}] failed to get virtio console rx virt queue",
                 trgt_vmid
             );
             return false;
@@ -217,7 +220,7 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
 
     let desc_header_idx_opt = rx_vq.pop_avail_desc_idx(rx_vq.avail_idx());
     if !rx_vq.avail_is_avail() {
-        error!("virtio_console_recv: receive invalid avail desc idx");
+        error!("receive invalid avail desc idx");
         return false;
     } else if desc_header_idx_opt.is_none() {
         return true;
@@ -231,7 +234,7 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
         let dst = trgt_vm.ipa2pa(rx_vq.desc_addr(desc_idx));
         if dst == 0 {
             error!(
-                "virtio_console_recv: failed to get dst, desc_idx {}, avail idx {}",
+                "failed to get dst, desc_idx {}, avail idx {}",
                 desc_idx,
                 rx_vq.avail_idx()
             );
@@ -258,13 +261,13 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
 
     if rx_len < len {
         rx_vq.put_back_avail_desc_idx();
-        error!("virtio_console_recv: rx_len smaller than tx_len");
+        error!("rx_len smaller than tx_len");
         return false;
     }
 
     if tx_iov.write_through_iov(&rx_iov, len) > 0 {
         error!(
-            "virtio_console_recv: write through iov failed, rx_iov_num {} tx_iov_num {} rx_len {} tx_len {}",
+            "write through iov failed, rx_iov_num {} tx_iov_num {} rx_len {} tx_len {}",
             rx_iov.num(),
             tx_iov.num(),
             rx_len,
@@ -275,7 +278,7 @@ fn virtio_console_recv(trgt_vmid: u16, trgt_console_ipa: u64, tx_iov: VirtioIov,
 
     if !rx_vq.update_used_ring(len as u32, desc_idx_header as u32) {
         error!(
-            "virtio_console_recv: update used ring failed len {} rx_vq num {}",
+            "update used ring failed len {} rx_vq num {}",
             len,
             rx_vq.num()
         );

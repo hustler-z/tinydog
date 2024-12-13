@@ -250,7 +250,7 @@ impl AsyncTask {
 pub async fn async_ipi_req() {
     let ipi_list = ASYNC_IPI_TASK_LIST.lock();
     if ipi_list.is_empty() {
-        panic!("IPI List Should Not Be Empty");
+        panic!("IPI list should not be empty");
     }
     let task = ipi_list.front().unwrap().clone();
     drop(ipi_list);
@@ -271,7 +271,7 @@ pub async fn async_blk_id_req() {}
 pub async fn async_blk_io_req() {
     let io_list = ASYNC_IO_TASK_LIST.lock();
     if io_list.is_empty() {
-        panic!("IO List Should Not Be Empty");
+        panic!("IO list should not be empty");
     }
     let task = io_list.front().unwrap().clone();
     drop(io_list);
@@ -287,7 +287,10 @@ pub async fn async_blk_io_req() {
                     let len = msg.iov_list[idx].len as usize;
 
                     if cache_ptr < 0x1000 || data_bg < 0x1000 {
-                        panic!("Illegal Des Addr {:x}, Src Addr {:x}", cache_ptr, data_bg);
+                        panic!(
+                            "illegal dst addr {:08x}, src addr {:08x}",
+                            cache_ptr, data_bg
+                        );
                     }
                     // SAFETY:
                     // We have both read and write access to the src and dst memory regions.
@@ -300,7 +303,7 @@ pub async fn async_blk_io_req() {
                 mediated_blk_write(msg.blk_id, msg.sector, msg.count);
             }
             _ => {
-                panic!("Illegal Mediated Blk Req Type {}", msg.io_type);
+                panic!("illegal mediated block request type {}", msg.io_type);
             }
         }
     }
@@ -312,7 +315,7 @@ pub fn set_front_io_task_state(state: AsyncTaskState) {
     let io_list = ASYNC_IO_TASK_LIST.lock();
     match io_list.front() {
         None => {
-            panic!("Front IO Task Is None");
+            panic!("front IO task is none");
         }
         Some(task) => {
             task.set_state(state);
@@ -420,7 +423,7 @@ pub fn finish_async_task(ipi: bool) {
         io_list.pop_front()
     } {
         None => {
-            panic!("There Is No {} Task", if ipi { "IPI" } else { "IO" })
+            panic!("there is no {} task", if ipi { "IPI" } else { "IO" })
         }
         Some(t) => t,
     };
@@ -436,7 +439,10 @@ pub fn finish_async_task(ipi: bool) {
                     let data_bg = args.iov_list[idx].data_bg;
                     let len = args.iov_list[idx].len as usize;
                     if trace() && (data_bg < 0x1000 || cache_ptr < 0x1000) {
-                        panic!("Illegal Des Addr {:x}, Src Addr {:x}", data_bg, cache_ptr);
+                        panic!(
+                            "illegal dst addr {:08x}, src addr {:08x}",
+                            data_bg, cache_ptr
+                        );
                     }
                     // SAFETY:
                     // We have both read and write access to the src and dst memory regions.
@@ -469,7 +475,7 @@ pub fn push_used_info(desc_chain_head_idx: u32, used_len: u32, src_vmid: usize) 
             });
         }
         None => {
-            error!("Source Vmid {} Not Existed", src_vmid);
+            error!("source vmid {} not existed", src_vmid);
         }
     }
 }
@@ -482,7 +488,7 @@ fn update_used_info(vq: Arc<Virtq>, src_vmid: usize) {
             vq.update_used_ring(info.used_len, info.desc_chain_head_idx);
         }
         None => {
-            error!("Source Vmid {} Not Existed", src_vmid);
+            error!("source vmid {} not existed", src_vmid);
         }
     }
 }

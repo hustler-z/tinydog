@@ -8,12 +8,12 @@ use alloc::vec::Vec;
 use core::mem::size_of;
 use spin::Mutex;
 
-use crate::device::{DevDesc, VirtioMmio, Virtq, VIRTQ_DESC_F_NEXT, VIRTQ_DESC_F_WRITE};
 use crate::device::VirtioIov;
-use crate::kernel::{current_cpu, vm_if_get_cpu_id};
-use crate::kernel::{ipi_send_msg, IpiEthernetMsg, IpiInnerMsg, IpiType};
+use crate::device::{DevDesc, VirtioMmio, Virtq, VIRTQ_DESC_F_NEXT, VIRTQ_DESC_F_WRITE};
 use crate::kernel::IpiMessage;
 use crate::kernel::Vm;
+use crate::kernel::{current_cpu, vm_if_get_cpu_id};
+use crate::kernel::{ipi_send_msg, IpiEthernetMsg, IpiInnerMsg, IpiType};
 use crate::utils::trace;
 
 const VIRTIO_NET_OK: u8 = 0;
@@ -192,7 +192,7 @@ pub fn virtio_net_handle_ctrl(vq: Arc<Virtq>, nic: Arc<VirtioMmio>, vm: Arc<Vm>)
         loop {
             let addr = vm.ipa2pa(vq.desc_addr(idx));
             if addr == 0 {
-                error!("virtio_net_handle_ctrl: failed to desc addr");
+                error!("failed to desc addr");
                 return false;
             }
             if vq.desc_flags(idx) & VIRTQ_DESC_F_WRITE != 0 {
@@ -226,7 +226,7 @@ pub fn virtio_net_handle_ctrl(vq: Arc<Virtq>, nic: Arc<VirtioMmio>, vm: Arc<Vm>)
                 in_iov.from_buf(&status as *const _ as usize, size_of::<u8>());
             }
             _ => {
-                warn!("Control queue header class can't match {}", ctrl.class);
+                warn!("control queue header class can't match {}", ctrl.class);
             }
         }
 
@@ -261,7 +261,7 @@ pub fn virtio_net_notify_handler(vq: Arc<Virtq>, nic: Arc<VirtioMmio>, vm: Arc<V
         loop {
             let addr = vm.ipa2pa(vq.desc_addr(idx));
             if addr == 0 {
-                error!("virtio_net_notify_handler: failed to desc addr");
+                error!("failed to desc addr");
                 return false;
             }
             tx_iov.push_data(addr, vq.desc_len(idx) as usize);
@@ -296,10 +296,7 @@ pub fn virtio_net_notify_handler(vq: Arc<Virtq>, nic: Arc<VirtioMmio>, vm: Arc<V
             let rx_vq = match nic.vq(0) {
                 Ok(x) => x,
                 Err(_) => {
-                    error!(
-                        "virtio_net_notify_handler: vm[{}] failed to get virtio net rx virt queue",
-                        vm.id()
-                    );
+                    error!("vm[{}] failed to get virtio net rx virt queue", vm.id());
                     return false;
                 }
             };
@@ -308,21 +305,20 @@ pub fn virtio_net_notify_handler(vq: Arc<Virtq>, nic: Arc<VirtioMmio>, vm: Arc<V
             }
         } else if let Some(cpu_trgt) = vm_if_get_cpu_id(trgt_vm.id()) {
             let msg = IpiEthernetMsg { trgt_nic: nic };
-            if !ipi_send_msg(cpu_trgt, IpiType::IpiTEthernetMsg, IpiInnerMsg::EnternetMsg(msg)) {
-                error!(
-                    "virtio_net_notify_handler: failed to send IPI message to CPU {}",
-                    cpu_trgt
-                );
+            if !ipi_send_msg(
+                cpu_trgt,
+                IpiType::IpiTEthernetMsg,
+                IpiInnerMsg::EnternetMsg(msg),
+            ) {
+                error!("failed to send IPI message to cpu {}", cpu_trgt);
                 return false;
             }
         } else {
-            error!(
-                "virtio_net_notify_handler: failed to get cpu id for vm {}",
-                trgt_vm.id()
-            );
+            error!("failed to get cpu id for vm[{}]", trgt_vm.id());
             return false;
         }
     }
+
     true
 }
 
@@ -335,10 +331,7 @@ pub fn ethernet_ipi_rev_handler(msg: IpiMessage) {
             let rx_vq = match nic.vq(0) {
                 Ok(x) => x,
                 Err(_) => {
-                    error!(
-                        "ethernet_ipi_rev_handler: vm[{}] failed to get virtio net rx virt queue",
-                        vm.id()
-                    );
+                    error!("vm[{}] failed to get virtio net rx virt queue", vm.id());
                     return;
                 }
             };
@@ -360,7 +353,7 @@ fn ethernet_transmit(tx_iov: VirtioIov, len: usize, vm: &Vm) -> Option<Vec<Arc<V
     // [ destination MAC - 6 ][ source MAC - 6 ][ EtherType - 2 ][ Payload ]
     if len < size_of::<VirtioNetHdr>() || len - size_of::<VirtioNetHdr>() < 6 + 6 + 2 {
         warn!(
-            "Too short for an ethernet frame, len {}, size of head {}",
+            "too short for an ethernet frame, len {}, size of head {}",
             len,
             size_of::<VirtioNetHdr>()
         );
@@ -422,17 +415,14 @@ fn ethernet_send_to(vm: &Vm, nic: &VirtioMmio, tx_iov: &VirtioIov, len: usize) -
     let rx_vq = match nic.vq(0) {
         Ok(x) => x,
         Err(_) => {
-            error!(
-                "ethernet_send_to: vm[{}] failed to get virtio net rx virt queue",
-                vm.id()
-            );
+            error!("vm[{}] failed to get virtio net rx virt queue", vm.id());
             return false;
         }
     };
 
     let desc_header_idx_opt = rx_vq.pop_avail_desc_idx(rx_vq.avail_idx());
     if !rx_vq.avail_is_avail() {
-        error!("ethernet_send_to: receive invalid avail desc idx");
+        error!("receive invalid avail desc idx");
         return false;
     } else if desc_header_idx_opt.is_none() {
         return false;
@@ -453,7 +443,7 @@ fn ethernet_send_to(vm: &Vm, nic: &VirtioMmio, tx_iov: &VirtioIov, len: usize) -
                 rx_vq.avail_addr(),
                 rx_vq.avail_idx()
             );
-            error!("ethernet_send_to: failed to get dst {}", vm.id());
+            error!("failed to get dst {}", vm.id());
             return false;
         }
         let desc_len = rx_vq.desc_len(desc_idx) as usize;
@@ -471,7 +461,7 @@ fn ethernet_send_to(vm: &Vm, nic: &VirtioMmio, tx_iov: &VirtioIov, len: usize) -
 
     if rx_len < len {
         rx_vq.put_back_avail_desc_idx();
-        warn!("ethernet_send_to: rx_len smaller than tx_len");
+        warn!("rx_len smaller than tx_len");
         return false;
     }
     if trace() && tx_iov.get_buf(0) < 0x1000 {
@@ -482,7 +472,7 @@ fn ethernet_send_to(vm: &Vm, nic: &VirtioMmio, tx_iov: &VirtioIov, len: usize) -
 
     if tx_iov.write_through_iov(&rx_iov, len) > 0 {
         error!(
-            "ethernet_send_to: write through iov failed, rx_iov_num {} tx_iov_num {} rx_len {} tx_len {}",
+            "write through iov failed, rx_iov_num {} tx_iov_num {} rx_len {} tx_len {}",
             rx_iov.num(),
             tx_iov.num(),
             rx_len,

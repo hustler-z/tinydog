@@ -2,8 +2,10 @@
 //
 // Self-Education Only
 
+use crate::kernel::{
+    current_cpu, run_idle_thread, timer_enable, vm, Scheduler, SchedulerUpdate, Vcpu, VcpuState,
+};
 use alloc::vec::Vec;
-use crate::kernel::{Vcpu, Scheduler, SchedulerUpdate, current_cpu, VcpuState, timer_enable, vm, run_idle_thread};
 
 #[derive(Default)]
 /// Round-Robin Scheduler struct
@@ -53,7 +55,7 @@ impl Scheduler for SchedulerRR {
         } else {
             match current_cpu().ctx_ptr() {
                 None => {
-                    error!("run_idle_thread: cpu{} ctx is NULL", current_cpu().id);
+                    error!("hcpu[{}] context is null", current_cpu().id);
                 }
                 Some(_ctx) => {
                     run_idle_thread();
@@ -132,7 +134,7 @@ impl SchedulerUpdate for SchedulerRR {
         let active_vcpu = if src_rr.active_idx < src_rr.queue.len() {
             Some(new_rr.queue[src_rr.active_idx].clone())
         } else {
-            debug!("Core[{}] is none", current_cpu().id);
+            debug!("hcpu[{}] is none", current_cpu().id);
             None
         };
         current_cpu().set_active_vcpu(active_vcpu);

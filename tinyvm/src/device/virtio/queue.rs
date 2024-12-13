@@ -9,7 +9,7 @@ use core::slice;
 use spin::Mutex;
 
 use crate::device::VirtioMmio;
-use crate::kernel::{active_vm, Vm, vm_ipa2pa};
+use crate::kernel::{active_vm, vm_ipa2pa, Vm};
 
 pub const VIRTQ_READY: usize = 1;
 pub const VIRTQ_DESC_F_NEXT: u16 = 1;
@@ -137,7 +137,7 @@ impl Virtq {
                 Some(avail_desc_idx)
             }
             None => {
-                error!("pop_avail_desc_idx: failed to avail table");
+                error!("failed to avail table");
                 None
             }
         }
@@ -151,7 +151,7 @@ impl Virtq {
                 inner.last_avail_idx -= 1;
             }
             None => {
-                error!("put_back_avail_desc_idx: failed to avail table");
+                error!("failed to avail table");
             }
         }
     }
@@ -317,7 +317,10 @@ impl Virtq {
     /// And it must be in range of the vm memory
     pub unsafe fn set_desc_table(&self, addr: usize) {
         let mut inner = self.inner.lock();
-        inner.desc_table = Some(slice::from_raw_parts_mut(addr as *mut VringDesc, DESC_QUEUE_SIZE));
+        inner.desc_table = Some(slice::from_raw_parts_mut(
+            addr as *mut VringDesc,
+            DESC_QUEUE_SIZE,
+        ));
     }
 
     /// Sets the available ring for the VirtIO queue.

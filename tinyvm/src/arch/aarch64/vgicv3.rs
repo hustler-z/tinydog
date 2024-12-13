@@ -163,7 +163,7 @@ impl VgicInt {
         match vgic_int.phys {
             VgicIntPhys::Redist(redist) => redist,
             _ => {
-                panic!("Must Get Redist!");
+                panic!("must get redist!");
             }
         }
     }
@@ -173,7 +173,7 @@ impl VgicInt {
         match vgic_int.phys {
             VgicIntPhys::Route(route) => route,
             _ => {
-                panic!("Must Get Route!")
+                panic!("must get route!")
             }
         }
     }
@@ -243,7 +243,7 @@ impl VgicInt {
         match &vgic_int.owner {
             Some(owner) => Some(owner.id()),
             None => {
-                error!("Owner_id Is None");
+                error!("owner_id is none");
                 None
             }
         }
@@ -596,7 +596,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     print!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed to send IPI message, target {} type {}",
                         interrupt.owner().unwrap().phys_id(),
                         0
                     );
@@ -911,7 +911,7 @@ impl Vgic {
                     };
                     if !ipi_send_msg(int_phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(ipi_msg)) {
                         error!(
-                            "Failed To Send IPI Message, Target {} Type {}",
+                            "failed to send IPI message, target {} type {}",
                             int_phys_id, 0
                         );
                     }
@@ -919,7 +919,7 @@ impl Vgic {
                 drop(interrupt_lock);
             }
             None => {
-                error!("Interrupt {} Is Illegal", int_id);
+                error!("interrupt {} is illegal", int_id);
             }
         }
     }
@@ -970,12 +970,12 @@ impl Vgic {
                         let phys_id = owner.phys_id();
 
                         if !ipi_send_msg(phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(m)) {
-                            error!("Failed To Send IPI Message, Target {} Type {}", phys_id, 0);
+                            error!("failed to send IPI message, target {} type {}", phys_id, 0);
                         }
                     }
                     None => {
                         panic!(
-                            "Core {} IRQ {:>4} Has No Owner",
+                            "hcpu[{}]interrupt {:>4} has no owner",
                             current_cpu().id,
                             interrupt.id()
                         );
@@ -1027,7 +1027,7 @@ impl Vgic {
                 };
                 let phys_id = interrupt.owner_phys_id().unwrap();
                 if !ipi_send_msg(phys_id, IpiType::IpiTIntc, IpiInnerMsg::Initc(m)) {
-                    error!("Failed To Send IPI Message, Target {} Type {}", phys_id, 0);
+                    error!("failed to send IPI message, target {} type {}", phys_id, 0);
                 }
             }
             drop(interrupt_lock);
@@ -1065,7 +1065,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     error!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed to send IPI message, target {} type {}",
                         interrupt.owner_phys_id().unwrap(),
                         0
                     );
@@ -1126,7 +1126,7 @@ impl Vgic {
                     IpiInnerMsg::Initc(m),
                 ) {
                     error!(
-                        "Failed To Send IPI Message, Target {} Type {}",
+                        "failed to send IPI message, target {} type {}",
                         interrupt.owner_phys_id().unwrap(),
                         0
                     );
@@ -1227,7 +1227,7 @@ impl Vgic {
             let val = self.vgicd_typer() as usize;
             current_cpu().set_gpr(idx, val);
         } else {
-            error!("Can't Write To Read Only Reg");
+            error!("can't write to read only reg");
         }
     }
 
@@ -1237,7 +1237,7 @@ impl Vgic {
             let val = self.vgicd_iidr() as usize;
             current_cpu().set_gpr(idx, val);
         } else {
-            error!("Can't Write To Read Only Reg");
+            error!("can't write to read only reg");
         }
     }
 
@@ -1254,7 +1254,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1266,7 +1266,7 @@ impl Vgic {
             }
         }
         if first_int >= 16 && !vm_has_interrupt_flag {
-            error!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+            error!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
             return;
         }
 
@@ -1369,7 +1369,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1381,7 +1381,7 @@ impl Vgic {
             }
         }
         if first_int >= 16 && !vm_has_interrupt_flag {
-            warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+            warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
             return;
         }
 
@@ -1430,7 +1430,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1443,7 +1443,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1500,7 +1500,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1513,7 +1513,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1560,7 +1560,7 @@ impl Vgic {
         let vm = match active_vm() {
             Some(vm) => vm,
             None => {
-                panic!("Current vcpu.vm Is None");
+                panic!("current vcpu.vm is none");
             }
         };
         let mut vm_has_interrupt_flag = false;
@@ -1573,7 +1573,7 @@ impl Vgic {
                 }
             }
             if first_int >= 16 && !vm_has_interrupt_flag {
-                warn!("Vm[{}] IRQ {:>4} Not Exist", vm_id, first_int);
+                warn!("vm[{}] interrupt {:>4} [>_<]", vm_id, first_int);
                 return;
             }
         }
@@ -1641,21 +1641,24 @@ impl Vgic {
         /// SAFETY: All VgicInt are allocated when initializing, so it's safe to convert them to NonNull
         binding
             .min_by_key(|x| {
-                (((unsafe { x.as_ref().prio() } as u32) << 10) | unsafe { x.as_ref().id() } as u32)
+                ((unsafe { x.as_ref().prio() } as u32) << 10) | unsafe { x.as_ref().id() } as u32
             })
             .cloned()
     }
 
     fn refill_lrs(&self, vcpu: &Vcpu, flag: bool) {
         let gic_lrs = gic_lrs();
-        // ICH_ELRSR_EL2:locate a usable List register when the hypervisor is delivering an interrupt to a Guest OS.
+        // ICH_ELRSR_EL2:locate a usable List register when the hypervisor is
+        // delivering an interrupt to a Guest OS.
         let mut lr_idx_opt = bitmap_find_nth(GICH.elrsr(), 0, gic_lrs, 1, true);
-        // flag indicates that is no pending or not true:no pending flase:have pending,the we will look up active and pend
+        // flag indicates that is no pending or not true:no pending flase:have pending,
+        // the we will look up active and pend
         let mut new_flags = flag;
         while lr_idx_opt.is_some() {
             match self.vgic_highest_proi_spilled(vcpu, new_flags) {
                 Some(interrupt_ptr) => {
-                    /// SAFETY: All VgicInt are allocated when initializing, so it's safe to convert them to NonNull
+                    /// SAFETY: All VgicInt are allocated when initializing, so it's
+                    /// safe to convert them to NonNull
                     let interrupt = unsafe { interrupt_ptr.as_ref() };
                     let interrupt_lock = interrupt.lock.lock();
                     let got_ownership = vgic_int_get_owner(vcpu, interrupt);
@@ -1682,16 +1685,20 @@ impl Vgic {
     fn eoir_highest_spilled_active(&self, vcpu: &Vcpu) {
         let cpu_priv = self.cpu_priv[vcpu.id()].inner_mut.borrow();
         let binding = &cpu_priv.act_list;
-        /// SAFETY: All VgicInt are allocated when initializing, so it's safe to convert them to NonNull
+        /// SAFETY: All VgicInt are allocated when initializing, so it's
+        /// safe to convert them to NonNull
         let interrupt = binding
             .iter()
             .min_by_key(|x| {
-                (((unsafe { x.as_ref().prio() } as u32) << 10) | unsafe { x.as_ref().id() } as u32)
+                ((unsafe { x.as_ref().prio() } as u32) << 10) | unsafe { x.as_ref().id() } as u32
             })
             .cloned();
+
         drop(cpu_priv);
+
         if let Some(int_ptr) = interrupt {
-            /// SAFETY: All VgicInt are allocated when initializing, so it's safe to convert them to NonNull
+            /// SAFETY: All VgicInt are allocated when initializing, so
+            /// it's safe to convert them to NonNull
             let int = unsafe { int_ptr.as_ref() };
             int.lock.lock();
             vgic_int_get_owner(vcpu, int);
@@ -1805,7 +1812,7 @@ fn vgic_target_translate(vm: &Vm, trgt: u32, v2p: bool) -> u32 {
     {
         result |= *val << (8 * idx);
         if idx >= 4 {
-            panic!("Illegal Idx, From Len {}", from.len());
+            panic!("illegal idx, from len {}", from.len());
         }
     }
     result
@@ -1898,7 +1905,7 @@ pub fn gic_maintenance_handler() {
     let vm = match active_vm() {
         Some(vm) => vm,
         None => {
-            panic!("Current vcpu.vm Is None");
+            panic!("current vcpu.vm is none");
         }
     };
     let vgic = vm.vgic();
@@ -1908,7 +1915,8 @@ pub fn gic_maintenance_handler() {
     }
 
     // NP:List Register Entry Not Present.
-    // U: underflow Zero or one of the List register entries are marked as a valid interrupt, that is, if the corresponding ICH_LR<n>_EL2.State bits do not equal 0x0.
+    // U: underflow Zero or one of the List register entries are marked as a valid interrupt,
+    // that is, if the corresponding ICH_LR<n>_EL2.State bits do not equal 0x0.
     if misr & (GICH_MISR_NP as u32 | GICH_MISR_U as u32) != 0 {
         vgic.refill_lrs(
             current_cpu().active_vcpu.as_ref().unwrap(),
@@ -1956,7 +1964,7 @@ impl EmuDev for Vgic {
         }
 
         trace!(
-            "Current Cpu{} => Offset:{:#x} Is Write:{},Val:{:#x}",
+            "current cpu{} => offset:{:#x} is write:{},val:{:#x}",
             current_cpu().id,
             emu_ctx.address,
             emu_ctx.write,
@@ -2113,7 +2121,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
         let trgt_vcpu = match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
             None => {
                 error!(
-                    "Core {} Received vGic Msg From Unknown Vm[{}]",
+                    "hcpu[{}] received vgic msg from unknown vm[{}]",
                     current_cpu().id,
                     vm_id
                 );
@@ -2125,7 +2133,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
 
         let vm = match trgt_vcpu.vm() {
             None => {
-                panic!("Vm Is None");
+                panic!("vm is none");
             }
             Some(x) => x,
         };
@@ -2133,7 +2141,7 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
 
         if vm_id != vm.id() {
             error!(
-                "Vm[{}] Received vGic Msg From Another Vm[{}]",
+                "vm[{}] received vgic msg from another vm[{}]",
                 vm.id(),
                 vm_id
             );
@@ -2182,12 +2190,12 @@ pub fn vgic_ipi_handler(msg: IpiMessage) {
                 );
             }
             _ => {
-                error!("Core {} Received Unknown Event", current_cpu().id)
+                error!("hcpu[{}] received unknown event", current_cpu().id)
             }
         }
         save_vcpu_gic(current_cpu().active_vcpu.clone(), trgt_vcpu);
     } else {
-        error!("Illegal IPI");
+        error!("illegal IPI");
     }
 }
 
@@ -2197,7 +2205,7 @@ pub fn emu_intc_init(
     vcpu_list: &[Vcpu],
 ) -> Result<Arc<dyn EmuDev>, ()> {
     if emu_cfg.emu_type != EmuDeviceType::EmuDeviceTGicd {
-        error!("Emu Type Is Not EmuDeviceTGicd");
+        error!("emulate type is not EmuDeviceTGicd");
         return Err(());
     }
 
@@ -2216,12 +2224,17 @@ pub fn emu_intc_init(
         let vmpidr = vcpu.get_vmpidr();
         typer |= (vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
         typer |= !!((vcpu.id() == (vcpu_num - 1)) as usize) << GICR_TYPER_LAST_OFF;
-        //need the low 6 bits for LPI/ITS init
-        //DPGS, bit [5]:Sets support for GICR_CTLR.DPG* bits
-        //DirectLPI, bit [3]: Indicates whether this Redistributor supports direct injection of LPIs.
-        //Dirty, bit [2]: Controls the functionality of GICR_VPENDBASER.Dirty.
-        //LPI VLPIS, bit [1]: Indicates whether the GIC implementation supports virtual LPIs and the direct injection of virtual LPIs
-        //PLPIS, bit [0]: Indicates whether the GIC implementation supports physical LPIs
+
+        // need the low 6 bits for LPI/ITS init
+        // DPGS, bit [5]:Sets support for GICR_CTLR.DPG* bits
+        // DirectLPI, bit [3]: Indicates whether this Redistributor supports direct
+        // injection of LPIs.
+        // Dirty, bit [2]: Controls the functionality of GICR_VPENDBASER.Dirty.
+        // LPI VLPIS, bit [1]: Indicates whether the GIC implementation supports
+        // virtual LPIs and the direct injection of virtual LPIs
+        // PLPIS, bit [0]: Indicates whether the GIC implementation supports
+        // physical LPIs
+
         typer |= 0b10_0001;
 
         let mut cpu_priv = VgicCpuPriv::new(
@@ -2299,7 +2312,7 @@ impl EmuDev for VgicRedis {
         let offset = emu_ctx.address & 0x1ffff;
 
         trace!(
-            "Current Cpu{} => Addr:{:#x} Reg {:?} Offset {:#x} Is Write:{}, Val:{:#x}",
+            "hcpu[{}] => addr:{:#x} reg {:?} offset {:#x} is write:{},val:{:#x}",
             current_cpu().id,
             emu_ctx.address,
             GicrRegs::from(offset),
@@ -2361,7 +2374,7 @@ pub fn emu_vgicr_init(
     vgic: Arc<Vgic>,
 ) -> Result<Arc<dyn EmuDev>, ()> {
     if emu_cfg.emu_type != EmuDeviceType::EmuDeviceTGICR {
-        error!("Emu Type Is Not EmuDeviceTGICR");
+        error!("emulate type is not EmuDeviceTGICR");
         return Err(());
     }
 
@@ -2479,13 +2492,13 @@ pub fn vgic_icc_sgir_handler(_emu_dev_id: usize, emu_ctx: &EmuContext) -> bool {
             let vm = match current_cpu().active_vcpu.clone().unwrap().vm() {
                 Some(tvm) => tvm,
                 None => {
-                    panic!("Current vcpu.vm Is None");
+                    panic!("current vcpu.vm is none");
                 }
             };
             let mut vtarget = sgir & 0xffff;
             // maybe surrort more cluseter (aff1 != 0)
             if sgir & 0xff0000 != 0 && cfg!(feature = "rk3588") {
-                //for rk3588 the aff1
+                // for rk3588 the aff1
                 vtarget <<= (sgir & 0xf0000) >> 16;
             }
             vgic_target_translate(&vm, vtarget as u32, true) as usize

@@ -6,13 +6,13 @@ use alloc::collections::BTreeSet;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use spin::Mutex;
-use tock_registers::*;
 use tock_registers::interfaces::*;
 use tock_registers::registers::*;
+use tock_registers::*;
 
 use crate::arch::traits::InterruptController;
 use crate::arch::IntCtrl;
-use crate::board::{Platform, PlatOperation};
+use crate::board::{PlatOperation, Platform};
 use crate::kernel::current_cpu;
 use crate::utils::bit_extract;
 use crate::utils::device_ref::DeviceRef;
@@ -88,7 +88,7 @@ impl IrqState {
             1 => IrqState::IrqSPend,
             2 => IrqState::IrqSActive,
             3 => IrqState::IrqSPendActive,
-            _ => panic!("num_to_state: illegal irq state"),
+            _ => panic!("illegal irq state"),
         }
     }
 
@@ -223,7 +223,8 @@ impl GicDistributor {
     }
 
     pub fn send_sgi(&self, cpu_if: usize, sgi_num: usize) {
-        self.SGIR.set(((1 << (16 + cpu_if)) | (sgi_num & 0b1111)) as u32);
+        self.SGIR
+            .set(((1 << (16 + cpu_if)) | (sgi_num & 0b1111)) as u32);
     }
 
     pub fn prio(&self, int_id: usize) -> usize {
@@ -539,8 +540,10 @@ impl crate::arch::InterruptContextTrait for GicState {
 }
 
 // SAFETY: They are GICv2 mmio device regions
-pub static GICD: DeviceRef<GicDistributor> = unsafe { DeviceRef::new(Platform::GICD_BASE as *const GicDistributor) };
-pub static GICC: DeviceRef<GicCpuInterface> = unsafe { DeviceRef::new(Platform::GICC_BASE as *const GicCpuInterface) };
+pub static GICD: DeviceRef<GicDistributor> =
+    unsafe { DeviceRef::new(Platform::GICD_BASE as *const GicDistributor) };
+pub static GICC: DeviceRef<GicCpuInterface> =
+    unsafe { DeviceRef::new(Platform::GICC_BASE as *const GicCpuInterface) };
 pub static GICH: DeviceRef<GicHypervisorInterface> =
     unsafe { DeviceRef::new(Platform::GICH_BASE as *const GicHypervisorInterface) };
 

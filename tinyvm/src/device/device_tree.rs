@@ -63,74 +63,9 @@ pub fn remove_riscv_ext(isa: String, ext: String) -> String {
 /// Dtb is a valid pointer to a device tree blob
 pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
     use fdt::*;
-    info!("Device Tree {dtb:p} Has Original Size {}", fdt_size(dtb));
-    #[cfg(feature = "tx2")]
-    {
-        fdt_pack(dtb);
-        fdt_enlarge(dtb);
-        let r = fdt_del_mem_rsv(dtb, 0);
-        assert_eq!(r, 0);
-        fdt_clear_initrd(dtb);
-        let r = fdt_remove_node(dtb, "/cpus/cpu-map/cluster0/core0\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_remove_node(dtb, "/cpus/cpu-map/cluster0/core1\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/cpus/cpu@0\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/cpus/cpu@1\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/sdhci@3460000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/sdhci@3440000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/serial@c280000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/serial@3110000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/serial@3130000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/combined-uart\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/trusty\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/host1x/nvdisplay@15210000\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/reserved-memory/ramoops_carveout\0".as_ptr());
-        assert_eq!(r, 0);
-        let r = fdt_disable_node(dtb, "/watchdog@30c0000\0".as_ptr());
-        assert_eq!(r, 0);
-        // disable denver pmu
-        let r = fdt_disable_node(dtb, "/denver-pmu\0".as_ptr());
-        assert_eq!(r, 0);
-        // modify arm pmu
-        // Hardcode: here, irq and affi are associated with clurster 1, cpu 0
-        let irq: [u32; 1] = [0x128];
-        let affi: [u32; 1] = [0x4];
-        let r = fdt_setup_pmu(
-            dtb,
-            "arm,armv8-pmuv3\0".as_ptr(),
-            irq.as_ptr(),
-            irq.len() as u32,
-            affi.as_ptr(),
-            affi.len() as u32,
-        );
-        assert_eq!(r, 0);
-        let len = fdt_size(dtb);
-        info!("Device Tree After Patched Size {}", len);
-        let slice = core::slice::from_raw_parts(dtb as *const u8, len as usize);
 
-        SYSTEM_FDT.call_once(|| slice.to_vec());
-    }
-    #[cfg(feature = "pi4")]
-    {
-        use crate::arch::PAGE_SIZE;
-        use crate::utils::round_up;
-        let pi_fdt = PI4_DTB_ADDR as *mut fdt::myctypes::c_void;
-        let len = round_up(fdt_size(pi_fdt) as usize, PAGE_SIZE) + PAGE_SIZE;
-        info!("fdt original size {}", len);
-        let slice = core::slice::from_raw_parts(pi_fdt as *const u8, len as usize);
-        SYSTEM_FDT.call_once(|| slice.to_vec());
-    }
+    info!("device tree {dtb:p} with size {} b", fdt_size(dtb));
+
     #[cfg(all(feature = "qemu", target_arch = "aarch64"))]
     {
         fdt_pack(dtb);
@@ -191,8 +126,11 @@ pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
         );
         //assert_eq!(fdt_remove_node(dtb, "/flash@0\0".as_ptr()), 0);
 
+        // @Hustler
+        //
+        // Flaten device tree size
         let len = fdt_size(dtb) as usize;
-        info!("Device Tree Patched Size {}", len);
+
         let slice = core::slice::from_raw_parts(dtb as *const u8, len);
         SYSTEM_FDT.call_once(|| slice.to_vec());
     }
@@ -273,6 +211,7 @@ pub unsafe fn init_vm0_dtb(dtb: *mut fdt::myctypes::c_void) -> Result<()> {
         crate::config::patch_fdt(&mut fdt)?;
         SYSTEM_FDT.call_once(move || fdt.into_inner());
     }
+
     Ok(())
 }
 
@@ -289,6 +228,7 @@ pub fn create_fdt(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
     }
 }
 
+#[cfg(target_arch = "riscv64")]
 pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
     let mut fdt = FdtWriter::new()?;
     let ncpu = config.cpu_allocated_bitmap().count_ones();
@@ -327,7 +267,7 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             | EmuDeviceType::EmuDeviceTVirtioNet
             | EmuDeviceType::EmuDeviceTVirtioConsole => {
                 info!(
-                    "Virtio Device Tree Node Init {} {:x}",
+                    "virtio device tree node init {} {:x}",
                     emu_cfg.name, emu_cfg.base_ipa
                 );
                 create_virtio_node_riscv64(
@@ -339,7 +279,7 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
                 )?;
             }
             EmuDeviceType::EmuDeviceTTinyvm => {
-                info!("Device Tree Node Init {:x}", emu_cfg.base_ipa);
+                info!("device tree node init {:x}", emu_cfg.base_ipa);
                 create_tinyvm_node(
                     &mut fdt,
                     &emu_cfg.name,
@@ -350,7 +290,7 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             }
             EmuDeviceType::EmuDeviceTPlic => {
                 info!(
-                    "PLIC Device Tree Node Init {:x} For {}",
+                    "plic device tree node init {:x} for {}",
                     emu_cfg.base_ipa, &emu_cfg.name
                 );
                 create_plic_node(
@@ -363,7 +303,7 @@ pub fn create_fdt_riscv64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             }
             EmuDeviceType::EmuDeviceTAPlic => {
                 info!(
-                    "APLIC Device Tree Node Init {:x} For {}",
+                    "aplic device tree node init {:x} for {}",
                     emu_cfg.base_ipa, &emu_cfg.name
                 );
                 create_aplic_node(
@@ -556,13 +496,13 @@ pub fn create_fdt_aarch64(config: &VmConfigEntry) -> FdtWriterResult<Vec<u8>> {
             | EmuDeviceType::EmuDeviceTVirtioNet
             | EmuDeviceType::EmuDeviceTVirtioConsole => {
                 info!(
-                    "Virtio Device Tree Node Init {} {:x}",
+                    "virtio device tree node init {} {:x}",
                     emu_cfg.name, emu_cfg.base_ipa
                 );
                 create_virtio_node(&mut fdt, &emu_cfg.name, emu_cfg.irq_id, emu_cfg.base_ipa)?;
             }
             EmuDeviceType::EmuDeviceTTinyvm => {
-                info!("Device Tree Node Init {:x}", emu_cfg.base_ipa);
+                info!("device tree node init {:x}", emu_cfg.base_ipa);
                 create_tinyvm_node(
                     &mut fdt,
                     &emu_cfg.name,
@@ -607,7 +547,7 @@ fn create_pinctrl_node(fdt: &mut FdtWriter) -> FdtWriterResult<()> {
 // hard code for tx2 vm1
 fn create_memory_node(fdt: &mut FdtWriter, config: VmConfigEntry) -> FdtWriterResult<()> {
     if config.memory_region().is_empty() {
-        panic!("create_memory_node Memory Region Num 0");
+        panic!("create_memory_node memory region num 0");
     }
     let memory_name = format!("memory@{:x}", config.memory_region()[0].ipa_start);
     let memory = fdt.begin_node(&memory_name)?;
@@ -849,6 +789,7 @@ fn create_virtio_node(
     Ok(())
 }
 
+#[cfg(target_arch = "riscv64")]
 fn create_virtio_node_riscv64(
     fdt: &mut FdtWriter,
     name: &str,

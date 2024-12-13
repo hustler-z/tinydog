@@ -14,11 +14,15 @@ use alloc::collections::BTreeMap;
 
 use spin::Mutex;
 
-use crate::utils::{memcpy_safe, sleep};
-use crate::kernel::{vm_ipa2pa, active_vm, HVC_UNILIB_FS_INIT, HVC_UNILIB_FS_LSEEK, HVC_UNILIB_FS_UNLINK};
-use crate::kernel::{HvcGuestMsg, HvcUniLibMsg, hvc_send_msg_to_vm};
 use crate::kernel::HVC_UNILIB;
-use crate::kernel::{HVC_UNILIB_FS_OPEN, HVC_UNILIB_FS_CLOSE, HVC_UNILIB_FS_READ, HVC_UNILIB_FS_WRITE};
+use crate::kernel::{
+    active_vm, vm_ipa2pa, HVC_UNILIB_FS_INIT, HVC_UNILIB_FS_LSEEK, HVC_UNILIB_FS_UNLINK,
+};
+use crate::kernel::{hvc_send_msg_to_vm, HvcGuestMsg, HvcUniLibMsg};
+use crate::kernel::{
+    HVC_UNILIB_FS_CLOSE, HVC_UNILIB_FS_OPEN, HVC_UNILIB_FS_READ, HVC_UNILIB_FS_WRITE,
+};
+use crate::utils::{memcpy_safe, sleep};
 
 pub static UNILIB_FS_LIST: Mutex<BTreeMap<usize, UnilibFS>> = Mutex::new(BTreeMap::new());
 
@@ -139,7 +143,7 @@ pub fn unilib_fs_remove(vm_id: usize) {
 pub fn unilib_fs_init() -> Result<usize, ()> {
     let vm = active_vm().unwrap();
     let vm_id = vm.id();
-    info!("unilib_fs_init: VM[{}] init unilib-fs", vm.id());
+    info!("vm[{}] init unilib-fs", vm.id());
     let unilib_msg = HvcUniLibMsg {
         fid: HVC_UNILIB,
         event: HVC_UNILIB_FS_INIT,
@@ -149,7 +153,7 @@ pub fn unilib_fs_init() -> Result<usize, ()> {
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs init: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
     // Enter a loop, wait for VM0 to setup the unilib fs config struct.
@@ -157,7 +161,7 @@ pub fn unilib_fs_init() -> Result<usize, ()> {
         let lock = UNILIB_FS_LIST.lock();
         match lock.get(&vm_id) {
             Some(_) => {
-                trace!("unilib_fs_init, fs append success, return");
+                trace!("fs append success, return");
                 drop(lock);
                 return Ok(0);
             }
@@ -182,7 +186,7 @@ pub fn unilib_fs_append(mmio_ipa: usize) -> Result<usize, ()> {
     let unilib_fs = UnilibFS { base_addr: mmio_pa };
     let buf_pa = vm_ipa2pa(vm, unilib_fs.buf_ipa());
     info!(
-        "unilib_fs_append: VM[{}] fs_mmio_ipa 0x{:x}, buf ipa 0x{:x}, buf_pa 0x{:x}",
+        "vm[{}] fs_mmio_ipa 0x{:x}, buf ipa 0x{:x}, buf_pa 0x{:x}",
         unilib_fs.vm_id(),
         mmio_ipa,
         unilib_fs.buf_ipa(),
@@ -199,10 +203,7 @@ pub fn unilib_fs_append(mmio_ipa: usize) -> Result<usize, ()> {
 /// ## Arguments
 /// * `vm_id`        - The target GVM's VM id of this unilib fs operation.
 pub fn unilib_fs_finished(vm_id: usize) -> Result<usize, ()> {
-    info!(
-        "unilib_fs_finished: VM[{}] fs io request is finished, currently unused",
-        vm_id
-    );
+    info!("vm[{}] fs io request is finished, currently unused", vm_id);
     Ok(0)
 }
 
@@ -215,7 +216,11 @@ pub fn unilib_fs_finished(vm_id: usize) -> Result<usize, ()> {
 /// * `path_start_ipa`  - The intermediated physical address of the path that GVM wants to open through unilib-fs API.
 /// * `path_length`     - The string length of the path that GVM wants to open through unilib-fs API.
 /// * `flags`           - The flags of open API, we need to care about the transfer between C and Rust.
-pub fn unilib_fs_open(path_start_ipa: usize, path_length: usize, flags: usize) -> Result<usize, ()> {
+pub fn unilib_fs_open(
+    path_start_ipa: usize,
+    path_length: usize,
+    flags: usize,
+) -> Result<usize, ()> {
     let vm = active_vm().unwrap();
     let vm_id = vm.id();
     // println!(
@@ -227,7 +232,7 @@ pub fn unilib_fs_open(path_start_ipa: usize, path_length: usize, flags: usize) -
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -255,7 +260,7 @@ pub fn unilib_fs_open(path_start_ipa: usize, path_length: usize, flags: usize) -
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs open: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
 
@@ -280,7 +285,7 @@ pub fn unilib_fs_close(fd: usize) -> Result<usize, ()> {
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -297,7 +302,7 @@ pub fn unilib_fs_close(fd: usize) -> Result<usize, ()> {
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs close: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
     // Still, we need to enter a loop, wait for VM to complete operation.
@@ -326,7 +331,7 @@ pub fn unilib_fs_read(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, ()
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -341,7 +346,7 @@ pub fn unilib_fs_read(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, ()
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs read: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
 
@@ -382,7 +387,7 @@ pub fn unilib_fs_write(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, (
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -404,7 +409,7 @@ pub fn unilib_fs_write(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, (
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs write: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
 
@@ -416,7 +421,8 @@ pub fn unilib_fs_write(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, (
 /// HVC_UNILIB | HVC_UNILIB_FS_LSEEK
 /// This function performs the lseek operation by send a HvcGuestMsg to MVM.
 /// Reposition read/write file offset.
-/// lseek() repositions the file offset of the open file description associated with the file descriptor fd to the argument offset according to the directive whence.
+/// lseek() repositions the file offset of the open file description associated with the
+/// file descriptor fd to the argument offset according to the directive whence.
 /// It's a synchronous process trigger by GVM.
 /// Upon successful completion, lseek() returns the resulting offset
 /// location as measured in bytes from the beginning of the file, wrapped by `Result` structure.
@@ -424,9 +430,12 @@ pub fn unilib_fs_write(fd: usize, buf_ipa: usize, len: usize) -> Result<usize, (
 /// * `fd`     - The file descriptor of file.
 /// * `offset` - The file offset of the open file.
 /// * `whence` - Only can be these three following types currently:
-///                 SEEK_SET 0 : Seek from beginning of file, the file offset is set to offset bytes.
-///                 SEEK_CUR 1 : Seek from current position, the file offset is set to its current location plus offset bytes.
-///                 SEEK_END 2 : Seek from end of file, the file offset is set to the size of the file plus offset bytes.
+///                 SEEK_SET 0 : Seek from beginning of file, the file offset is set to offset
+///                              bytes.
+///                 SEEK_CUR 1 : Seek from current position, the file offset is set to its
+///                              current location plus offset bytes.
+///                 SEEK_END 2 : Seek from end of file, the file offset is set to the size of
+///                              the file plus offset bytes.
 pub fn unilib_fs_lseek(fd: usize, offset: usize, whence: usize) -> Result<usize, ()> {
     let vm = active_vm().unwrap();
     let vm_id = vm.id();
@@ -439,7 +448,7 @@ pub fn unilib_fs_lseek(fd: usize, offset: usize, whence: usize) -> Result<usize,
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -455,7 +464,7 @@ pub fn unilib_fs_lseek(fd: usize, offset: usize, whence: usize) -> Result<usize,
         arg_3: whence,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs read: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
     // Still, we need to enter a loop, wait for VM to complete operation.
@@ -484,7 +493,7 @@ pub fn unilib_fs_unlink(path_start_ipa: usize, path_length: usize) -> Result<usi
     let fs_cfg = match fs_list_lock.get(&vm_id) {
         Some(cfg) => cfg,
         None => {
-            error!("VM[{}] doesn't register a unilib fs, return", vm_id);
+            error!("vm[{}] doesn't register a unilib fs, return", vm_id);
             return Err(());
         }
     };
@@ -512,7 +521,7 @@ pub fn unilib_fs_unlink(path_start_ipa: usize, path_length: usize) -> Result<usi
         arg_3: 0,
     };
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::UniLib(unilib_msg)) {
-        error!("unilib fs unlink: failed to notify VM 0");
+        error!("failed to notify vm 0");
         return Err(());
     }
 

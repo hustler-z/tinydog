@@ -54,7 +54,10 @@ impl EmuContext {
             2 => ptr::write_volatile(self.address as *mut u16, val as u16),
             4 => ptr::write_volatile(self.address as *mut u32, val as u32),
             8 => ptr::write_volatile(self.address as *mut u64, val as u64),
-            _ => panic!("unexpected write width {} at {:x}", self.width, self.address),
+            _ => panic!(
+                "unexpected write width {} at {:x}",
+                self.width, self.address
+            ),
         }
     }
 }
@@ -106,11 +109,13 @@ impl Display for EmuDeviceType {
             EmuDeviceType::EmuDeviceTVirtioConsole => write!(f, "virtio console"),
             EmuDeviceType::EmuDeviceTTinyvm => write!(f, "device tinyvm"),
             EmuDeviceType::EmuDeviceTVirtioBlkMediated => write!(f, "medaited virtio block"),
-            EmuDeviceType::EmuDeviceTIOMMU => write!(f, "IOMMU"),
+            EmuDeviceType::EmuDeviceTIOMMU => write!(f, "iommu"),
             EmuDeviceType::EmuDeviceTGICR => write!(f, "interrupt controller gicr"),
             EmuDeviceType::EmuDeviceTMeta => write!(f, "meta device"),
             EmuDeviceType::EmuDeviceTPlic => write!(f, "platform level interrupt controller"),
-            EmuDeviceType::EmuDeviceTAPlic => write!(f, "Advanced Platform-Level Interrupt Controller"),
+            EmuDeviceType::EmuDeviceTAPlic => {
+                write!(f, "advanced platform-level interrupt controller")
+            }
         }
     }
 }
@@ -147,7 +152,7 @@ impl EmuDeviceType {
             12 => EmuDeviceType::EmuDeviceTMeta,
             13 => EmuDeviceType::EmuDeviceTPlic,
             14 => EmuDeviceType::EmuDeviceTAPlic,
-            _ => panic!("Unknown  EmuDeviceType value: {}", value),
+            _ => panic!("unknown emulate device type value: {}", value),
         }
     }
 }
@@ -164,7 +169,7 @@ pub fn emu_handler(emu_ctx: &EmuContext) -> bool {
     }
 
     error!(
-        "emu_handler: no emul handler for Core {} data abort ipa 0x{:x}\nctx: {:?}",
+        "no emulate handler for hcpu[{}] data abort ipa 0x{:x}\nctx: {:?}",
         current_cpu().id,
         ipa,
         emu_ctx,
@@ -190,7 +195,7 @@ pub fn emu_reg_handler(emu_ctx: &EmuContext) -> bool {
         }
     }
     error!(
-        "emu_reg_handler: no handler for Core{} {} reg ({:#x})",
+        "no handler for hcpu[{}] {} reg ({:#x})",
         current_cpu().id,
         if emu_ctx.write { "write" } else { "read" },
         address
@@ -204,10 +209,8 @@ pub fn emu_register_reg(emu_type: EmuRegType, address: usize, handler: EmuRegHan
 
     for emu_reg in emu_regs_list.iter() {
         if address == emu_reg.addr {
-            warn!(
-                "emu_register_reg: duplicated emul reg addr: prev address {:#x}",
-                address
-            );
+            warn!("duplicated emulate reg addr: prev address {:#x}", address);
+
             return;
         }
     }

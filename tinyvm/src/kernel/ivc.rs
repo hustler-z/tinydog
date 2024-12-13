@@ -27,7 +27,7 @@ pub fn ivc_update_mq(receive_ipa: usize, cfg_ipa: usize) -> bool {
     let cfg_pa = vm_ipa2pa(&vm, cfg_ipa);
 
     if receive_pa == 0 {
-        error!("Invalid Received PA");
+        error!("invalid received pa");
         return false;
     }
 
@@ -66,7 +66,7 @@ pub fn tinyvm_init(vm: Weak<Vm>, base_ipa: usize, len: usize) -> Result<Arc<dyn 
             Ok(Arc::new(EmuTinyvm { base_ipa, len }))
         }
         None => {
-            error!("Shared Mem Should Not Be None");
+            error!("shared memory shall not be none");
             Err(())
         }
     }
@@ -87,8 +87,8 @@ impl EmuDev for EmuTinyvm {
     }
 
     fn handler(&self, emu_ctx: &EmuContext) -> bool {
-        info!("Emulated Context IPA {:x}", emu_ctx.address);
-        info!("DO NOTHING");
+        info!("emulate context ipa {:08x}", emu_ctx.address);
+        info!("-- [DO NOTHING] --");
         true
     }
 }

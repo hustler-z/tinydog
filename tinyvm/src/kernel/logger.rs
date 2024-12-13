@@ -9,11 +9,11 @@ struct SimpleLogger;
 
 fn level2color(level: Level) -> u8 {
     match level {
-        Level::Error => 31, // 31 Red
+        Level::Error => 91, // 31 BrightRed
         Level::Warn => 93,  // 93 BrightYellow
-        Level::Info => 34,  // 34 Blue
-        Level::Debug => 32, // 32 Green
-        Level::Trace => 90, // 90 BrightBlack
+        Level::Info => 92,  // 34 BrightGreen
+        Level::Debug => 90, // 32 BrightBlack
+        Level::Trace => 42, // 90 White On Green
     }
 }
 
@@ -37,16 +37,31 @@ impl log::Log for SimpleLogger {
                 Level::Debug => "[D]",
                 Level::Trace => "[T]",
             };
+
+            // @Hustler
+
+            #[cfg(feature = "tinydebug")]
             println!(
                 "{}",
                 with_color!(
                     level2color(record.level()),
-                    "[H]<core {}> {} {}",
+                    "[vmm] <core {}> {} {:>30}:{:<4} {}",
                     crate::kernel::current_cpu().id,
                     level,
                     // record.target(),
-                    // record.file().unwrap_or("Unknown File"),
-                    // record.line().unwrap_or(0),
+                    record.file().unwrap_or("Unknown File"),
+                    record.line().unwrap_or(0),
+                    record.args()
+                )
+            );
+
+            println!(
+                "{}",
+                with_color!(
+                    level2color(record.level()),
+                    "[vmm] <core {}> {} {}",
+                    crate::kernel::current_cpu().id,
+                    level,
                     record.args()
                 )
             );

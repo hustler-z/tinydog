@@ -6,24 +6,25 @@ use alloc::sync::Arc;
 
 use crate::arch::{gicc_clear_current_irq, IntCtrl, InterruptController, GIC_SGIS_NUM};
 use crate::config::vm_cfg_remove_vm_entry;
-use crate::kernel::{
-    current_cpu, interrupt_vm_remove, ipi_send_msg, IpiInnerMsg, IpiType, mem_vm_region_free, remove_async_used_info,
-    remove_vm, remove_vm_async_task, vm, Vm, Scheduler, cpu_idle, IpiVmmPercoreMsg,
-};
 use crate::kernel::vm_if_reset;
+use crate::kernel::{
+    cpu_idle, current_cpu, interrupt_vm_remove, ipi_send_msg, mem_vm_region_free,
+    remove_async_used_info, remove_vm, remove_vm_async_task, vm, IpiInnerMsg, IpiType,
+    IpiVmmPercoreMsg, Scheduler, Vm,
+};
 use crate::utils::memset;
 
 use super::VmmPercoreEvent;
 
 pub fn vmm_remove_vm(vm_id: usize) {
     if vm_id == 0 {
-        warn!("Tinyvm do not support remove vm0");
+        warn!("tinyvm do not support remove vm0");
         return;
     }
 
     let vm = match vm(vm_id) {
         None => {
-            error!("vmm_remove_vm: vm[{}] not exist", vm_id);
+            error!("vm[{}] not exist", vm_id);
             return;
         }
         Some(vm) => vm,
@@ -85,8 +86,12 @@ fn vmm_remove_vcpu(vm: &Arc<Vm>) {
                 vm: vm.clone(),
                 event: VmmPercoreEvent::VmmRemoveCpu,
             };
-            if !ipi_send_msg(vcpu.phys_id(), IpiType::IpiTVMM, IpiInnerMsg::VmmPercoreMsg(m)) {
-                warn!("vmm_remove_vcpu: failed to send ipi to Core {}", vcpu.phys_id());
+            if !ipi_send_msg(
+                vcpu.phys_id(),
+                IpiType::IpiTVMM,
+                IpiInnerMsg::VmmPercoreMsg(m),
+            ) {
+                warn!("failed to send IPI to core {}", vcpu.phys_id());
             }
         }
     }

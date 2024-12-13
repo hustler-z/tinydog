@@ -7,11 +7,11 @@ use alloc::vec::Vec;
 use spin::Mutex;
 
 use crate::device::{virtio_blk_notify_handler, VIRTIO_BLK_T_IN, VIRTIO_BLK_T_OUT};
-use crate::kernel::{
-    active_vm, async_task_exe, AsyncTaskState, finish_async_task, hvc_send_msg_to_vm, HvcDefaultMsg, HvcGuestMsg,
-    IpiInnerMsg, set_front_io_task_state, vm_ipa2pa, vm_list_walker,
-};
 use crate::kernel::IpiMessage;
+use crate::kernel::{
+    active_vm, async_task_exe, finish_async_task, hvc_send_msg_to_vm, set_front_io_task_state,
+    vm_ipa2pa, vm_list_walker, AsyncTaskState, HvcDefaultMsg, HvcGuestMsg, IpiInnerMsg,
+};
 
 /// Mutex for the list of mediated block devices.
 pub static MEDIATED_BLK_LIST: Mutex<Vec<MediatedBlk>> = Mutex::new(Vec::new());
@@ -22,7 +22,7 @@ pub fn mediated_blk_list_push(mut blk: MediatedBlk) {
     vm_list_walker(|vm| {
         if let Some(id) = vm.config().mediated_block_index() {
             if id == list.len() {
-                info!("Assign blk[{}] to VM {}", list.len(), vm.id());
+                info!("assign block[{}] to vm[{}]", list.len(), vm.id());
                 blk.avail = false;
                 #[cfg(feature = "static-config")]
                 {
@@ -208,7 +208,10 @@ pub fn mediated_blk_notify_handler(dev_ipa_reg: usize) -> Result<usize, ()> {
     let mediated_blk = match mediated_blk_list_get_from_pa(dev_pa_reg) {
         Some(blk) => blk,
         None => {
-            error!("illegal mediated blk pa {:x} ipa {:x}", dev_pa_reg, dev_ipa_reg);
+            error!(
+                "illegal mediated block pa {:x} ipa {:x}",
+                dev_pa_reg, dev_ipa_reg
+            );
             return Err(());
         }
     };
@@ -216,7 +219,7 @@ pub fn mediated_blk_notify_handler(dev_ipa_reg: usize) -> Result<usize, ()> {
         // finish current IO task
         set_front_io_task_state(AsyncTaskState::Finish);
     } else {
-        warn!("Mediated blk not belong to any VM");
+        warn!("Mediated block not belong to any vm");
     }
     // invoke the excuter to handle finished IO task
     async_task_exe();
@@ -251,7 +254,7 @@ pub fn mediated_blk_read(blk_idx: usize, sector: usize, count: usize) {
     };
 
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::Default(med_msg)) {
-        error!("mediated_blk_read: failed to notify VM 0");
+        error!("failed to notify vm 0");
     }
 }
 
@@ -271,6 +274,6 @@ pub fn mediated_blk_write(blk_idx: usize, sector: usize, count: usize) {
 
     // println!("mediated_blk_write send msg to vm0");
     if !hvc_send_msg_to_vm(0, &HvcGuestMsg::Default(med_msg)) {
-        error!("mediated_blk_write: failed to notify VM 0");
+        error!("failed to notify vm 0");
     }
 }

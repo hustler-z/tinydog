@@ -67,7 +67,7 @@ pub unsafe extern "C" fn _start() -> ! {
         ic  iallu
 
         // if core_id is not zero, skip bss clearing and pt_populate
-        bl {clear_bss}
+        bl  {clear_bss}
         adrp x0, {lvl1_page_table}
         adrp x1, {lvl2_page_table}
         bl  {pt_populate}
@@ -84,7 +84,8 @@ pub unsafe extern "C" fn _start() -> ! {
         mrs x0, mpidr_el1
         bl  {cpu_map_self}
 
-        bl {init_sysregs} // here, enable cache and MMU, then switch the stack
+        // here, enable cache and MMU, then switch the stack
+        bl  {init_sysregs}
 
         // set real sp pointer
         msr spsel, #1
@@ -92,8 +93,8 @@ pub unsafe extern "C" fn _start() -> ! {
         add x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
         sub	sp, x1, #{CONTEXT_SIZE}
 
-        tlbi	alle2
-        dsb	nsh
+        tlbi  alle2
+        dsb	  nsh
         isb
 
         mov x0, x20
@@ -156,7 +157,8 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
         mrs x0, mpidr_el1
         bl  {cpu_map_self}
 
-        bl {init_sysregs} // here, enable cache and MMU, then switch the stack
+        // here, enable cache and MMU, then switch the stack
+        bl  {init_sysregs}
 
         // set real sp pointer
         msr spsel, #1
@@ -164,8 +166,8 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
         add x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
         sub	sp, x1, #{CONTEXT_SIZE}
 
-        tlbi	alle2
-        dsb	nsh
+        tlbi  alle2
+        dsb	  nsh
         isb
 
         mrs x0, mpidr_el1
@@ -186,6 +188,18 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
     );
 }
 
+/// #############################################################
+/// @Hustler
+///
+/// HCR_EL2   - Hypervisor Configuration Register
+///
+/// VBAR_EL2  - Vector Base Address Register
+///             For any exception that is taken to EL2
+///
+/// SCTLR_EL2 - System Control Register
+///             Provides top level control of the system
+///
+/// #############################################################
 fn init_sysregs() {
     use cortex_a::registers::{HCR_EL2, SCTLR_EL2, VBAR_EL2};
     HCR_EL2.write(
@@ -211,31 +225,31 @@ unsafe extern "C" fn cache_invalidate(cache_level: usize) {
     asm!(
         r#"
         msr csselr_el1, {0}
-        mrs x4, ccsidr_el1 // read cache size id.
+        mrs x4, ccsidr_el1      // read cache size id.
         and x1, x4, #0x7
-        add x1, x1, #0x4 // x1 = cache line size.
+        add x1, x1, #0x4        // x1 = cache line size.
         ldr x3, =0x7fff
         and x2, x3, x4, lsr #13 // x2 = cache set number - 1.
         ldr x3, =0x3ff
-        and x3, x3, x4, lsr #3 // x3 = cache associativity number - 1.
-        clz w4, w3 // x4 = way position in the cisw instruction.
-        mov x5, #0 // x5 = way counter way_loop.
-    // way_loop:
+        and x3, x3, x4, lsr #3  // x3 = cache associativity number - 1.
+        clz w4, w3              // x4 = way position in the cisw instruction.
+        mov x5, #0              // x5 = way counter way_loop.
+                                // way_loop:
     1:
-        mov x6, #0 // x6 = set counter set_loop.
-    // set_loop:
+        mov x6, #0              // x6 = set counter set_loop.
+                                // set_loop:
     2:
         lsl x7, x5, x4
-        orr x7, {0}, x7 // set way.
+        orr x7, {0}, x7         // set way.
         lsl x8, x6, x1
-        orr x7, x7, x8 // set set.
-        dc cisw, x7 // clean and invalidate cache line.
-        add x6, x6, #1 // increment set counter.
-        cmp x6, x2 // last set reached yet?
-        ble 2b // if not, iterate set_loop,
-        add x5, x5, #1 // else, next way.
-        cmp x5, x3 // last way reached yet?
-        ble 1b // if not, iterate way_loop
+        orr x7, x7, x8          // set set.
+        dc cisw, x7             // clean and invalidate cache line.
+        add x6, x6, #1          // increment set counter.
+        cmp x6, x2              // last set reached yet?
+        ble 2b                  // if not, iterate set_loop,
+        add x5, x5, #1          // else, next way.
+        cmp x5, x3              // last way reached yet?
+        ble 1b                  // if not, iterate way_loop
         "#,
         in(reg) cache_level,
         options(nostack)

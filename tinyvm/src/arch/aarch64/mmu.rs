@@ -2,11 +2,11 @@
 //
 // Self-Education Only
 
-use tock_registers::*;
 use tock_registers::interfaces::*;
+use tock_registers::*;
 
-use crate::utils::{memset, bit_extract};
 use crate::arch::{at, isb};
+use crate::utils::{bit_extract, memset};
 
 use super::interface::*;
 
@@ -24,6 +24,33 @@ register_bitfields! {u64,
     ]
 }
 
+/// #############################################################
+/// @Hustler
+///
+/// Page Table Entry Format:
+///
+/// +------------------+--+----------------------+--+------------------+
+/// | Upper attributes |  | Output block address |  | Lower attributes |
+/// +------------------+--+----------------------+--+------------------+
+///
+/// UXN - Unprivileged Execute Never ---+
+///                                     |--> Executable Attribute
+/// PXN - Privileged Execute Never   ---+
+///
+/// AF  - Access Flag
+///       Indicate the block entry been used or not.
+///
+/// SH  - Shareable Attribute
+///
+/// AP  - Access Permission
+///       Indicate whether the entry is readable/writable, or both
+/// AddrIndx
+///       Selector for memory type and attributes (MAIR_ELn)
+/// TYPE
+///
+/// VALID
+///
+/// #############################################################
 register_bitfields! {u64,
     pub PageDescriptorS1 [
         UXN      OFFSET(54) NUMBITS(1) [
@@ -34,7 +61,7 @@ register_bitfields! {u64,
             False = 0,
             True = 1
         ],
-        OUTPUT_PPN OFFSET(12) NUMBITS(36) [], // [47:12]
+        OUTPUT_PPN OFFSET(12) NUMBITS(36) [], // [47:12] Base Address
         AF       OFFSET(10) NUMBITS(1) [
             False = 0,
             True = 1
@@ -83,8 +110,12 @@ impl BlockDescriptor {
                 + PageDescriptorS1::TYPE::Block
                 + PageDescriptorS1::VALID::True
                 + match mem_type {
-                    MemoryType::Device => PageDescriptorS1::AttrIndx::Attr0 + PageDescriptorS1::SH::OuterShareable,
-                    MemoryType::Normal => PageDescriptorS1::AttrIndx::Attr1 + PageDescriptorS1::SH::InnerShareable,
+                    MemoryType::Device => {
+                        PageDescriptorS1::AttrIndx::Attr0 + PageDescriptorS1::SH::OuterShareable
+                    }
+                    MemoryType::Normal => {
+                        PageDescriptorS1::AttrIndx::Attr1 + PageDescriptorS1::SH::InnerShareable
+                    }
                 })
             .value,
         )
@@ -136,65 +167,6 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
         memset(lvl2_base as *mut u8, 0, PAGE_SIZE);
     }
 
-    #[cfg(feature = "tx2")]
-    {
-        use crate::arch::pt_lvl2_idx;
-        use crate::board::PLAT_DESC;
-        for i in 0..PLATFORM_PHYSICAL_LIMIT_GB {
-            use crate::arch::LVL1_SHIFT;
-            let output_addr = i << LVL1_SHIFT;
-            lvl1_pt.entry[i] = if output_addr >= PLAT_DESC.mem_desc.base {
-                BlockDescriptor::new(output_addr, MemoryType::Normal)
-            } else {
-                BlockDescriptor::invalid()
-            }
-        }
-
-        lvl1_pt.entry[0] = BlockDescriptor::table(lvl2_base);
-        // 0x200000 ~ 2MB
-        // UART0 ~ 0x3000000 - 0x3200000 (0x3100000)
-        // UART1 ~ 0xc200000 - 0xc400000 (0xc280000)
-        // EMMC ~ 0x3400000 - 0x3600000 (0x3460000)
-        // GIC  ~ 0x3800000 - 0x3a00000 (0x3881000)
-        // SMMU ~ 0x12000000 - 0x13000000
-        lvl2_pt.entry[pt_lvl2_idx(0x3000000)] = BlockDescriptor::new(0x3000000, MemoryType::Device);
-        lvl2_pt.entry[pt_lvl2_idx(0xc200000)] = BlockDescriptor::new(0xc200000, MemoryType::Device);
-        // lvl2_pt.entry[pt_lvl2_idx(0x3400000)] = BlockDescriptor::new(0x3400000, MemoryType::Device);
-        lvl2_pt.entry[pt_lvl2_idx(0x3800000)] = BlockDescriptor::new(0x3800000, MemoryType::Device);
-        for i in 0..(0x100_0000 / 0x200000) {
-            let addr = 0x12000000 + i * 0x200000;
-            lvl2_pt.entry[pt_lvl2_idx(addr)] = BlockDescriptor::new(addr, MemoryType::Device);
-        }
-    }
-    #[cfg(feature = "pi4")]
-    {
-        use crate::arch::LVL2_SHIFT;
-        // crate::driver::putc('o' as u8);
-        // crate::driver::putc('r' as u8);
-        // crate::driver::putc('e' as u8);
-        // println!("pt");
-        // 0x0_0000_0000 ~ 0x0_c000_0000 --> normal memory (3GB)
-        lvl1_pt.entry[0] = BlockDescriptor::new(0, MemoryType::Normal);
-        lvl1_pt.entry[1] = BlockDescriptor::new(0x40000000, MemoryType::Normal);
-        lvl1_pt.entry[2] = BlockDescriptor::new(0x80000000, MemoryType::Normal);
-        lvl1_pt.entry[3] = BlockDescriptor::table(lvl2_base);
-        // 0x0_c000_0000 ~ 0x0_fc00_0000 --> normal memory (960MB)
-        for i in 0..480 {
-            lvl2_pt.entry[i] = BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Normal);
-        }
-        // 0x0_fc00_0000 ~ 0x1_0000_0000 --> device memory (64MB)
-        for i in 480..512 {
-            lvl2_pt.entry[i] = BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Device);
-        }
-        // 0x1_0000_0000 ~ 0x2_0000_0000 --> normal memory (4GB)
-        lvl1_pt.entry[4] = BlockDescriptor::new(0x100000000, MemoryType::Normal);
-        lvl1_pt.entry[5] = BlockDescriptor::new(0x140000000, MemoryType::Normal);
-        lvl1_pt.entry[6] = BlockDescriptor::new(0x180000000, MemoryType::Normal);
-        lvl1_pt.entry[7] = BlockDescriptor::new(0x1c0000000, MemoryType::Normal);
-        for i in 8..512 {
-            lvl1_pt.entry[i] = BlockDescriptor::invalid();
-        }
-    }
     #[cfg(feature = "qemu")]
     {
         use crate::arch::LVL2_SHIFT;
@@ -209,13 +181,17 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
             }
         }
         lvl1_pt.entry[32] = BlockDescriptor::table(lvl2_base);
-        for (index, pa) in (0..PLAT_DESC.mem_desc.base).step_by(1 << LVL2_SHIFT).enumerate() {
+        for (index, pa) in (0..PLAT_DESC.mem_desc.base)
+            .step_by(1 << LVL2_SHIFT)
+            .enumerate()
+        {
             if index >= 512 {
                 break;
             }
             lvl2_pt.entry[index] = BlockDescriptor::new(pa, MemoryType::Device);
         }
     }
+
     #[cfg(feature = "rk3588")]
     {
         use crate::arch::LVL2_SHIFT;
@@ -227,11 +203,13 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
         // 0xc000_0000 ~ 0xf000_0000 --> normal memory (768MB)
         const DEVICE_BOUND: usize = (0xf000_0000 - 0xc000_0000) / (1 << LVL2_SHIFT);
         for i in 0..DEVICE_BOUND {
-            lvl2_pt.entry[i] = BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Normal);
+            lvl2_pt.entry[i] =
+                BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Normal);
         }
         // 0x0_f000_0000 ~ 0x1_0000_0000 --> device memory (256MB)
         for i in DEVICE_BOUND..512 {
-            lvl2_pt.entry[i] = BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Device);
+            lvl2_pt.entry[i] =
+                BlockDescriptor::new(0x0c0000000 + (i << LVL2_SHIFT), MemoryType::Device);
         }
         // 0x1_0000_0000 ~ 0x2_0000_0000 --> normal memory (4GB)
         lvl1_pt.entry[4] = BlockDescriptor::new(0x100000000, MemoryType::Normal);
@@ -250,9 +228,24 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
     }
 }
 
+/// #############################################################
+/// @Hustler
+///
+/// init mmu, set mmu-related registers
+///
+/// MAIR_EL2   - Memory Attribute Indirection Register
+///              Provides the memory attribute encodings
+///              corresponding to the possible AttrIndx values
+///              values in a Long-descriptor format translation
+///              table entry for stage 1 translations at EL2.
+///
+/// TTBR0_EL2  - Translation Table Base Register 0
+///
+/// TCR_EL2    - Translation Control Register
+///
+/// #############################################################
 #[no_mangle]
 // #[link_section = ".text.boot"]
-/// init mmu, set mmu-related registers
 pub extern "C" fn mmu_init(pt: &PageTables) {
     use cortex_a::registers::*;
     MAIR_EL2.write(
@@ -270,7 +263,8 @@ pub extern "C" fn mmu_init(pt: &PageTables) {
             + TCR_EL2::TG0::KiB_4
             + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
             + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL2::T0SZ.val(64 - 39),
+            + TCR_EL2::T0SZ.val(64 - 39), // The size offset of the memory region addressed by
+                                          // TTBR0_EL2, The region size is 2^(64-T0SZ)
     );
 }
 

@@ -120,10 +120,6 @@ pub const HVC_CONFIG_UPLOAD_KERNEL_IMAGE: usize = 9;
 pub const HVC_CONFIG_MEMORY_COLOR_BUDGET: usize = 10;
 pub const HVC_CONFIG_UPLOAD_DEVICE_TREE: usize = 11;
 
-#[cfg(feature = "tx2")]
-pub const HVC_IRQ: usize = 32 + 0x20;
-#[cfg(feature = "pi4")]
-pub const HVC_IRQ: usize = 32 + 0x10;
 #[cfg(all(feature = "qemu", target_arch = "aarch64"))]
 pub const HVC_IRQ: usize = 32 + 0x20;
 // The reason for modifying the IRQs of virtio_net and virtio_console devices:
@@ -191,7 +187,7 @@ pub fn get_share_mem(mem_type: usize) -> usize {
     let list = SHARE_MEM_LIST.lock();
     match list.get(&mem_type) {
         None => {
-            panic!("There Is Not {} Type Share Memory", mem_type);
+            panic!("there is not {} type share memory", mem_type);
         }
         Some(tup) => *tup,
     }
@@ -223,7 +219,7 @@ pub fn hvc_guest_handler(
         #[cfg(feature = "unilib")]
         HVC_UNILIB => hvc_unilib_handler(event, x0, x1, x2),
         _ => {
-            error!("Unknown HVC Type {} Event {}", hvc_type, event);
+            error!("unknown hvc type {} event {}", hvc_type, event);
             Err(())
         }
     }
@@ -257,7 +253,7 @@ fn hvc_config_handler(
         HVC_CONFIG_UPLOAD_KERNEL_IMAGE => vm_cfg_upload_kernel_image(x0, x1, x2, x3, x4),
         HVC_CONFIG_UPLOAD_DEVICE_TREE => vm_cfg_upload_device_tree(x0, x1, x2, x3, x4),
         _ => {
-            error!("HVC Config Handle Unknown Event {}", event);
+            error!("hvc config handle unknown event {}", event);
             Err(())
         }
     }
@@ -269,7 +265,7 @@ fn hvc_sys_handler(event: usize, _x0: usize) -> Result<usize, ()> {
             todo!()
         }
         HVC_SYS_TEST => {
-            println!("HVC SYS TEST");
+            println!("hvc sys test");
             Ok(0)
         }
         _ => Err(()),
@@ -303,7 +299,7 @@ fn hvc_vmm_handler(event: usize, x0: usize, _x1: usize) -> Result<usize, ()> {
         | HVC_VMM_MIGRATE_INIT_VM
         | HVC_VMM_MIGRATE_VM_BOOT
         | HVC_VMM_MIGRATE_FINISH => {
-            error!("Unimplemented");
+            error!("unimplemented");
             Err(())
         }
         HVC_VMM_VM_REMOVE => {
@@ -312,7 +308,7 @@ fn hvc_vmm_handler(event: usize, x0: usize, _x1: usize) -> Result<usize, ()> {
             Ok(HVC_FINISH)
         }
         _ => {
-            error!("HVC VMM Unknown Event {}", event);
+            error!("hvc vmm unknown event {}", event);
             Err(())
         }
     }
@@ -328,11 +324,11 @@ fn hvc_ivc_handler(event: usize, x0: usize, x1: usize) -> Result<usize, ()> {
             }
         }
         HVC_IVC_SHARE_MEM => {
-            error!("Not Support Vm Migration And Live Update");
+            error!("not support vm migration and live update");
             Ok(HVC_FINISH)
         }
         _ => {
-            error!("HVC IVC Handle: Unknown Event {}", event);
+            error!("hvc ivc handle: unknown event {}", event);
             Err(())
         }
     }
@@ -343,7 +339,7 @@ fn hvc_mediated_handler(event: usize, x0: usize, x1: usize) -> Result<usize, ()>
         HVC_MEDIATED_DEV_APPEND => mediated_dev_append(x0, x1),
         HVC_MEDIATED_DEV_NOTIFY => mediated_blk_notify_handler(x0),
         _ => {
-            error!("Unknown Mediated Event {}", event);
+            error!("unknown mediated event {}", event);
             Err(())
         }
     }
@@ -386,13 +382,13 @@ pub fn hvc_send_msg_to_vm(vm_id: usize, guest_msg: &HvcGuestMsg) -> bool {
     }
 
     if target_addr == 0 {
-        warn!("Target Vm[{}] Interface Is Not Prepared", vm_id);
+        warn!("target vm[{}] interface is not prepared", vm_id);
         return false;
     }
 
     if trace() && (target_addr < 0x1000 || (guest_msg as *const _ as usize) < 0x1000) {
         panic!(
-            "Illegal Des Addr {:x}, Src Addr {:x}",
+            "illegal dst addr {:08x}, src addr {:08x}",
             target_addr, guest_msg as *const _ as usize
         );
     }
@@ -452,7 +448,7 @@ pub fn hvc_send_msg_to_vm(vm_id: usize, guest_msg: &HvcGuestMsg) -> bool {
             };
             if !ipi_send_msg(cpu_trgt, IpiType::IpiTHvc, IpiInnerMsg::HvcMsg(ipi_msg)) {
                 error!(
-                    "Failed To Send IPI Message, Target {} Type {:#?}",
+                    "failed to send IPI message, target {} type {:#?}",
                     cpu_trgt,
                     IpiType::IpiTHvc
                 );
@@ -461,7 +457,7 @@ pub fn hvc_send_msg_to_vm(vm_id: usize, guest_msg: &HvcGuestMsg) -> bool {
             hvc_guest_notify(vm_id);
         }
     } else {
-        error!("Failed To Get Cpu ID Of Vm[{}]", vm_id);
+        error!("failed to get cpu id of vm[{}]", vm_id);
         return false;
     }
 
@@ -474,13 +470,12 @@ pub fn hvc_guest_notify(vm_id: usize) {
     match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
         None => {
             error!(
-                "Core {} Failed To Find vCpu Of Vm[{}]",
+                "hcpu[{}] failed to find vcpu of vm[{}]",
                 current_cpu().id,
                 vm_id
             );
         }
         Some(vcpu) => {
-            // println!("hvc_guest_notify here");
             interrupt_vm_inject(&vm, vcpu, HVC_IRQ);
         }
     };
@@ -495,7 +490,7 @@ pub fn hvc_ipi_handler(msg: IpiMessage) {
                 .is_none()
             {
                 error!(
-                    "Core {} Failed To Find vCpu Of Vm[{}]",
+                    "hcpu[{}] failed to find vcpu of vm[{}]",
                     current_cpu().id,
                     msg.trgt_vmid
                 );
@@ -512,10 +507,10 @@ pub fn hvc_ipi_handler(msg: IpiMessage) {
                         hvc_guest_notify(msg.trgt_vmid);
                     }
                     HVC_VMM_MIGRATE_FINISH => {
-                        error!("Unimplemented");
+                        error!("unimplemented");
                     }
                     HVC_VMM_MIGRATE_VM_BOOT => {
-                        error!("Unimplemented");
+                        error!("unimplemented");
                     }
                     _ => {}
                 },
@@ -537,7 +532,7 @@ pub fn hvc_ipi_handler(msg: IpiMessage) {
             }
         }
         _ => {
-            error!("Illegal IPI");
+            error!("illegal IPI");
         }
     }
 }

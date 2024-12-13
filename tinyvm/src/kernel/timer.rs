@@ -33,10 +33,9 @@ pub fn timer_init() {
     if is_boot_core(current_cpu().id) {
         crate::kernel::interrupt_reserve_int(IntCtrl::IRQ_HYPERVISOR_TIMER, timer_irq_handler);
         info!(
-            "Timer Frequency: {}Hz",
+            "timer frequency: {}Hz",
             crate::arch::timer_arch_get_frequency()
         );
-        info!("Timer Init Ok");
     }
 }
 

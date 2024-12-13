@@ -173,11 +173,11 @@ pub fn add_en_interrupt(id: usize) {
 
 pub fn show_en_interrupt() {
     let set = INTERRUPT_EN_SET.lock();
-    print!("en irq set: ");
+    debug!("en interrupt set: ");
     for irq in set.iter() {
         print!("{} ", irq);
     }
-    print!("\n");
+    debug!("\n");
 }
 
 pub fn gic_prio_reg(int_id: usize) -> usize {
@@ -203,7 +203,7 @@ impl IrqState {
             1 => IrqState::IrqSPend,
             2 => IrqState::IrqSActive,
             3 => IrqState::IrqSPendActive,
-            _ => panic!("num_to_state: illegal irq state"),
+            _ => panic!("illegal irq state"),
         }
     }
 
@@ -834,7 +834,8 @@ impl GicCpuInterface {
             ICC_IGRPEN1_EL1::write(GICC_IGRPEN_EL1_ENB_BIT);
         }
 
-        //Set ICH_VMCR_EL2:Interrupt Controller Virtual Machine Control Register Enables the hypervisor to save and restore the virtual machine view of the GIC state.
+        // Set ICH_VMCR_EL2:Interrupt Controller Virtual Machine Control Register Enables the
+        // hypervisor to save and restore the virtual machine view of the GIC state.
         let mut ich_vmcr = (pmr & GICH_PMR_MASK) << GICH_VMCR_VPMR_SHIFT;
         ich_vmcr |= GICH_VMCR_VENG1 | GICH_VMCR_VEOIM;
         // SAFETY:
@@ -879,7 +880,8 @@ impl GicHypervisorInterface {
         }
     }
 
-    // These registers can be used to locate a usable List register when the hypervisor is delivering an interrupt to a Guest OS.
+    // These registers can be used to locate a usable List register when the
+    // hypervisor is delivering an interrupt to a Guest OS.
     pub fn elrsr(&self) -> usize {
         ICH_ELRSR_EL2::read()
     }
@@ -906,7 +908,7 @@ impl GicHypervisorInterface {
             13 => ICH_LR13_EL2::read(),
             14 => ICH_LR14_EL2::read(),
             15 => ICH_LR15_EL2::read(),
-            _ => panic!("GIC: Trying To Read Inexistent List Register"),
+            _ => panic!("GIC: trying to read inexistent list register"),
         }
     }
 
@@ -935,7 +937,7 @@ impl GicHypervisorInterface {
                 13 => ICH_LR13_EL2::write(val),
                 14 => ICH_LR14_EL2::write(val),
                 15 => ICH_LR15_EL2::write(val),
-                _ => panic!("GIC: Trying To Write Inexistent List Register"),
+                _ => panic!("GIC: trying to write inexistent list register"),
             }
         }
     }
@@ -995,8 +997,10 @@ impl crate::arch::InterruptContextTrait for GicState {
         self.hcr = ICH_HCR_EL2::read();
         // save VMCR_EL2: save and restore the virtual machine view of the GIC state.
         self.vmcr = ICH_VMCR_EL2::read() as u32;
-        // save ICH_AP1Rn_EL2: Provides information about Group 1 virtual active priorities for EL2.
-        // if some bit set 1:There is a Group 1 interrupt active with this priority level which has not undergone priority drop.
+        // save ICH_AP1Rn_EL2: Provides information about Group 1 virtual active
+        // priorities for EL2.
+        // if some bit set 1:There is a Group 1 interrupt active with this
+        // priority level which has not undergone priority drop.
         self.save_aprn_regs();
         // save lr
         for i in 0..gich_lrs_num() {
@@ -1070,7 +1074,7 @@ impl GicState {
             5 => {
                 self.save_apr0();
             }
-            _ => panic!("Priority Not Surpport"),
+            _ => panic!("priority not surpport"),
         }
     }
 
@@ -1101,7 +1105,7 @@ impl GicState {
             5 => {
                 restore_apr0();
             }
-            _ => panic!("Priority Not Surpport"),
+            _ => panic!("priority not surpport"),
         }
     }
 }
