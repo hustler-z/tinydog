@@ -35,6 +35,14 @@ extern "C" {
 ///                    expression.
 ///
 /// #############################################################
+/// @Hustler
+///
+/// The booting process
+///
+///
+///
+///
+/// #############################################################
 ///
 /// The entry point of the kernel.
 #[naked]
@@ -44,61 +52,65 @@ pub unsafe extern "C" fn _start() -> ! {
     asm!(
         r#"
         // save fdt pointer to x20
-        mov x20, x0
+        mov  x20, x0
 
         // set stack per core
-        ldr x0, ={boot_stack}
-        add sp, x0, #{CORE_BOOT_STACK_SIZE}
+        ldr  x0, ={boot_stack}
+        add  sp, x0, #{CORE_BOOT_STACK_SIZE}
 
         // disable cache and MMU
-        mrs x1, sctlr_el2
-        bic x1, x1, #0xf
-        msr sctlr_el2, x1
+        mrs  x1, sctlr_el2
+        bic  x1, x1, #0xf
+        msr  sctlr_el2, x1
 
         // cache_invalidate(0): clear dl1$
-        mov x0, #0
-        bl  {cache_invalidate}
+        mov  x0, #0
+        bl   {cache_invalidate}
 
         // if (cpu_id == 0) cache_invalidate(2): clear l2$
-        mov x0, #2
-        bl  {cache_invalidate}
+        mov  x0, #2
+        bl   {cache_invalidate}
 
         // clear icache
-        ic  iallu
+        ic   iallu
 
         // if core_id is not zero, skip bss clearing and pt_populate
-        bl  {clear_bss}
+        bl   {clear_bss}
         adrp x0, {lvl1_page_table}
         adrp x1, {lvl2_page_table}
-        bl  {pt_populate}
+        bl   {pt_populate}
 
         // Trap nothing from EL1 to El2
-        mov x3, xzr
-        msr cptr_el2, x3
+        // @Hustler
+        //
+        // cptr_el2 - Architectual Feature Trap Register
+        //            Access to certain functionalities will trap to EL2
+        mov  x3, xzr
+        msr  cptr_el2, x3
 
         // init mmu
         adrp x0, {lvl1_page_table}
-        bl  {mmu_init}
+        bl   {mmu_init}
 
         // map cpu page table
-        mrs x0, mpidr_el1
-        bl  {cpu_map_self}
+        mrs  x0, mpidr_el1
+        bl   {cpu_map_self}
 
         // here, enable cache and MMU, then switch the stack
-        bl  {init_sysregs}
+        bl   {init_sysregs}
 
         // set real sp pointer
-        msr spsel, #1
-        mrs x1, tpidr_el2
-        add x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
-        sub	sp, x1, #{CONTEXT_SIZE}
+        msr  spsel, #1
+        mrs  x1, tpidr_el2
+        add  x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
+        sub  sp, x1, #{CONTEXT_SIZE}
 
-        tlbi  alle2
-        dsb	  nsh
+        tlbi alle2
+        dsb  nsh
         isb
 
-        mov x0, x20
-        bl  {init}
+        mov  x0, x20
+        bl   {init}
         "#,
         cache_invalidate = sym cache_invalidate,
         boot_stack = sym BOOT_STACK,
@@ -124,54 +136,54 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
     asm!(
         r#"
         // save core id to x20
-        mov x20, x0
+        mov  x20, x0
 
         // set stack per core by core id
-        ldr x0, ={boot_stack}
-        mov x1, #{CORE_BOOT_STACK_SIZE}
-        mul x2, x20, x1
-        add x0, x0, x1
-        add sp, x0, x2
+        ldr  x0, ={boot_stack}
+        mov  x1, #{CORE_BOOT_STACK_SIZE}
+        mul  x2, x20, x1
+        add  x0, x0, x1
+        add  sp, x0, x2
 
         // disable cache and MMU
-        mrs x1, sctlr_el2
-        bic x1, x1, #0xf
-        msr sctlr_el2, x1
+        mrs  x1, sctlr_el2
+        bic  x1, x1, #0xf
+        msr  sctlr_el2, x1
 
         // cache_invalidate(0): clear dl1$
-        mov x0, #0
-        bl  {cache_invalidate}
+        mov  x0, #0
+        bl   {cache_invalidate}
 
-        mrs x0, mpidr_el1
-        ic  iallu
+        mrs  x0, mpidr_el1
+        ic   iallu
 
         // Trap nothing from EL1 to El2
-        mov x3, xzr
-        msr cptr_el2, x3
+        mov  x3, xzr
+        msr  cptr_el2, x3
 
         // init mmu
         adrp x0, {lvl1_page_table}
-        bl  {mmu_init}
+        bl   {mmu_init}
 
         // map cpu page table
-        mrs x0, mpidr_el1
-        bl  {cpu_map_self}
+        mrs  x0, mpidr_el1
+        bl   {cpu_map_self}
 
         // here, enable cache and MMU, then switch the stack
-        bl  {init_sysregs}
+        bl   {init_sysregs}
 
         // set real sp pointer
-        msr spsel, #1
-        mrs x1, tpidr_el2
-        add x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
-        sub	sp, x1, #{CONTEXT_SIZE}
+        msr  spsel, #1
+        mrs  x1, tpidr_el2
+        add  x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
+        sub  sp, x1, #{CONTEXT_SIZE}
 
-        tlbi  alle2
-        dsb	  nsh
+        tlbi alle2
+        dsb  nsh
         isb
 
-        mrs x0, mpidr_el1
-        bl  {secondary_init}
+        mrs  x0, mpidr_el1
+        bl   {secondary_init}
         "#,
         cache_invalidate = sym cache_invalidate,
         lvl1_page_table = sym super::mmu::LVL1_PAGE_TABLE,
@@ -192,12 +204,30 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
 /// @Hustler
 ///
 /// HCR_EL2   - Hypervisor Configuration Register
+///             provides configuration controls for virtualization
+///             including define whether various operations are
+///             trapped to EL2.
+///
+/// --------------------> EL1
+///           |
+///           |
+///           V
+/// --------------------> EL2
 ///
 /// VBAR_EL2  - Vector Base Address Register
 ///             For any exception that is taken to EL2
 ///
 /// SCTLR_EL2 - System Control Register
 ///             Provides top level control of the system
+///
+/// #############################################################
+/// @Hustler
+///
+/// [1] Enable virtualization, physical FIQ routing, physical
+///     IRQ routing, trap SMC instructions, set the execution
+///     state to AArch64 for EL1.
+/// [2] Set up exception table taken to EL2.
+/// [3] Enable MMU, data cache, instruction cache.
 ///
 /// #############################################################
 fn init_sysregs() {
@@ -243,7 +273,7 @@ unsafe extern "C" fn cache_invalidate(cache_level: usize) {
         orr x7, {0}, x7         // set way.
         lsl x8, x6, x1
         orr x7, x7, x8          // set set.
-        dc cisw, x7             // clean and invalidate cache line.
+        dc  cisw, x7            // clean and invalidate cache line.
         add x6, x6, #1          // increment set counter.
         cmp x6, x2              // last set reached yet?
         ble 2b                  // if not, iterate set_loop,

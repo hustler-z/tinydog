@@ -153,9 +153,13 @@ pub static LVL2_PAGE_TABLE: PageTables = PageTables {
 
 const PLATFORM_PHYSICAL_LIMIT_GB: usize = 16;
 
+/// #############################################################
+/// @Hustler
+///
+/// populate page table
+/// #############################################################
 #[no_mangle]
 // #[link_section = ".text.boot"]
-/// populate page table
 pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables) {
     let lvl1_base: usize = lvl1_pt as *const _ as usize;
     let lvl2_base = lvl2_pt as *const _ as usize;
@@ -219,11 +223,14 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
         for i in 8..512 {
             lvl1_pt.entry[i] = BlockDescriptor::invalid();
         }
+
+        // @Hustler
+        //
         // 0x200000 ~ 2MB
         // UART0 ~ 0xfea00000 - 0xfec00000 (0xfeb50000)
         // UART1 ~ 0xfea00000 - 0xfec00000 (0xfebc0000)
-        // EMMC ~ 0xfe200000 - 0xfe400000 (0xfe2e0000)
-        // GIC  ~ 0xfe600000 - 0xfe800000 (0xfe600000)
+        // EMMC  ~ 0xfe200000 - 0xfe400000 (0xfe2e0000)
+        // GIC   ~ 0xfe600000 - 0xfe800000 (0xfe600000)
         // SMMU1 ~ 0xfc800000 - 0xfce00000 (0xfc900000  size:0x200000;0xfcb00000  size:0x200000)
     }
 }
