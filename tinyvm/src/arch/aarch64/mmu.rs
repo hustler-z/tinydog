@@ -129,6 +129,7 @@ impl BlockDescriptor {
                 .value,
         )
     }
+
     const fn invalid() -> BlockDescriptor {
         BlockDescriptor(0)
     }
@@ -157,6 +158,9 @@ const PLATFORM_PHYSICAL_LIMIT_GB: usize = 16;
 /// @Hustler
 ///
 /// populate page table
+///
+///
+///
 /// #############################################################
 #[no_mangle]
 // #[link_section = ".text.boot"]
@@ -184,7 +188,9 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
                 lvl1_pt.entry[index] = BlockDescriptor::new(pa, MemoryType::Normal);
             }
         }
+
         lvl1_pt.entry[32] = BlockDescriptor::table(lvl2_base);
+
         for (index, pa) in (0..PLAT_DESC.mem_desc.base)
             .step_by(1 << LVL2_SHIFT)
             .enumerate()
@@ -249,6 +255,15 @@ pub extern "C" fn pt_populate(lvl1_pt: &mut PageTables, lvl2_pt: &mut PageTables
 /// TTBR0_EL2  - Translation Table Base Register 0
 ///
 /// TCR_EL2    - Translation Control Register
+///
+/// #############################################################
+/// @Hustler
+///
+/// To initialize MMU:
+///
+/// [1] set memory attribute encodings
+/// [2] set the base address of page table
+/// [3] set page table attributes
 ///
 /// #############################################################
 #[no_mangle]

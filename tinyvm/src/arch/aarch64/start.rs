@@ -37,10 +37,10 @@ extern "C" {
 /// #############################################################
 /// @Hustler
 ///
-/// The booting process
-///
-///
-///
+/// The booting process:
+/// [1]
+/// [2]
+/// [3]
 ///
 /// #############################################################
 ///
@@ -100,6 +100,13 @@ pub unsafe extern "C" fn _start() -> ! {
         bl   {init_sysregs}
 
         // set real sp pointer
+        // tpidr_el2 - EL2 Software Thread ID Register
+        //             Provides a location where software executing
+        //             at EL2 can store thread identifying information,
+        //             for OS management purposes.
+        // spsel     - Stack Pointer Select
+        //             Allows the stack pointer to be selected between
+        //             SP_EL0 and SP_ELx.
         msr  spsel, #1
         mrs  x1, tpidr_el2
         add  x1, x1, #({CPU_STACK_OFFSET} + {CPU_STACK_SIZE})
@@ -223,10 +230,10 @@ pub unsafe extern "C" fn _secondary_start() -> ! {
 /// #############################################################
 /// @Hustler
 ///
-/// [1] Enable virtualization, physical FIQ routing, physical
+/// [1] Enable virtualization, virtual FIQ routing, virtual
 ///     IRQ routing, trap SMC instructions, set the execution
 ///     state to AArch64 for EL1.
-/// [2] Set up exception table taken to EL2.
+/// [2] Set up exception table that taken to EL2.
 /// [3] Enable MMU, data cache, instruction cache.
 ///
 /// #############################################################

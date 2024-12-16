@@ -191,6 +191,7 @@ pub fn init(dtb: &mut fdt::myctypes::c_void) {
     unsafe {
         init_vm0_dtb(dtb).unwrap();
     }
+
     iommu_init();
 
     cpu_init();

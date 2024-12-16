@@ -153,16 +153,19 @@ fn exception_sysreg_gpr(iss: u32) -> u32 {
     (iss >> ESR_ISS_SYSREG_REG_OFF) & ESR_ISS_SYSREG_REG_MASK
 }
 
-/*ESR EC:011000 IL, bit [25]：Instruction Length for synchronous exceptions. Possible values of this bit are: 0：16b 1：32b
-Op0, bits [21:20]
-Op2, bits [19:17]
-Op1, bits [16:14]
-CRn, bits [13:10]
-CRm, bits [4:1]   This five parameters are for SYSREG
+// @Hustler
+//
+// ESR EC:011000 IL, bit [25]：Instruction Length for synchronous exceptions. Possible
+//                             values of this bit are: 0：16b 1：32b
+// Op0, bits [21:20]
+// Op2, bits [19:17]
+// Op1, bits [16:14]
+// CRn, bits [13:10]
+// CRm, bits [4:1]        This five parameters are for SYSREG
+// Rt,  bits [9:5]        general-purpose register used for the transfer.
+// Direction, bit [0]  0：Write access, including MSR instructions.  1：Read access,
+//                        including MRS instructions.
 
-Rt, bits [9:5]  general-purpose register used for the transfer.
-Direction, bit [0]  0：Write access, including MSR instructions.  1：Read access, including MRS instructions.
-*/
 pub fn sysreg_handler(iss: u32) {
     let reg_addr = exception_sysreg_addr(iss);
 
