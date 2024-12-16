@@ -84,9 +84,9 @@
 use core::future::Future;
 use core::ops::{Add, AddAssign};
 use core::pin::Pin;
-use portable_atomic::{AtomicU32, Ordering};
 use core::task::{Context, Poll};
 use core::time::Duration;
+use portable_atomic::{AtomicU32, Ordering};
 
 use cortex_m::peripheral::{syst::SystClkSource, SYST};
 use cortex_m_rt::exception;
@@ -104,12 +104,12 @@ static EPOCH: AtomicU32 = AtomicU32::new(0);
 /// [`run_tasks`][crate::exec::run_tasks] (or a fancier version of `run_tasks`)
 /// to set up the timer for monotonic operation.
 pub fn initialize_sys_tick(syst: &mut SYST, clock_hz: u32) {
-    let cycles_per_millisecond = clock_hz / 1000;
-    syst.set_reload(cycles_per_millisecond - 1);
-    syst.clear_current();
-    syst.set_clock_source(SystClkSource::Core);
-    syst.enable_interrupt();
-    syst.enable_counter();
+	let cycles_per_millisecond = clock_hz / 1000;
+	syst.set_reload(cycles_per_millisecond - 1);
+	syst.clear_current();
+	syst.set_clock_source(SystClkSource::Core);
+	syst.enable_interrupt();
+	syst.enable_counter();
 }
 
 /// Represents a moment in time by the value of the system tick counter.
@@ -118,92 +118,92 @@ pub fn initialize_sys_tick(syst: &mut SYST, clock_hz: u32) {
 pub struct TickTime(u64);
 
 impl TickTime {
-    /// Retrieves the current value of the tick counter.
-    pub fn now() -> Self {
-        // This loop will only repeat if e != e2, which means we raced the
-        // systick ISR. Since that ISR only occurs once per millisecond, this
-        // loop should repeat at most twice.
-        loop {
-            let e = EPOCH.load(Ordering::SeqCst);
-            let t = TICK.load(Ordering::SeqCst);
-            let e2 = EPOCH.load(Ordering::SeqCst);
-            if e == e2 {
-                break TickTime(((e as u64) << 32) | (t as u64));
-            }
-        }
-    }
+	/// Retrieves the current value of the tick counter.
+	pub fn now() -> Self {
+		// This loop will only repeat if e != e2, which means we raced the
+		// systick ISR. Since that ISR only occurs once per millisecond, this
+		// loop should repeat at most twice.
+		loop {
+			let e = EPOCH.load(Ordering::SeqCst);
+			let t = TICK.load(Ordering::SeqCst);
+			let e2 = EPOCH.load(Ordering::SeqCst);
+			if e == e2 {
+				break TickTime(((e as u64) << 32) | (t as u64));
+			}
+		}
+	}
 
-    /// Constructs a `TickTime` value describing a certain number of
-    /// milliseconds since the executor booted.
-    pub fn from_millis_since_boot(m: u64) -> Self {
-        Self(m)
-    }
+	/// Constructs a `TickTime` value describing a certain number of
+	/// milliseconds since the executor booted.
+	pub fn from_millis_since_boot(m: u64) -> Self {
+		Self(m)
+	}
 
-    /// Subtracts this time from an earlier time, giving the `Duration` between
-    /// them.
-    ///
-    /// # Panics
-    ///
-    /// If this time is not actually `>= earlier`.
-    pub fn duration_since(self, earlier: TickTime) -> Duration {
-        Duration::from_millis(self.millis_since(earlier).0)
-    }
+	/// Subtracts this time from an earlier time, giving the `Duration` between
+	/// them.
+	///
+	/// # Panics
+	///
+	/// If this time is not actually `>= earlier`.
+	pub fn duration_since(self, earlier: TickTime) -> Duration {
+		Duration::from_millis(self.millis_since(earlier).0)
+	}
 
-    /// Subtracts this time from an earlier time, giving the amount of time
-    /// between them measured in `Millis`.
-    ///
-    /// # Panics
-    ///
-    /// If this time is not actually `>= earlier`.
-    pub fn millis_since(self, earlier: TickTime) -> Millis {
-        Millis(self.0.checked_sub(earlier.0).unwrap())
-    }
+	/// Subtracts this time from an earlier time, giving the amount of time
+	/// between them measured in `Millis`.
+	///
+	/// # Panics
+	///
+	/// If this time is not actually `>= earlier`.
+	pub fn millis_since(self, earlier: TickTime) -> Millis {
+		Millis(self.0.checked_sub(earlier.0).unwrap())
+	}
 
-    /// Checks the clock to determine how much time has elapsed since the
-    /// instant recorded by `self`.
-    pub fn elapsed(self) -> Millis {
-        Self::now().millis_since(self)
-    }
+	/// Checks the clock to determine how much time has elapsed since the
+	/// instant recorded by `self`.
+	pub fn elapsed(self) -> Millis {
+		Self::now().millis_since(self)
+	}
 
-    /// Checks the clock to determine how much time has elapsed since the
-    /// instant recorded by `self`. Convenience version that returns the result
-    /// as a `Duration`.
-    pub fn elapsed_duration(self) -> Duration {
-        Duration::from_millis(self.elapsed().0)
-    }
+	/// Checks the clock to determine how much time has elapsed since the
+	/// instant recorded by `self`. Convenience version that returns the result
+	/// as a `Duration`.
+	pub fn elapsed_duration(self) -> Duration {
+		Duration::from_millis(self.elapsed().0)
+	}
 
-    /// Adds some milliseconds to `self`, checking for overflow. Note that since
-    /// we use 64 bit ticks, overflow is unlikely in practice.
-    pub fn checked_add(self, millis: Millis) -> Option<Self> {
-        self.0.checked_add(millis.0).map(TickTime)
-    }
+	/// Adds some milliseconds to `self`, checking for overflow. Note that since
+	/// we use 64 bit ticks, overflow is unlikely in practice.
+	pub fn checked_add(self, millis: Millis) -> Option<Self> {
+		self.0.checked_add(millis.0).map(TickTime)
+	}
 
-    /// Subtracts some milliseconds from `self`, checking for overflow. Overflow
-    /// can occur if `millis` is longer than the time from boot to `self`.
-    pub fn checked_sub(self, millis: Millis) -> Option<Self> {
-        self.0.checked_sub(millis.0).map(TickTime)
-    }
+	/// Subtracts some milliseconds from `self`, checking for overflow. Overflow
+	/// can occur if `millis` is longer than the time from boot to `self`.
+	pub fn checked_sub(self, millis: Millis) -> Option<Self> {
+		self.0.checked_sub(millis.0).map(TickTime)
+	}
 }
 
 /// Add a `Duration` to a `Ticks` with normal `+` overflow behavior (i.e.
 /// checked in debug builds, optionally not checked in release builds).
 impl Add<Duration> for TickTime {
-    type Output = Self;
-    fn add(self, other: Duration) -> Self::Output {
-        TickTime(self.0 + other.as_millis() as u64)
-    }
+	type Output = Self;
+	fn add(self, other: Duration) -> Self::Output {
+		TickTime(self.0 + other.as_millis() as u64)
+	}
 }
 
 impl AddAssign<Duration> for TickTime {
-    fn add_assign(&mut self, other: Duration) {
-        self.0 += other.as_millis() as u64
-    }
+	fn add_assign(&mut self, other: Duration) {
+		self.0 += other.as_millis() as u64
+	}
 }
 
 impl From<TickTime> for u64 {
-    fn from(t: TickTime) -> Self {
-        t.0
-    }
+	fn from(t: TickTime) -> Self {
+		t.0
+	}
 }
 
 /// A period of time measured in milliseconds.
@@ -227,31 +227,31 @@ pub struct Millis(pub u64);
 /// behavior (i.e. checked in debug builds, optionally not checked in release
 /// builds).
 impl Add<Millis> for TickTime {
-    type Output = Self;
-    fn add(self, other: Millis) -> Self::Output {
-        TickTime(self.0 + other.0)
-    }
+	type Output = Self;
+	fn add(self, other: Millis) -> Self::Output {
+		TickTime(self.0 + other.0)
+	}
 }
 
 /// Adds a number of milliseconds to a `TickTime` with normal `+=` overflow
 /// behavior (i.e. checked in debug builds, optionally not checked in release
 /// builds).
 impl AddAssign<Millis> for TickTime {
-    fn add_assign(&mut self, other: Millis) {
-        self.0 += other.0;
-    }
+	fn add_assign(&mut self, other: Millis) {
+		self.0 += other.0;
+	}
 }
 
 impl From<Millis> for u64 {
-    fn from(x: Millis) -> Self {
-        x.0
-    }
+	fn from(x: Millis) -> Self {
+		x.0
+	}
 }
 
 impl From<u64> for Millis {
-    fn from(x: u64) -> Self {
-        Self(x)
-    }
+	fn from(x: u64) -> Self {
+		Self(x)
+	}
 }
 
 /// Sleeps until the system time is equal to or greater than `deadline`.
@@ -280,13 +280,13 @@ impl From<u64> for Millis {
 ///
 /// Dropping this future does nothing in particular.
 pub async fn sleep_until(deadline: TickTime) {
-    if TickTime::now() >= deadline {
-        return;
-    }
+	if TickTime::now() >= deadline {
+		return;
+	}
 
-    // Insert our node into the pending timer list. If we get cancelled, the
-    // node will detach itself as it's being dropped.
-    crate::exec::get_timer_list().join(deadline).await
+	// Insert our node into the pending timer list. If we get cancelled, the
+	// node will detach itself as it's being dropped.
+	crate::exec::get_timer_list().join(deadline).await
 }
 
 /// Sleeps until the system time has increased by `d`.
@@ -309,9 +309,10 @@ pub async fn sleep_until(deadline: TickTime) {
 ///
 /// Dropping this future does nothing in particular.
 pub fn sleep_for<D>(d: D) -> impl Future<Output = ()>
-    where TickTime: Add<D, Output = TickTime>,
+where
+	TickTime: Add<D, Output = TickTime>,
 {
-    sleep_until(TickTime::now() + d)
+	sleep_until(TickTime::now() + d)
 }
 
 /// Alters a future to impose a deadline on its completion.
@@ -333,13 +334,17 @@ pub fn sleep_for<D>(d: D) -> impl Future<Output = ()>
 /// In this case, `await` drops the future as soon as it resolves (as always),
 /// which means the nested `some_operation()` future will be promptly dropped
 /// when we notice that the deadline has been met or exceeded.
-pub fn with_deadline<F>(deadline: TickTime, code: F) -> impl Future<Output = Option<F::Output>>
-    where F: Future,
+pub fn with_deadline<F>(
+	deadline: TickTime,
+	code: F,
+) -> impl Future<Output = Option<F::Output>>
+where
+	F: Future,
 {
-    TimeLimited {
-        limiter: sleep_until(deadline),
-        process: code,
-    }
+	TimeLimited {
+		limiter: sleep_until(deadline),
+		process: code,
+	}
 }
 
 /// Alters a future to impose a timeout on its completion.
@@ -350,11 +355,15 @@ pub fn with_deadline<F>(deadline: TickTime, code: F) -> impl Future<Output = Opt
 /// as the deadline for the returned future.
 ///
 /// See [`with_deadline`] for more details.
-pub fn with_timeout<D, F>(timeout: D, code: F) -> impl Future<Output = Option<F::Output>>
-    where F: Future,
-          TickTime: Add<D, Output = TickTime>,
+pub fn with_timeout<D, F>(
+	timeout: D,
+	code: F,
+) -> impl Future<Output = Option<F::Output>>
+where
+	F: Future,
+	TickTime: Add<D, Output = TickTime>,
 {
-    with_deadline(TickTime::now() + timeout, code)
+	with_deadline(TickTime::now() + timeout, code)
 }
 
 /// A future-wrapper that gates polling a future `B` on whether another
@@ -366,27 +375,28 @@ pub fn with_timeout<D, F>(timeout: D, code: F) -> impl Future<Output = Option<F:
 #[derive(Debug)]
 #[pin_project]
 struct TimeLimited<A, B> {
-    #[pin]
-    limiter: A,
-    #[pin]
-    process: B,
+	#[pin]
+	limiter: A,
+	#[pin]
+	process: B,
 }
 
 impl<A, B> Future for TimeLimited<A, B>
-    where A: Future<Output = ()>,
-          B: Future,
+where
+	A: Future<Output = ()>,
+	B: Future,
 {
-    type Output = Option<B::Output>;
+	type Output = Option<B::Output>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let p = self.project();
-        // We always check the limiter first. If the limiter's condition has
-        // occurred, we bail, even if the limited process is also ready.
-        if let Poll::Ready(()) = p.limiter.poll(cx) {
-            return Poll::Ready(None);
-        }
-        p.process.poll(cx).map(Some)
-    }
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		let p = self.project();
+		// We always check the limiter first. If the limiter's condition has
+		// occurred, we bail, even if the limited process is also ready.
+		if let Poll::Ready(()) = p.limiter.poll(cx) {
+			return Poll::Ready(None);
+		}
+		p.process.poll(cx).map(Some)
+	}
 }
 
 /// Helper for doing something periodically, accurately.
@@ -424,60 +434,60 @@ impl<A, B> Future for TimeLimited<A, B>
 ///   different from `PeriodicGate`'s behavior.
 #[derive(Debug)]
 pub struct PeriodicGate {
-    interval: Millis,
-    next: TickTime,
+	interval: Millis,
+	next: TickTime,
 }
 
 impl From<Duration> for PeriodicGate {
-    fn from(d: Duration) -> Self {
-        PeriodicGate {
-            interval: Millis(d.as_millis() as u64),
-            next: TickTime::now(),
-        }
-    }
+	fn from(d: Duration) -> Self {
+		PeriodicGate {
+			interval: Millis(d.as_millis() as u64),
+			next: TickTime::now(),
+		}
+	}
 }
 
 impl From<Millis> for PeriodicGate {
-    /// Creates a periodic gate that can be used to release execution every
-    /// `interval`, starting right now.
-    fn from(interval: Millis) -> Self {
-        PeriodicGate {
-            interval,
-            next: TickTime::now(),
-        }
-    }
+	/// Creates a periodic gate that can be used to release execution every
+	/// `interval`, starting right now.
+	fn from(interval: Millis) -> Self {
+		PeriodicGate {
+			interval,
+			next: TickTime::now(),
+		}
+	}
 }
 
 impl PeriodicGate {
-    /// Creates a periodic gate that can be used to release execution every
-    /// `interval`, starting `delay` ticks in the future.
-    ///
-    /// This can be useful for creating multiple periodic gates that operate out
-    /// of phase with respect to each other.
-    pub fn new_shift(interval: Millis, delay: Millis) -> Self {
-        PeriodicGate {
-            interval,
-            next: TickTime::now() + delay,
-        }
-    }
+	/// Creates a periodic gate that can be used to release execution every
+	/// `interval`, starting `delay` ticks in the future.
+	///
+	/// This can be useful for creating multiple periodic gates that operate out
+	/// of phase with respect to each other.
+	pub fn new_shift(interval: Millis, delay: Millis) -> Self {
+		PeriodicGate {
+			interval,
+			next: TickTime::now() + delay,
+		}
+	}
 
-    /// Checks if this gate is lagging behind because it isn't being called
-    /// often enough.
-    pub fn is_lagging(&self) -> bool {
-        self.next <= TickTime::now()
-    }
+	/// Checks if this gate is lagging behind because it isn't being called
+	/// often enough.
+	pub fn is_lagging(&self) -> bool {
+		self.next <= TickTime::now()
+	}
 
-    /// Returns a future that will resolve when it's time to execute again.
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel safety:** Strict.
-    ///
-    /// Dropping this future does nothing in particular.
-    pub async fn next_time(&mut self) {
-        sleep_until(self.next).await;
-        self.next += self.interval;
-    }
+	/// Returns a future that will resolve when it's time to execute again.
+	///
+	/// # Cancellation
+	///
+	/// **Cancel safety:** Strict.
+	///
+	/// Dropping this future does nothing in particular.
+	pub async fn next_time(&mut self) {
+		sleep_until(self.next).await;
+		self.next += self.interval;
+	}
 }
 
 /// System tick ISR. Advances the tick counter. This doesn't wake any tasks; see
@@ -485,7 +495,7 @@ impl PeriodicGate {
 #[doc(hidden)]
 #[exception]
 fn SysTick() {
-    if TICK.fetch_add(1, Ordering::Release) == u32::MAX {
-        EPOCH.fetch_add(1, Ordering::Release);
-    }
+	if TICK.fetch_add(1, Ordering::Release) == u32::MAX {
+		EPOCH.fetch_add(1, Ordering::Release);
+	}
 }

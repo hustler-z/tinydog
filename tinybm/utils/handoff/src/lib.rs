@@ -70,19 +70,18 @@
 //! with the compiler, though, so again -- be careful.
 
 #![no_std]
-
 #![warn(
-    elided_lifetimes_in_paths,
-    explicit_outlives_requirements,
-    missing_debug_implementations,
-    missing_docs,
-    semicolon_in_expressions_from_macros,
-    single_use_lifetimes,
-    trivial_casts,
-    trivial_numeric_casts,
-    unreachable_pub,
-    unsafe_op_in_unsafe_fn,
-    unused_qualifications,
+	elided_lifetimes_in_paths,
+	explicit_outlives_requirements,
+	missing_debug_implementations,
+	missing_docs,
+	semicolon_in_expressions_from_macros,
+	single_use_lifetimes,
+	trivial_casts,
+	trivial_numeric_casts,
+	unreachable_pub,
+	unsafe_op_in_unsafe_fn,
+	unused_qualifications
 )]
 
 use core::cell::Cell;
@@ -96,44 +95,44 @@ use tinybm::exec::Notify;
 /// information.
 #[derive(Default)]
 pub struct Handoff<T> {
-    state: Cell<State<T>>,
-    ping: Notify,
+	state: Cell<State<T>>,
+	ping: Notify,
 }
 
 impl<T> Handoff<T> {
-    /// Creates a new Handoff in idle state.
-    pub const fn new() -> Self {
-        Self {
-            state: Cell::new(State::Idle),
-            ping: Notify::new(),
-        }
-    }
+	/// Creates a new Handoff in idle state.
+	pub const fn new() -> Self {
+		Self {
+			state: Cell::new(State::Idle),
+			ping: Notify::new(),
+		}
+	}
 
-    /// Borrows `self` exclusively and produces `Pusher` and `Popper` endpoints.
-    /// The endpoints are guaranteed to be unique, since they can't be cloned
-    /// and you can't call `split` to make new ones until both are
-    /// dropped/forgotten.
-    pub fn split(&mut self) -> (Pusher<'_, T>, Popper<'_, T>) {
-        (Pusher(self), Popper(self))
-    }
+	/// Borrows `self` exclusively and produces `Pusher` and `Popper` endpoints.
+	/// The endpoints are guaranteed to be unique, since they can't be cloned
+	/// and you can't call `split` to make new ones until both are
+	/// dropped/forgotten.
+	pub fn split(&mut self) -> (Pusher<'_, T>, Popper<'_, T>) {
+		(Pusher(self), Popper(self))
+	}
 }
 
 impl<T> Drop for Handoff<T> {
-    fn drop(&mut self) {
-        // It should be impossible to drop a Handoff while anyone is waiting on
-        // it, but let's check.
-        debug_assert!(matches!(self.state.get(), State::Idle));
-    }
+	fn drop(&mut self) {
+		// It should be impossible to drop a Handoff while anyone is waiting on
+		// it, but let's check.
+		debug_assert!(matches!(self.state.get(), State::Idle));
+	}
 }
 
 /// Implement Debug by hand so it doesn't require T: Debug.
 impl<T> core::fmt::Debug for Handoff<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Handoff")
-            .field("state", &self.state)
-            .field("ping", &self.ping)
-            .finish()
-    }
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("Handoff")
+			.field("state", &self.state)
+			.field("ping", &self.ping)
+			.finish()
+	}
 }
 
 /// Internal representation of handoff state.
@@ -145,36 +144,36 @@ impl<T> core::fmt::Debug for Handoff<T> {
 /// pointers on drop).
 #[derive(Default)]
 enum State<T> {
-    /// Nobody's waiting.
-    #[default]
-    Idle,
-    /// Push side is blocked, and here is a pointer to the value they're
-    /// offering. (The `Option` will be `Some(value)`, and to pop you must reset
-    /// it to `None` and then write the state to `Idle`.)
-    PushWait(NonNull<Option<T>>),
-    /// Pop side is blocked, and here is a pointer to the buffer where a value
-    /// shall be deposited. (The `Option` will be `None`, and to push you must
-    /// set it to `Some(value)` and then write the state to `Idle`.)
-    PopWait(NonNull<Option<T>>),
+	/// Nobody's waiting.
+	#[default]
+	Idle,
+	/// Push side is blocked, and here is a pointer to the value they're
+	/// offering. (The `Option` will be `Some(value)`, and to pop you must reset
+	/// it to `None` and then write the state to `Idle`.)
+	PushWait(NonNull<Option<T>>),
+	/// Pop side is blocked, and here is a pointer to the buffer where a value
+	/// shall be deposited. (The `Option` will be `None`, and to push you must
+	/// set it to `Some(value)` and then write the state to `Idle`.)
+	PopWait(NonNull<Option<T>>),
 }
 
 /// Implement Debug by hand so it doesn't require T: Debug.
 impl<T> core::fmt::Debug for State<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Idle => f.write_str("Idle"),
-            Self::PushWait(p) => f.debug_tuple("PushWait").field(p).finish(),
-            Self::PopWait(p) => f.debug_tuple("PopWait").field(p).finish(),
-        }
-    }
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			Self::Idle => f.write_str("Idle"),
+			Self::PushWait(p) => f.debug_tuple("PushWait").field(p).finish(),
+			Self::PopWait(p) => f.debug_tuple("PopWait").field(p).finish(),
+		}
+	}
 }
 
 // Manually deriving Copy and Clone so they don't require T: Copy/Clone.
 impl<T> Copy for State<T> {}
 impl<T> Clone for State<T> {
-    fn clone(&self) -> Self {
-        *self  // thanks, Copy impl!
-    }
+	fn clone(&self) -> Self {
+		*self // thanks, Copy impl!
+	}
 }
 
 /// Push endpoint for a `Handoff<T>`. Holding this allows you to offer a single
@@ -182,106 +181,111 @@ impl<T> Clone for State<T> {
 pub struct Pusher<'a, T>(&'a Handoff<T>);
 
 impl<T> Pusher<'_, T> {
-    /// Offers `value` to our peer, if they are waiting to receive it.
-    ///
-    /// If someone is blocked on the `Popper` side, `value` is transferred to
-    /// them, they are unblocked, and this returns `Ok(())`.
-    ///
-    /// Otherwise, it returns `Err(value)`, giving `value` back to you.
-    pub fn try_push(&mut self, value: T) -> Result<(), T> {
-        match self.0.state.get() {
-            State::PopWait(dest_ptr) => {
-                // Our peer is waiting.
-                unsafe {
-                    dest_ptr.as_ptr().write(Some(value));
-                }
-                self.0.state.set(State::Idle);
-                self.0.ping.notify();
-                Ok(())
-            },
-            #[cfg(debug_assertions)]
-            State::PushWait(_) => panic!(),
-            _ => Err(value),
-        }
-    }
+	/// Offers `value` to our peer, if they are waiting to receive it.
+	///
+	/// If someone is blocked on the `Popper` side, `value` is transferred to
+	/// them, they are unblocked, and this returns `Ok(())`.
+	///
+	/// Otherwise, it returns `Err(value)`, giving `value` back to you.
+	pub fn try_push(&mut self, value: T) -> Result<(), T> {
+		match self.0.state.get() {
+			State::PopWait(dest_ptr) => {
+				// Our peer is waiting.
+				unsafe {
+					dest_ptr.as_ptr().write(Some(value));
+				}
+				self.0.state.set(State::Idle);
+				self.0.ping.notify();
+				Ok(())
+			}
+			#[cfg(debug_assertions)]
+			State::PushWait(_) => panic!(),
+			_ => Err(value),
+		}
+	}
 
-    /// Produces a future that resolves when `value` can be handed off to our
-    /// peer.
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel Safety:** Weak.
-    ///
-    /// If this future is dropped before it resolves, `value` is dropped, i.e.
-    /// both you and the peer lose access to it. This means the operation can't
-    /// reasonably be retried, and means that if collecting `value` in the first
-    /// place had side effects, there's no good way to roll those back.
-    ///
-    /// If the code using `push` can hang on to a copy of `value`, or if losing
-    /// `value` on cancellation is okay, then this operation _can_ be used
-    /// safely.
-    ///
-    /// I'm trying to figure out a version of this with strict safety.
-    /// Suggestions welcome.
-    pub async fn push(&mut self, value: T) {
-        let mut guard = scopeguard::guard(Some(value), |v| {
-            if v.is_some() {
-                // Cancelled while waiting to push! We know that...
-                // - We have been polled at least once (or we wouldn't be here)
-                // - All paths to await in this function set the state to
-                //   PushWait.
-                // - If the peer sets the state to something other than
-                //   PushWait, they take the value.
-                // - Thus the current state is...
-                debug_assert!(matches!(self.0.state.get(), State::PushWait(_)));
-                // ...and we want to eliminate the suggestion that a pusher is
-                // waiting.
-                self.0.state.set(State::Idle);
-            }
-        });
-        loop {
-            if guard.is_some() {
-                // Value has not yet been taken. What can we do about that?
-                match self.0.state.get() {
-                    State::Idle => {
-                        // Our peer is not waiting, we must block.
-                        self.0.state.set(State::PushWait(
-                            NonNull::from(&mut *guard)
-                        ));
-                        self.0.ping.until_next().await;
-                        continue;
-                    }
-                    State::PushWait(_) => {
-                        // We are already blocked; spurious wakeup.
-                        self.0.ping.until_next().await;
-                        continue;
-                    }
-                    State::PopWait(dest_ptr) => {
-                        // Our peer is waiting. We can do the handoff
-                        // immediately. Defuse the guard.
-                        unsafe {
-                            dest_ptr.as_ptr().write(ScopeGuard::into_inner(guard));
-                        }
-                        self.0.state.set(State::Idle);
-                        self.0.ping.notify();
-                        return;
-                    },
-                }
-            } else {
-                // Value must have been taken while we were sleeping.
-                // Pop side should have left state in either of....
-                debug_assert!(matches!(self.0.state.get(), State::Idle | State::PopWait(_)));
-                break;
-            }
-        }
-    }
+	/// Produces a future that resolves when `value` can be handed off to our
+	/// peer.
+	///
+	/// # Cancellation
+	///
+	/// **Cancel Safety:** Weak.
+	///
+	/// If this future is dropped before it resolves, `value` is dropped, i.e.
+	/// both you and the peer lose access to it. This means the operation can't
+	/// reasonably be retried, and means that if collecting `value` in the first
+	/// place had side effects, there's no good way to roll those back.
+	///
+	/// If the code using `push` can hang on to a copy of `value`, or if losing
+	/// `value` on cancellation is okay, then this operation _can_ be used
+	/// safely.
+	///
+	/// I'm trying to figure out a version of this with strict safety.
+	/// Suggestions welcome.
+	pub async fn push(&mut self, value: T) {
+		let mut guard = scopeguard::guard(Some(value), |v| {
+			if v.is_some() {
+				// Cancelled while waiting to push! We know that...
+				// - We have been polled at least once (or we wouldn't be here)
+				// - All paths to await in this function set the state to
+				//   PushWait.
+				// - If the peer sets the state to something other than
+				//   PushWait, they take the value.
+				// - Thus the current state is...
+				debug_assert!(matches!(self.0.state.get(), State::PushWait(_)));
+				// ...and we want to eliminate the suggestion that a pusher is
+				// waiting.
+				self.0.state.set(State::Idle);
+			}
+		});
+		loop {
+			if guard.is_some() {
+				// Value has not yet been taken. What can we do about that?
+				match self.0.state.get() {
+					State::Idle => {
+						// Our peer is not waiting, we must block.
+						self.0
+							.state
+							.set(State::PushWait(NonNull::from(&mut *guard)));
+						self.0.ping.until_next().await;
+						continue;
+					}
+					State::PushWait(_) => {
+						// We are already blocked; spurious wakeup.
+						self.0.ping.until_next().await;
+						continue;
+					}
+					State::PopWait(dest_ptr) => {
+						// Our peer is waiting. We can do the handoff
+						// immediately. Defuse the guard.
+						unsafe {
+							dest_ptr
+								.as_ptr()
+								.write(ScopeGuard::into_inner(guard));
+						}
+						self.0.state.set(State::Idle);
+						self.0.ping.notify();
+						return;
+					}
+				}
+			} else {
+				// Value must have been taken while we were sleeping.
+				// Pop side should have left state in either of....
+				debug_assert!(matches!(
+					self.0.state.get(),
+					State::Idle | State::PopWait(_)
+				));
+				break;
+			}
+		}
+	}
 }
 
 /// Implement Debug by hand so it doesn't require T: Debug.
 impl<T> core::fmt::Debug for Pusher<'_, T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Pusher").field(&self.0).finish()
-    }
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_tuple("Pusher").field(&self.0).finish()
+	}
 }
 
 /// Pop endpoint for a `Handoff<T>`. Holding this allows you to take a single
@@ -289,105 +293,108 @@ impl<T> core::fmt::Debug for Pusher<'_, T> {
 pub struct Popper<'a, T>(&'a Handoff<T>);
 
 impl<T> Popper<'_, T> {
-    /// Takes data from the `Pusher` peer if it's waiting.
-    ///
-    /// If the peer is blocked offering us data, this unblocks them and returns
-    /// `Some(value)`.
-    ///
-    /// Otherwise, returns `None`.
-    pub fn try_pop(&mut self) -> Option<T> {
-        match self.0.state.get() {
-            State::PushWait(src_ptr) => {
-                // Our peer is waiting. Take the thingy.
-                //
-                // Safety: if we're in this state the source pointer is valid
-                // and the backing memory is not being used -- since if the peer
-                // had resumed, it would have knocked us out of this state.
-                let value = unsafe { &mut *src_ptr.as_ptr() }.take();
+	/// Takes data from the `Pusher` peer if it's waiting.
+	///
+	/// If the peer is blocked offering us data, this unblocks them and returns
+	/// `Some(value)`.
+	///
+	/// Otherwise, returns `None`.
+	pub fn try_pop(&mut self) -> Option<T> {
+		match self.0.state.get() {
+			State::PushWait(src_ptr) => {
+				// Our peer is waiting. Take the thingy.
+				//
+				// Safety: if we're in this state the source pointer is valid
+				// and the backing memory is not being used -- since if the peer
+				// had resumed, it would have knocked us out of this state.
+				let value = unsafe { &mut *src_ptr.as_ptr() }.take();
 
-                self.0.state.set(State::Idle);
-                self.0.ping.notify();
-                value
-            },
-            #[cfg(debug_assertions)]
-            State::PopWait(_) => panic!(),
-            _ => None,
-        }
-    }
+				self.0.state.set(State::Idle);
+				self.0.ping.notify();
+				value
+			}
+			#[cfg(debug_assertions)]
+			State::PopWait(_) => panic!(),
+			_ => None,
+		}
+	}
 
-    /// Produces a future that resolves when the peer offers a value.
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel Safety:** Weak.
-    ///
-    /// If this is dropped before it resolves, no data will be lost: we have
-    /// either taken data from the `Pusher` side and resolved, or we have not
-    /// taken data.
-    ///
-    /// *However,* if this future is pending when another task successfully
-    /// `push`-es, and _then_ this future is dropped before resolving, the
-    /// pushed data is lost with no feedback to the pusher.
-    pub async fn pop(&mut self) -> T {
-        let mut guard = scopeguard::guard(None, |v| {
-            if v.is_none() {
-                // Cancelled while waiting to pop! We know that...
-                // - We have been polled at least once (or we wouldn't be here)
-                // - All paths to await in this function set the state to
-                //   PopWait.
-                // - If the peer sets the state to something other than
-                //   PopWait, they deliver a value.
-                // - Thus the current state is...
-                debug_assert!(matches!(self.0.state.get(), State::PopWait(_)));
-                // ...and we want to eliminate the suggestion that a popper is
-                // waiting.
-                self.0.state.set(State::Idle);
-            }
-        });
-        loop {
-            if guard.is_some() {
-                // Value must have been deposited while we slept. The push side
-                // should either have left the state idle, or began blocking for
-                // our next item:
-                debug_assert!(matches!(self.0.state.get(), State::Idle | State::PushWait(_)));
+	/// Produces a future that resolves when the peer offers a value.
+	///
+	/// # Cancellation
+	///
+	/// **Cancel Safety:** Weak.
+	///
+	/// If this is dropped before it resolves, no data will be lost: we have
+	/// either taken data from the `Pusher` side and resolved, or we have not
+	/// taken data.
+	///
+	/// *However,* if this future is pending when another task successfully
+	/// `push`-es, and _then_ this future is dropped before resolving, the
+	/// pushed data is lost with no feedback to the pusher.
+	pub async fn pop(&mut self) -> T {
+		let mut guard = scopeguard::guard(None, |v| {
+			if v.is_none() {
+				// Cancelled while waiting to pop! We know that...
+				// - We have been polled at least once (or we wouldn't be here)
+				// - All paths to await in this function set the state to
+				//   PopWait.
+				// - If the peer sets the state to something other than
+				//   PopWait, they deliver a value.
+				// - Thus the current state is...
+				debug_assert!(matches!(self.0.state.get(), State::PopWait(_)));
+				// ...and we want to eliminate the suggestion that a popper is
+				// waiting.
+				self.0.state.set(State::Idle);
+			}
+		});
+		loop {
+			if guard.is_some() {
+				// Value must have been deposited while we slept. The push side
+				// should either have left the state idle, or began blocking for
+				// our next item:
+				debug_assert!(matches!(
+					self.0.state.get(),
+					State::Idle | State::PushWait(_)
+				));
 
-                return ScopeGuard::into_inner(guard).unwrap();
-            } else {
-                // Value has not yet been delivered. What can we do about that?
-                match self.0.state.get() {
-                    State::Idle => {
-                        // Our peer is not waiting, we must block.
-                        self.0.state.set(State::PopWait(
-                            NonNull::from(&mut *guard)
-                        ));
-                        self.0.ping.until_next().await;
-                        continue;
-                    }
-                    State::PopWait(_) => {
-                        // We are still blocked; spurious wakeup.
-                        self.0.ping.until_next().await;
-                        continue;
-                    },
-                    State::PushWait(src_ptr) => {
-                        // Our peer is waiting. We can do the handoff
-                        // immediately.
-                        core::mem::swap(
-                            unsafe { &mut *src_ptr.as_ptr() },
-                            &mut *guard,
-                        );
-                        self.0.state.set(State::Idle);
-                        self.0.ping.notify();
-                        return ScopeGuard::into_inner(guard).unwrap();
-                    },
-                }
-            }
-        }
-    }
+				return ScopeGuard::into_inner(guard).unwrap();
+			} else {
+				// Value has not yet been delivered. What can we do about that?
+				match self.0.state.get() {
+					State::Idle => {
+						// Our peer is not waiting, we must block.
+						self.0
+							.state
+							.set(State::PopWait(NonNull::from(&mut *guard)));
+						self.0.ping.until_next().await;
+						continue;
+					}
+					State::PopWait(_) => {
+						// We are still blocked; spurious wakeup.
+						self.0.ping.until_next().await;
+						continue;
+					}
+					State::PushWait(src_ptr) => {
+						// Our peer is waiting. We can do the handoff
+						// immediately.
+						core::mem::swap(
+							unsafe { &mut *src_ptr.as_ptr() },
+							&mut *guard,
+						);
+						self.0.state.set(State::Idle);
+						self.0.ping.notify();
+						return ScopeGuard::into_inner(guard).unwrap();
+					}
+				}
+			}
+		}
+	}
 }
 
 /// Implement Debug by hand so it doesn't require T: Debug.
 impl<T> core::fmt::Debug for Popper<'_, T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Popper").field(&self.0).finish()
-    }
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_tuple("Popper").field(&self.0).finish()
+	}
 }

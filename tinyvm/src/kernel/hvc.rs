@@ -12,17 +12,20 @@ use crate::arch::PAGE_SIZE;
 use crate::config::*;
 use crate::device::{mediated_blk_notify_handler, mediated_dev_append};
 use crate::kernel::{
-    current_cpu, interrupt_vm_inject, ipi_send_msg, ivc_update_mq, vm, vm_if_get_cpu_id,
-    vm_if_ivc_arg, vm_if_ivc_arg_ptr, vm_if_set_ivc_arg_ptr, IpiHvcMsg, IpiInnerMsg, IpiMessage,
-    IpiType, VM_NUM_MAX,
+	current_cpu, interrupt_vm_inject, ipi_send_msg, ivc_update_mq, vm,
+	vm_if_get_cpu_id, vm_if_ivc_arg, vm_if_ivc_arg_ptr, vm_if_set_ivc_arg_ptr,
+	IpiHvcMsg, IpiInnerMsg, IpiMessage, IpiType, VM_NUM_MAX,
 };
 #[cfg(feature = "unilib")]
 use crate::utils::unilib::*;
 use crate::utils::{memcpy, trace};
-use crate::vmm::{get_vm_id, vmm_boot_vm, vmm_list_vm, vmm_reboot_vm, vmm_remove_vm};
+use crate::vmm::{
+	get_vm_id, vmm_boot_vm, vmm_list_vm, vmm_reboot_vm, vmm_remove_vm,
+};
 pub static VM_STATE_FLAG: AtomicUsize = AtomicUsize::new(0);
 
-pub static SHARE_MEM_LIST: Mutex<BTreeMap<usize, usize>> = Mutex::new(BTreeMap::new());
+pub static SHARE_MEM_LIST: Mutex<BTreeMap<usize, usize>> =
+	Mutex::new(BTreeMap::new());
 // If succeed, return 0.
 const HVC_FINISH: usize = 0;
 // If failed, return -1.
@@ -92,18 +95,18 @@ pub const HVC_MEDIATED_DEV_NOTIFY: usize = 0x31;
 pub const HVC_MEDIATED_DRV_NOTIFY: usize = 0x32;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "unilib")] {
-        pub const HVC_UNILIB_FS_INIT: usize = 0;
-        pub const HVC_UNILIB_FS_OPEN: usize = 1;
-        pub const HVC_UNILIB_FS_CLOSE: usize = 2;
-        pub const HVC_UNILIB_FS_READ: usize = 3;
-        pub const HVC_UNILIB_FS_WRITE: usize = 4;
-        pub const HVC_UNILIB_FS_LSEEK: usize = 5;
-        pub const HVC_UNILIB_FS_STAT: usize = 6;
-        pub const HVC_UNILIB_FS_UNLINK: usize = 7;
-        pub const HVC_UNILIB_FS_APPEND: usize = 0x10;
-        pub const HVC_UNILIB_FS_FINISHED: usize = 0x11;
-    }
+	if #[cfg(feature = "unilib")] {
+		pub const HVC_UNILIB_FS_INIT: usize = 0;
+		pub const HVC_UNILIB_FS_OPEN: usize = 1;
+		pub const HVC_UNILIB_FS_CLOSE: usize = 2;
+		pub const HVC_UNILIB_FS_READ: usize = 3;
+		pub const HVC_UNILIB_FS_WRITE: usize = 4;
+		pub const HVC_UNILIB_FS_LSEEK: usize = 5;
+		pub const HVC_UNILIB_FS_STAT: usize = 6;
+		pub const HVC_UNILIB_FS_UNLINK: usize = 7;
+		pub const HVC_UNILIB_FS_APPEND: usize = 0x10;
+		pub const HVC_UNILIB_FS_FINISHED: usize = 0x11;
+	}
 }
 
 // hvc_config_event
@@ -134,24 +137,24 @@ pub const HVC_IRQ: usize = 32 + 0x10;
 
 #[repr(C)]
 pub enum HvcGuestMsg {
-    Default(HvcDefaultMsg),
-    Manage(HvcManageMsg),
-    Migrate(HvcMigrateMsg),
-    #[cfg(feature = "unilib")]
-    UniLib(HvcUniLibMsg),
+	Default(HvcDefaultMsg),
+	Manage(HvcManageMsg),
+	Migrate(HvcMigrateMsg),
+	#[cfg(feature = "unilib")]
+	UniLib(HvcUniLibMsg),
 }
 
 #[repr(C)]
 pub struct HvcDefaultMsg {
-    pub fid: usize,
-    pub event: usize,
+	pub fid: usize,
+	pub event: usize,
 }
 
 #[repr(C)]
 pub struct HvcManageMsg {
-    pub fid: usize,
-    pub event: usize,
-    pub vm_id: usize,
+	pub fid: usize,
+	pub event: usize,
+	pub vm_id: usize,
 }
 
 pub const MIGRATE_START: usize = 0;
@@ -160,379 +163,402 @@ pub const MIGRATE_FINISH: usize = 2;
 
 #[repr(C)]
 pub struct HvcMigrateMsg {
-    pub fid: usize,
-    pub event: usize,
-    pub vm_id: usize,
-    pub oper: usize,
-    pub page_num: usize, // bitmap page num
+	pub fid: usize,
+	pub event: usize,
+	pub vm_id: usize,
+	pub oper: usize,
+	pub page_num: usize, // bitmap page num
 }
 
 #[cfg(feature = "unilib")]
 #[repr(C)]
 pub struct HvcUniLibMsg {
-    pub fid: usize,
-    pub event: usize,
-    pub vm_id: usize,
-    pub arg_1: usize,
-    pub arg_2: usize,
-    pub arg_3: usize,
+	pub fid: usize,
+	pub event: usize,
+	pub vm_id: usize,
+	pub arg_1: usize,
+	pub arg_2: usize,
+	pub arg_3: usize,
 }
 
 pub fn add_share_mem(mem_type: usize, base: usize) {
-    let mut list = SHARE_MEM_LIST.lock();
-    list.insert(mem_type, base);
+	let mut list = SHARE_MEM_LIST.lock();
+	list.insert(mem_type, base);
 }
 
 pub fn get_share_mem(mem_type: usize) -> usize {
-    let list = SHARE_MEM_LIST.lock();
-    match list.get(&mem_type) {
-        None => {
-            panic!("there is not {} type share memory", mem_type);
-        }
-        Some(tup) => *tup,
-    }
+	let list = SHARE_MEM_LIST.lock();
+	match list.get(&mem_type) {
+		None => {
+			panic!("there is not {} type share memory", mem_type);
+		}
+		Some(tup) => *tup,
+	}
 }
 
 #[allow(clippy::too_many_arguments)]
 /// handler of hypervisor call from guest os
 pub fn hvc_guest_handler(
-    hvc_type: usize,
-    event: usize,
-    x0: usize,
-    x1: usize,
-    x2: usize,
-    x3: usize,
-    x4: usize,
-    x5: usize,
-    x6: usize,
+	hvc_type: usize,
+	event: usize,
+	x0: usize,
+	x1: usize,
+	x2: usize,
+	x3: usize,
+	x4: usize,
+	x5: usize,
+	x6: usize,
 ) -> Result<usize, ()> {
-    // info!("hvc_guest_handler: hvc_type {} event {} x0: \n{}",
-    //     hvc_type, event,
-    //     current_cpu().ctx().unwrap()
-    // );
-    match hvc_type {
-        HVC_SYS => hvc_sys_handler(event, x0),
-        HVC_VMM => hvc_vmm_handler(event, x0, x1),
-        HVC_IVC => hvc_ivc_handler(event, x0, x1),
-        HVC_MEDIATED => hvc_mediated_handler(event, x0, x1),
-        HVC_CONFIG => hvc_config_handler(event, x0, x1, x2, x3, x4, x5, x6),
-        #[cfg(feature = "unilib")]
-        HVC_UNILIB => hvc_unilib_handler(event, x0, x1, x2),
-        _ => {
-            error!("unknown hvc type {} event {}", hvc_type, event);
-            Err(())
-        }
-    }
+	// info!("hvc_guest_handler: hvc_type {} event {} x0: \n{}",
+	//     hvc_type, event,
+	//     current_cpu().ctx().unwrap()
+	// );
+	match hvc_type {
+		HVC_SYS => hvc_sys_handler(event, x0),
+		HVC_VMM => hvc_vmm_handler(event, x0, x1),
+		HVC_IVC => hvc_ivc_handler(event, x0, x1),
+		HVC_MEDIATED => hvc_mediated_handler(event, x0, x1),
+		HVC_CONFIG => hvc_config_handler(event, x0, x1, x2, x3, x4, x5, x6),
+		#[cfg(feature = "unilib")]
+		HVC_UNILIB => hvc_unilib_handler(event, x0, x1, x2),
+		_ => {
+			error!("unknown hvc type {} event {}", hvc_type, event);
+			Err(())
+		}
+	}
 }
 
 #[allow(clippy::too_many_arguments)]
 fn hvc_config_handler(
-    event: usize,
-    x0: usize,
-    x1: usize,
-    x2: usize,
-    x3: usize,
-    x4: usize,
-    x5: usize,
-    x6: usize,
+	event: usize,
+	x0: usize,
+	x1: usize,
+	x2: usize,
+	x3: usize,
+	x4: usize,
+	x5: usize,
+	x6: usize,
 ) -> Result<usize, ()> {
-    match event {
-        HVC_CONFIG_ADD_VM => vm_cfg_add_vm(x0),
-        HVC_CONFIG_DELETE_VM => vm_cfg_del_vm(x0),
-        HVC_CONFIG_CPU => vm_cfg_set_cpu(x0, x1, x2, x3),
-        HVC_CONFIG_MEMORY_REGION => vm_cfg_add_mem_region(x0, x1, x2),
-        HVC_CONFIG_EMULATED_DEVICE => vm_cfg_add_emu_dev(x0, x1, x2, x3, x4, x5, x6),
-        HVC_CONFIG_PASSTHROUGH_DEVICE_REGION => {
-            vm_cfg_add_passthrough_device_region(x0, x1, x2, x3)
-        }
-        HVC_CONFIG_PASSTHROUGH_DEVICE_IRQS => vm_cfg_add_passthrough_device_irqs(x0, x1, x2),
-        HVC_CONFIG_PASSTHROUGH_DEVICE_STREAMS_IDS => {
-            vm_cfg_add_passthrough_device_streams_ids(x0, x1, x2)
-        }
-        HVC_CONFIG_DTB_DEVICE => vm_cfg_add_dtb_dev(x0, x1, x2, x3, x4, x5, x6),
-        HVC_CONFIG_UPLOAD_KERNEL_IMAGE => vm_cfg_upload_kernel_image(x0, x1, x2, x3, x4),
-        HVC_CONFIG_UPLOAD_DEVICE_TREE => vm_cfg_upload_device_tree(x0, x1, x2, x3, x4),
-        _ => {
-            error!("hvc config handle unknown event {}", event);
-            Err(())
-        }
-    }
+	match event {
+		HVC_CONFIG_ADD_VM => vm_cfg_add_vm(x0),
+		HVC_CONFIG_DELETE_VM => vm_cfg_del_vm(x0),
+		HVC_CONFIG_CPU => vm_cfg_set_cpu(x0, x1, x2, x3),
+		HVC_CONFIG_MEMORY_REGION => vm_cfg_add_mem_region(x0, x1, x2),
+		HVC_CONFIG_EMULATED_DEVICE => {
+			vm_cfg_add_emu_dev(x0, x1, x2, x3, x4, x5, x6)
+		}
+		HVC_CONFIG_PASSTHROUGH_DEVICE_REGION => {
+			vm_cfg_add_passthrough_device_region(x0, x1, x2, x3)
+		}
+		HVC_CONFIG_PASSTHROUGH_DEVICE_IRQS => {
+			vm_cfg_add_passthrough_device_irqs(x0, x1, x2)
+		}
+		HVC_CONFIG_PASSTHROUGH_DEVICE_STREAMS_IDS => {
+			vm_cfg_add_passthrough_device_streams_ids(x0, x1, x2)
+		}
+		HVC_CONFIG_DTB_DEVICE => vm_cfg_add_dtb_dev(x0, x1, x2, x3, x4, x5, x6),
+		HVC_CONFIG_UPLOAD_KERNEL_IMAGE => {
+			vm_cfg_upload_kernel_image(x0, x1, x2, x3, x4)
+		}
+		HVC_CONFIG_UPLOAD_DEVICE_TREE => {
+			vm_cfg_upload_device_tree(x0, x1, x2, x3, x4)
+		}
+		_ => {
+			error!("hvc config handle unknown event {}", event);
+			Err(())
+		}
+	}
 }
 
 fn hvc_sys_handler(event: usize, _x0: usize) -> Result<usize, ()> {
-    match event {
-        HVC_SYS_UPDATE => {
-            todo!()
-        }
-        HVC_SYS_TEST => {
-            println!("hvc sys test");
-            Ok(0)
-        }
-        _ => Err(()),
-    }
+	match event {
+		HVC_SYS_UPDATE => {
+			todo!()
+		}
+		HVC_SYS_TEST => {
+			println!("hvc sys test");
+			Ok(0)
+		}
+		_ => Err(()),
+	}
 }
 
 fn hvc_vmm_handler(event: usize, x0: usize, _x1: usize) -> Result<usize, ()> {
-    match event {
-        HVC_VMM_LIST_VM => vmm_list_vm(x0),
-        HVC_VMM_GET_VM_STATE => {
-            todo!();
-        }
-        HVC_VMM_BOOT_VM => {
-            vmm_boot_vm(x0);
-            Ok(HVC_FINISH)
-        }
-        HVC_VMM_SHUTDOWN_VM => {
-            todo!();
-        }
-        HVC_VMM_REBOOT_VM => {
-            vmm_reboot_vm(x0);
-            Ok(HVC_FINISH)
-        }
-        HVC_VMM_GET_VM_ID => {
-            get_vm_id(x0);
-            Ok(HVC_FINISH)
-        }
-        HVC_VMM_MIGRATE_START
-        | HVC_VMM_MIGRATE_READY
-        | HVC_VMM_MIGRATE_MEMCPY
-        | HVC_VMM_MIGRATE_INIT_VM
-        | HVC_VMM_MIGRATE_VM_BOOT
-        | HVC_VMM_MIGRATE_FINISH => {
-            error!("unimplemented");
-            Err(())
-        }
-        HVC_VMM_VM_REMOVE => {
-            vmm_remove_vm(x0);
-            VM_STATE_FLAG.store(0, Ordering::Relaxed);
-            Ok(HVC_FINISH)
-        }
-        _ => {
-            error!("hvc vmm unknown event {}", event);
-            Err(())
-        }
-    }
+	match event {
+		HVC_VMM_LIST_VM => vmm_list_vm(x0),
+		HVC_VMM_GET_VM_STATE => {
+			todo!();
+		}
+		HVC_VMM_BOOT_VM => {
+			vmm_boot_vm(x0);
+			Ok(HVC_FINISH)
+		}
+		HVC_VMM_SHUTDOWN_VM => {
+			todo!();
+		}
+		HVC_VMM_REBOOT_VM => {
+			vmm_reboot_vm(x0);
+			Ok(HVC_FINISH)
+		}
+		HVC_VMM_GET_VM_ID => {
+			get_vm_id(x0);
+			Ok(HVC_FINISH)
+		}
+		HVC_VMM_MIGRATE_START
+		| HVC_VMM_MIGRATE_READY
+		| HVC_VMM_MIGRATE_MEMCPY
+		| HVC_VMM_MIGRATE_INIT_VM
+		| HVC_VMM_MIGRATE_VM_BOOT
+		| HVC_VMM_MIGRATE_FINISH => {
+			error!("unimplemented");
+			Err(())
+		}
+		HVC_VMM_VM_REMOVE => {
+			vmm_remove_vm(x0);
+			VM_STATE_FLAG.store(0, Ordering::Relaxed);
+			Ok(HVC_FINISH)
+		}
+		_ => {
+			error!("hvc vmm unknown event {}", event);
+			Err(())
+		}
+	}
 }
 
 fn hvc_ivc_handler(event: usize, x0: usize, x1: usize) -> Result<usize, ()> {
-    match event {
-        HVC_IVC_UPDATE_MQ => {
-            if ivc_update_mq(x0, x1) {
-                Ok(HVC_FINISH)
-            } else {
-                Err(())
-            }
-        }
-        HVC_IVC_SHARE_MEM => {
-            error!("not support vm migration and live update");
-            Ok(HVC_FINISH)
-        }
-        _ => {
-            error!("hvc ivc handle: unknown event {}", event);
-            Err(())
-        }
-    }
+	match event {
+		HVC_IVC_UPDATE_MQ => {
+			if ivc_update_mq(x0, x1) {
+				Ok(HVC_FINISH)
+			} else {
+				Err(())
+			}
+		}
+		HVC_IVC_SHARE_MEM => {
+			error!("not support vm migration and live update");
+			Ok(HVC_FINISH)
+		}
+		_ => {
+			error!("hvc ivc handle: unknown event {}", event);
+			Err(())
+		}
+	}
 }
 
-fn hvc_mediated_handler(event: usize, x0: usize, x1: usize) -> Result<usize, ()> {
-    match event {
-        HVC_MEDIATED_DEV_APPEND => mediated_dev_append(x0, x1),
-        HVC_MEDIATED_DEV_NOTIFY => mediated_blk_notify_handler(x0),
-        _ => {
-            error!("unknown mediated event {}", event);
-            Err(())
-        }
-    }
+fn hvc_mediated_handler(
+	event: usize,
+	x0: usize,
+	x1: usize,
+) -> Result<usize, ()> {
+	match event {
+		HVC_MEDIATED_DEV_APPEND => mediated_dev_append(x0, x1),
+		HVC_MEDIATED_DEV_NOTIFY => mediated_blk_notify_handler(x0),
+		_ => {
+			error!("unknown mediated event {}", event);
+			Err(())
+		}
+	}
 }
 
 #[cfg(feature = "unilib")]
-fn hvc_unilib_handler(event: usize, x0: usize, x1: usize, x2: usize) -> Result<usize, ()> {
-    match event {
-        HVC_UNILIB_FS_INIT => unilib_fs_init(),
-        HVC_UNILIB_FS_OPEN => unilib_fs_open(x0, x1, x2),
-        HVC_UNILIB_FS_CLOSE => unilib_fs_close(x0),
-        HVC_UNILIB_FS_READ => unilib_fs_read(x0, x1, x2),
-        HVC_UNILIB_FS_WRITE => unilib_fs_write(x0, x1, x2),
-        HVC_UNILIB_FS_LSEEK => unilib_fs_lseek(x0, x1, x2),
-        HVC_UNILIB_FS_STAT => unilib_fs_stat(),
-        HVC_UNILIB_FS_UNLINK => unilib_fs_unlink(x0, x1),
-        HVC_UNILIB_FS_APPEND => unilib_fs_append(x0),
-        HVC_UNILIB_FS_FINISHED => unilib_fs_finished(x0),
-        _ => {
-            error!("unknown mediated event {}", event);
-            Err(())
-        }
-    }
+fn hvc_unilib_handler(
+	event: usize,
+	x0: usize,
+	x1: usize,
+	x2: usize,
+) -> Result<usize, ()> {
+	match event {
+		HVC_UNILIB_FS_INIT => unilib_fs_init(),
+		HVC_UNILIB_FS_OPEN => unilib_fs_open(x0, x1, x2),
+		HVC_UNILIB_FS_CLOSE => unilib_fs_close(x0),
+		HVC_UNILIB_FS_READ => unilib_fs_read(x0, x1, x2),
+		HVC_UNILIB_FS_WRITE => unilib_fs_write(x0, x1, x2),
+		HVC_UNILIB_FS_LSEEK => unilib_fs_lseek(x0, x1, x2),
+		HVC_UNILIB_FS_STAT => unilib_fs_stat(),
+		HVC_UNILIB_FS_UNLINK => unilib_fs_unlink(x0, x1),
+		HVC_UNILIB_FS_APPEND => unilib_fs_append(x0),
+		HVC_UNILIB_FS_FINISHED => unilib_fs_finished(x0),
+		_ => {
+			error!("unknown mediated event {}", event);
+			Err(())
+		}
+	}
 }
 
 pub fn hvc_send_msg_to_vm(vm_id: usize, guest_msg: &HvcGuestMsg) -> bool {
-    let mut target_addr = 0;
-    let mut arg_ptr_addr = vm_if_ivc_arg_ptr(vm_id);
-    let arg_addr = vm_if_ivc_arg(vm_id);
+	let mut target_addr = 0;
+	let mut arg_ptr_addr = vm_if_ivc_arg_ptr(vm_id);
+	let arg_addr = vm_if_ivc_arg(vm_id);
 
-    if arg_ptr_addr != 0 {
-        arg_ptr_addr += PAGE_SIZE / VM_NUM_MAX;
-        if arg_ptr_addr - arg_addr >= PAGE_SIZE {
-            vm_if_set_ivc_arg_ptr(vm_id, arg_addr);
-            target_addr = arg_addr;
-        } else {
-            vm_if_set_ivc_arg_ptr(vm_id, arg_ptr_addr);
-            target_addr = arg_ptr_addr;
-        }
-    }
+	if arg_ptr_addr != 0 {
+		arg_ptr_addr += PAGE_SIZE / VM_NUM_MAX;
+		if arg_ptr_addr - arg_addr >= PAGE_SIZE {
+			vm_if_set_ivc_arg_ptr(vm_id, arg_addr);
+			target_addr = arg_addr;
+		} else {
+			vm_if_set_ivc_arg_ptr(vm_id, arg_ptr_addr);
+			target_addr = arg_ptr_addr;
+		}
+	}
 
-    if target_addr == 0 {
-        warn!("target vm[{}] interface is not prepared", vm_id);
-        return false;
-    }
+	if target_addr == 0 {
+		warn!("target vm[{}] interface is not prepared", vm_id);
+		return false;
+	}
 
-    if trace() && (target_addr < 0x1000 || (guest_msg as *const _ as usize) < 0x1000) {
-        panic!(
-            "illegal dst addr {:08x}, src addr {:08x}",
-            target_addr, guest_msg as *const _ as usize
-        );
-    }
-    let (fid, event) = match guest_msg {
-        HvcGuestMsg::Default(msg) => {
-            // SAFETY:
-            // We have both read and write access to the src and dst memory regions.
-            // The copied size will not exceed the memory region.
-            unsafe {
-                memcpy(
-                    target_addr as *const u8,
-                    msg as *const _ as *const u8,
-                    size_of::<HvcDefaultMsg>(),
-                );
-            }
-            (msg.fid, msg.event)
-        }
-        HvcGuestMsg::Migrate(_msg) => {
-            todo!()
-        }
-        HvcGuestMsg::Manage(msg) => {
-            // SAFETY:
-            // We have both read and write access to the src and dst memory regions.
-            // The copied size will not exceed the memory region.
-            unsafe {
-                memcpy(
-                    target_addr as *const u8,
-                    msg as *const _ as *const u8,
-                    size_of::<HvcManageMsg>(),
-                );
-            }
-            (msg.fid, msg.event)
-        }
-        #[cfg(feature = "unilib")]
-        HvcGuestMsg::UniLib(msg) => {
-            // SAFETY:
-            // We have both read and write access to the src and dst memory regions.
-            // The copied size will not exceed the memory region.
-            unsafe {
-                memcpy(
-                    target_addr as *const u8,
-                    msg as *const _ as *const u8,
-                    size_of::<HvcUniLibMsg>(),
-                );
-            }
-            (msg.fid, msg.event)
-        }
-    };
+	if trace()
+		&& (target_addr < 0x1000 || (guest_msg as *const _ as usize) < 0x1000)
+	{
+		panic!(
+			"illegal dst addr {:08x}, src addr {:08x}",
+			target_addr, guest_msg as *const _ as usize
+		);
+	}
+	let (fid, event) = match guest_msg {
+		HvcGuestMsg::Default(msg) => {
+			// SAFETY:
+			// We have both read and write access to the src and dst memory regions.
+			// The copied size will not exceed the memory region.
+			unsafe {
+				memcpy(
+					target_addr as *const u8,
+					msg as *const _ as *const u8,
+					size_of::<HvcDefaultMsg>(),
+				);
+			}
+			(msg.fid, msg.event)
+		}
+		HvcGuestMsg::Migrate(_msg) => {
+			todo!()
+		}
+		HvcGuestMsg::Manage(msg) => {
+			// SAFETY:
+			// We have both read and write access to the src and dst memory regions.
+			// The copied size will not exceed the memory region.
+			unsafe {
+				memcpy(
+					target_addr as *const u8,
+					msg as *const _ as *const u8,
+					size_of::<HvcManageMsg>(),
+				);
+			}
+			(msg.fid, msg.event)
+		}
+		#[cfg(feature = "unilib")]
+		HvcGuestMsg::UniLib(msg) => {
+			// SAFETY:
+			// We have both read and write access to the src and dst memory regions.
+			// The copied size will not exceed the memory region.
+			unsafe {
+				memcpy(
+					target_addr as *const u8,
+					msg as *const _ as *const u8,
+					size_of::<HvcUniLibMsg>(),
+				);
+			}
+			(msg.fid, msg.event)
+		}
+	};
 
-    if let Some(cpu_trgt) = vm_if_get_cpu_id(vm_id) {
-        if cpu_trgt != current_cpu().id {
-            let ipi_msg = IpiHvcMsg {
-                src_vmid: 0,
-                trgt_vmid: vm_id,
-                fid,
-                event,
-            };
-            if !ipi_send_msg(cpu_trgt, IpiType::IpiTHvc, IpiInnerMsg::HvcMsg(ipi_msg)) {
-                error!(
-                    "failed to send IPI message, target {} type {:#?}",
-                    cpu_trgt,
-                    IpiType::IpiTHvc
-                );
-            }
-        } else {
-            hvc_guest_notify(vm_id);
-        }
-    } else {
-        error!("failed to get cpu id of vm[{}]", vm_id);
-        return false;
-    }
+	if let Some(cpu_trgt) = vm_if_get_cpu_id(vm_id) {
+		if cpu_trgt != current_cpu().id {
+			let ipi_msg = IpiHvcMsg {
+				src_vmid: 0,
+				trgt_vmid: vm_id,
+				fid,
+				event,
+			};
+			if !ipi_send_msg(
+				cpu_trgt,
+				IpiType::IpiTHvc,
+				IpiInnerMsg::HvcMsg(ipi_msg),
+			) {
+				error!(
+					"failed to send IPI message, target {} type {:#?}",
+					cpu_trgt,
+					IpiType::IpiTHvc
+				);
+			}
+		} else {
+			hvc_guest_notify(vm_id);
+		}
+	} else {
+		error!("failed to get cpu id of vm[{}]", vm_id);
+		return false;
+	}
 
-    true
+	true
 }
 
 /// notify current cpu's vcpu
 pub fn hvc_guest_notify(vm_id: usize) {
-    let vm = vm(vm_id).unwrap();
-    match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
-        None => {
-            error!(
-                "hcpu[{}] failed to find vcpu of vm[{}]",
-                current_cpu().id,
-                vm_id
-            );
-        }
-        Some(vcpu) => {
-            interrupt_vm_inject(&vm, vcpu, HVC_IRQ);
-        }
-    };
+	let vm = vm(vm_id).unwrap();
+	match current_cpu().vcpu_array.pop_vcpu_through_vmid(vm_id) {
+		None => {
+			error!(
+				"hcpu[{}] failed to find vcpu of vm[{}]",
+				current_cpu().id,
+				vm_id
+			);
+		}
+		Some(vcpu) => {
+			interrupt_vm_inject(&vm, vcpu, HVC_IRQ);
+		}
+	};
 }
 
 pub fn hvc_ipi_handler(msg: IpiMessage) {
-    match msg.ipi_message {
-        IpiInnerMsg::HvcMsg(msg) => {
-            if current_cpu()
-                .vcpu_array
-                .pop_vcpu_through_vmid(msg.trgt_vmid)
-                .is_none()
-            {
-                error!(
-                    "hcpu[{}] failed to find vcpu of vm[{}]",
-                    current_cpu().id,
-                    msg.trgt_vmid
-                );
-                return;
-            }
+	match msg.ipi_message {
+		IpiInnerMsg::HvcMsg(msg) => {
+			if current_cpu()
+				.vcpu_array
+				.pop_vcpu_through_vmid(msg.trgt_vmid)
+				.is_none()
+			{
+				error!(
+					"hcpu[{}] failed to find vcpu of vm[{}]",
+					current_cpu().id,
+					msg.trgt_vmid
+				);
+				return;
+			}
 
-            match msg.fid {
-                HVC_MEDIATED => {
-                    hvc_guest_notify(msg.trgt_vmid);
-                }
-                HVC_VMM => match msg.event {
-                    HVC_VMM_MIGRATE_START => {
-                        // in mvm
-                        hvc_guest_notify(msg.trgt_vmid);
-                    }
-                    HVC_VMM_MIGRATE_FINISH => {
-                        error!("unimplemented");
-                    }
-                    HVC_VMM_MIGRATE_VM_BOOT => {
-                        error!("unimplemented");
-                    }
-                    _ => {}
-                },
-                HVC_CONFIG => match msg.event {
-                    HVC_CONFIG_UPLOAD_KERNEL_IMAGE => {
-                        hvc_guest_notify(msg.trgt_vmid);
-                    }
-                    _ => {
-                        todo!();
-                    }
-                },
-                #[cfg(feature = "unilib")]
-                HVC_UNILIB => {
-                    hvc_guest_notify(msg.trgt_vmid);
-                }
-                _ => {
-                    todo!();
-                }
-            }
-        }
-        _ => {
-            error!("illegal IPI");
-        }
-    }
+			match msg.fid {
+				HVC_MEDIATED => {
+					hvc_guest_notify(msg.trgt_vmid);
+				}
+				HVC_VMM => match msg.event {
+					HVC_VMM_MIGRATE_START => {
+						// in mvm
+						hvc_guest_notify(msg.trgt_vmid);
+					}
+					HVC_VMM_MIGRATE_FINISH => {
+						error!("unimplemented");
+					}
+					HVC_VMM_MIGRATE_VM_BOOT => {
+						error!("unimplemented");
+					}
+					_ => {}
+				},
+				HVC_CONFIG => match msg.event {
+					HVC_CONFIG_UPLOAD_KERNEL_IMAGE => {
+						hvc_guest_notify(msg.trgt_vmid);
+					}
+					_ => {
+						todo!();
+					}
+				},
+				#[cfg(feature = "unilib")]
+				HVC_UNILIB => {
+					hvc_guest_notify(msg.trgt_vmid);
+				}
+				_ => {
+					todo!();
+				}
+			}
+		}
+		_ => {
+			error!("illegal IPI");
+		}
+	}
 }

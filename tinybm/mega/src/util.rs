@@ -8,8 +8,12 @@
 //! applications. Unlike `atomic`, it's not particularly focused on a single
 //! topic.
 
-use core::{future::Future, pin::Pin, task::{Context, Poll}};
 use core::marker::PhantomData;
+use core::{
+	future::Future,
+	pin::Pin,
+	task::{Context, Poll},
+};
 
 use pin_project::{pin_project, pinned_drop};
 
@@ -53,17 +57,18 @@ impl<U: ?Sized, T> Captures<T> for U {}
 /// use tinybm::util::FutureExt as _;
 /// ```
 pub trait FutureExt {
-    /// Wraps this future such that `action` will be called if it is dropped
-    /// before it resolves.
-    fn on_cancel<A>(self, action: A) -> OnCancel<Self, A>
-        where A: FnOnce(),
-              Self: Sized,
-    {
-        OnCancel {
-            inner: self,
-            action: Some(action),
-        }
-    }
+	/// Wraps this future such that `action` will be called if it is dropped
+	/// before it resolves.
+	fn on_cancel<A>(self, action: A) -> OnCancel<Self, A>
+	where
+		A: FnOnce(),
+		Self: Sized,
+	{
+		OnCancel {
+			inner: self,
+			action: Some(action),
+		}
+	}
 }
 
 impl<F: Future> FutureExt for F {}
@@ -73,39 +78,42 @@ impl<F: Future> FutureExt for F {}
 #[derive(Debug)]
 #[pin_project(PinnedDrop)]
 pub struct OnCancel<F, A>
-    where A: FnOnce(),
+where
+	A: FnOnce(),
 {
-    #[pin]
-    inner: F,
-    action: Option<A>,
+	#[pin]
+	inner: F,
+	action: Option<A>,
 }
 
 #[pinned_drop]
 impl<F, A> PinnedDrop for OnCancel<F, A>
-    where A: FnOnce(),
+where
+	A: FnOnce(),
 {
-    fn drop(self: Pin<&mut Self>) {
-        if let Some(a) = self.project().action.take() {
-            a();
-        }
-    }
+	fn drop(self: Pin<&mut Self>) {
+		if let Some(a) = self.project().action.take() {
+			a();
+		}
+	}
 }
 
 impl<F, A> Future for OnCancel<F, A>
-    where F: Future,
-          A: FnOnce() + Unpin,
+where
+	F: Future,
+	A: FnOnce() + Unpin,
 {
-    type Output = F::Output;
+	type Output = F::Output;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let p = self.project();
-        let result = p.inner.poll(cx);
-        if result.is_ready() {
-            // Disarm the cancel handler.
-            *p.action = None;
-        }
-        result
-    }
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		let p = self.project();
+		let result = p.inner.poll(cx);
+		if result.is_ready() {
+			// Disarm the cancel handler.
+			*p.action = None;
+		}
+		result
+	}
 }
 
 /// Newtype to wrap the contents of a mutex or lock when you know, in the

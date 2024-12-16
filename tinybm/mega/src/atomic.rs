@@ -21,38 +21,40 @@
 //! This is exposed so that applications don't have to rewrite it for M0
 //! support.
 
-use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicUsize, Ordering};
+use core::sync::atomic::{
+	AtomicBool, AtomicPtr, AtomicU32, AtomicUsize, Ordering,
+};
 
 mod private {
-    /// ########################################################################
-    /// @Hustler
-    ///
-    /// Trait
-    ///
-    /// Static Dispatch - Figure out which method to call at compile time.
-    ///
-    ///
-    ///
-    /// Trait Object - The combination of a type that implements a trait and its
-    ///                vtable (Virtual Method Table).
-    ///                                         |
-    ///                                         V
-    ///                                  Dynamic Dispatch
-    ///
-    ///                  [Figure out which method to call at runtime time]
-    ///
-    ///                  Trait                            +-------------+
-    ///                    |        pointer               |             |
-    ///                    +---------------------> vtable :  Interfaces :
-    ///                                                   |             |
-    ///                                                   +-------------+
-    ///
-    /// For instance, &dyn [Defined-Trait]
-    ///
-    /// To be object-safe, none of a trait's methods can be generic or use the
-    /// Self type.
-    /// ########################################################################
-    pub trait Sealed {}
+	/// ########################################################################
+	/// @Hustler
+	///
+	/// Trait
+	///
+	/// Static Dispatch - Figure out which method to call at compile time.
+	///
+	///
+	///
+	/// Trait Object - The combination of a type that implements a trait and its
+	///                vtable (Virtual Method Table).
+	///                                         |
+	///                                         V
+	///                                  Dynamic Dispatch
+	///
+	///                  [Figure out which method to call at runtime time]
+	///
+	///                  Trait                            +-------------+
+	///                    |        pointer               |             |
+	///                    +---------------------> vtable :  Interfaces :
+	///                                                   |             |
+	///                                                   +-------------+
+	///
+	/// For instance, &dyn [Defined-Trait]
+	///
+	/// To be object-safe, none of a trait's methods can be generic or use the
+	/// Self type.
+	/// ########################################################################
+	pub trait Sealed {}
 }
 
 /// Basic atomic operations.
@@ -67,84 +69,100 @@ mod private {
 /// Sealed Trait is one that can be used only, but not implemented by other
 /// crates.
 pub trait AtomicExt: private::Sealed {
-    /// Primitive type corresponding to this atomic type.
-    ///
-    /// @Hustler
-    ///
-    /// Associated Type
-    type Value;
+	/// Primitive type corresponding to this atomic type.
+	///
+	/// @Hustler
+	///
+	/// Associated Type
+	type Value;
 
-    /// Atomically exchange our current contents for `val`, returning the
-    /// original contents.
-    ///
-    /// Replacement for `swap`.
-    fn swap_polyfill(&self, val: Self::Value, ordering: Ordering) -> Self::Value;
+	/// Atomically exchange our current contents for `val`, returning the
+	/// original contents.
+	///
+	/// Replacement for `swap`.
+	fn swap_polyfill(
+		&self,
+		val: Self::Value,
+		ordering: Ordering,
+	) -> Self::Value;
 
-    /// If `self`'s value is equal to `current`, atomically replace it with
-    /// `new`, otherwise leave it untouched.
-    ///
-    /// Returns `Ok(current)` on success, `Err(actual_value)` on failure.
-    ///
-    /// Replacement for `compare_exchange`.
-    fn compare_exchange_polyfill(
-        &self,
-        current: Self::Value,
-        new: Self::Value,
-        success: Ordering,
-        failure: Ordering,
-    ) -> Result<Self::Value, Self::Value>;
+	/// If `self`'s value is equal to `current`, atomically replace it with
+	/// `new`, otherwise leave it untouched.
+	///
+	/// Returns `Ok(current)` on success, `Err(actual_value)` on failure.
+	///
+	/// Replacement for `compare_exchange`.
+	fn compare_exchange_polyfill(
+		&self,
+		current: Self::Value,
+		new: Self::Value,
+		success: Ordering,
+		failure: Ordering,
+	) -> Result<Self::Value, Self::Value>;
 
-    /// Fetches the current value using `fetch_order`, applies `f` to it. If `f`
-    /// produces `Some(new_value)`, attempts to swap the value that was read for
-    /// `new_value`. If `f` produces `None`, stops.
-    ///
-    /// If the swap fails, the process repeats and `f` is called again with the
-    /// new observed value.
-    ///
-    /// Replacement for `fetch_update`.
-    ///
-    /// ########################################################################
-    /// @Hustler 2024/11/16
-    ///
-    /// Here I plan to dig on closure and funtion pointer, since I'm not fully
-    /// understand the concept and also how to use them in real situation.
-    ///
-    /// Function Item
-    ///
-    /// Function Pointers
-    ///
-    /// fn pass_callback(callback: fn(x: u32) -> u32) {}
-    ///
-    ///
-    /// Fn Traits
-    ///
-    /// [1] FnOnce - A closure that can be called once.
-    /// [2] FnMut  - A closure doesn't move captured values out of its body, But
-    ///              might mutate the values.
-    /// [3] Fn     - A closure doesn't move captured values out of its body, also
-    ///              does not mutate the values.
-    ///
-    /// Closure Anonymous Function that Capture Their Environment
-    ///
-    ///
-    ///
-    /// ########################################################################
-    fn fetch_update_polyfill(
-        &self,
-        set_order: Ordering,
-        fetch_order: Ordering,
-        f: impl FnMut(Self::Value) -> Option<Self::Value>,
-    ) -> Result<Self::Value, Self::Value>;
+	/// Fetches the current value using `fetch_order`, applies `f` to it. If `f`
+	/// produces `Some(new_value)`, attempts to swap the value that was read for
+	/// `new_value`. If `f` produces `None`, stops.
+	///
+	/// If the swap fails, the process repeats and `f` is called again with the
+	/// new observed value.
+	///
+	/// Replacement for `fetch_update`.
+	///
+	/// ########################################################################
+	/// @Hustler 2024/11/16
+	///
+	/// Here I plan to dig on closure and funtion pointer, since I'm not fully
+	/// understand the concept and also how to use them in real situation.
+	///
+	/// Function Item
+	///
+	/// Function Pointers
+	///
+	/// fn pass_callback(callback: fn(x: u32) -> u32) {}
+	///
+	///
+	/// Fn Traits
+	///
+	/// [1] FnOnce - A closure that can be called once.
+	/// [2] FnMut  - A closure doesn't move captured values out of its body, But
+	///              might mutate the values.
+	/// [3] Fn     - A closure doesn't move captured values out of its body, also
+	///              does not mutate the values.
+	///
+	/// Closure Anonymous Function that Capture Their Environment
+	///
+	///
+	///
+	/// ########################################################################
+	fn fetch_update_polyfill(
+		&self,
+		set_order: Ordering,
+		fetch_order: Ordering,
+		f: impl FnMut(Self::Value) -> Option<Self::Value>,
+	) -> Result<Self::Value, Self::Value>;
 }
 
 /// Atomic operations that apply to arithmetic types.
 pub trait AtomicArithExt: AtomicExt {
-    /// Atomically add `val` to our contents, returning the original value.
-    fn fetch_add_polyfill(&self, val: Self::Value, ordering: Ordering) -> Self::Value;
-    /// Atomically subtract `val` to our contents, returning the original value.
-    fn fetch_sub_polyfill(&self, val: Self::Value, ordering: Ordering) -> Self::Value;
-    /// Atomically OR `val` into our contents, returning the original value.
-    fn fetch_or_polyfill(&self, val: Self::Value, ordering: Ordering) -> Self::Value;
+	/// Atomically add `val` to our contents, returning the original value.
+	fn fetch_add_polyfill(
+		&self,
+		val: Self::Value,
+		ordering: Ordering,
+	) -> Self::Value;
+	/// Atomically subtract `val` to our contents, returning the original value.
+	fn fetch_sub_polyfill(
+		&self,
+		val: Self::Value,
+		ordering: Ordering,
+	) -> Self::Value;
+	/// Atomically OR `val` into our contents, returning the original value.
+	fn fetch_or_polyfill(
+		&self,
+		val: Self::Value,
+		ordering: Ordering,
+	) -> Self::Value;
 }
 
 /// ############################################################################
@@ -377,12 +395,12 @@ impl_atomic_arith_polyfills!(AtomicU32);
 #[cfg(not(tinybm_has_native_rmw))]
 #[inline(always)]
 fn rmw_ordering(o: Ordering) -> (Ordering, Ordering) {
-    match o {
-        Ordering::AcqRel => (Ordering::Acquire, Ordering::Release),
-        Ordering::Relaxed => (o, o),
-        Ordering::SeqCst => (o, o),
-        Ordering::Acquire => (Ordering::Acquire, Ordering::Relaxed),
-        Ordering::Release => (Ordering::Relaxed, Ordering::Release),
-        _ => panic!(),
-    }
+	match o {
+		Ordering::AcqRel => (Ordering::Acquire, Ordering::Release),
+		Ordering::Relaxed => (o, o),
+		Ordering::SeqCst => (o, o),
+		Ordering::Acquire => (Ordering::Acquire, Ordering::Relaxed),
+		Ordering::Release => (Ordering::Relaxed, Ordering::Release),
+		_ => panic!(),
+	}
 }

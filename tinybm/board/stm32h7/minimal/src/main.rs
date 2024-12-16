@@ -31,40 +31,42 @@ const PERIOD: tinybm::time::Millis = tinybm::time::Millis(500);
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    // Check out peripherals from the runtime.
-    let mut cp = cortex_m::Peripherals::take().unwrap();
+	// Check out peripherals from the runtime.
+	let mut cp = cortex_m::Peripherals::take().unwrap();
 
-    // Turn on GPIOB. Note the barrier: the H7 is a multi-issue CPU and if we
-    // want a specific ordering of memory operations, we have to ask for it.
-    device::RCC.ahb4enr().modify(|w| w.set_gpioben(true));
-    cortex_m::asm::dmb();
+	// Turn on GPIOB. Note the barrier: the H7 is a multi-issue CPU and if we
+	// want a specific ordering of memory operations, we have to ask for it.
+	device::RCC.ahb4enr().modify(|w| w.set_gpioben(true));
+	cortex_m::asm::dmb();
 
-    // Configure our output pin, B0.
-    device::GPIOB.moder().modify(|w| w.set_moder(0, Moder::OUTPUT));
+	// Configure our output pin, B0.
+	device::GPIOB
+		.moder()
+		.modify(|w| w.set_moder(0, Moder::OUTPUT));
 
-    // Create a task to blink the LED. You could also write this as an `async
-    // fn` but we've inlined it as an `async` block for simplicity.
-    let blink = core::pin::pin!(async {
-        // PeriodicGate is a `tinybm` tool for implementing low-jitter periodic
-        // actions. It opens once per PERIOD.
-        let mut gate = tinybm::time::PeriodicGate::from(PERIOD);
+	// Create a task to blink the LED. You could also write this as an `async
+	// fn` but we've inlined it as an `async` block for simplicity.
+	let blink = core::pin::pin!(async {
+		// PeriodicGate is a `tinybm` tool for implementing low-jitter periodic
+		// actions. It opens once per PERIOD.
+		let mut gate = tinybm::time::PeriodicGate::from(PERIOD);
 
-        // Loop forever, blinking things. Note that this borrows the device
-        // peripherals `p` from the enclosing stack frame.
-        loop {
-            device::GPIOB.bsrr().write(|w| w.set_bs(0, true));
-            gate.next_time().await;
-            device::GPIOB.bsrr().write(|w| w.set_br(0, true));
-            gate.next_time().await;
-        }
-    });
+		// Loop forever, blinking things. Note that this borrows the device
+		// peripherals `p` from the enclosing stack frame.
+		loop {
+			device::GPIOB.bsrr().write(|w| w.set_bs(0, true));
+			gate.next_time().await;
+			device::GPIOB.bsrr().write(|w| w.set_br(0, true));
+			gate.next_time().await;
+		}
+	});
 
-    // Configure the systick timer for 1kHz ticks at 64MHz (the speed the CPU is
-    // running at when it leaves reset).
-    tinybm::time::initialize_sys_tick(&mut cp.SYST, 64_000_000);
-    // Set up and run the scheduler with a single task.
-    tinybm::exec::run_tasks(
-        &mut [blink],  // <-- array of tasks
-        tinybm::exec::ALL_TASKS,  // <-- which to start initially
-    )
+	// Configure the systick timer for 1kHz ticks at 64MHz (the speed the CPU is
+	// running at when it leaves reset).
+	tinybm::time::initialize_sys_tick(&mut cp.SYST, 64_000_000);
+	// Set up and run the scheduler with a single task.
+	tinybm::exec::run_tasks(
+		&mut [blink],            // <-- array of tasks
+		tinybm::exec::ALL_TASKS, // <-- which to start initially
+	)
 }

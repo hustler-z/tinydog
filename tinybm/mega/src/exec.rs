@@ -149,14 +149,14 @@ use crate::util::Captures;
 // still have some intimate dependencies between the modules. You'll see a few
 // other cfg(feature = "systick") lines below.
 cfg_if::cfg_if! {
-    if #[cfg(feature = "systick")] {
-        use portable_atomic::AtomicBool;
-        use core::ptr::{addr_of, addr_of_mut};
+	if #[cfg(feature = "systick")] {
+		use portable_atomic::AtomicBool;
+		use core::ptr::{addr_of, addr_of_mut};
 
-        use tinybm_list::List;
-        use core::mem::MaybeUninit;
-        use crate::time::TickTime;
-    }
+		use tinybm_list::List;
+		use core::mem::MaybeUninit;
+		use crate::time::TickTime;
+	}
 }
 
 /// Accumulates bitmasks from wakers as they are invoked. The executor
@@ -166,10 +166,10 @@ static WAKE_BITS: AtomicUsize = AtomicUsize::new(0);
 /// Computes the wake bit mask for the task with the given index, which is
 /// equivalent to `1 << (index % USIZE_BITS)`.
 const fn wake_mask_for_index(index: usize) -> usize {
-    // Lossy as-cast used here because rotate_left implies a mod by small power
-    // of 2 (32, 64) and `as u32` implies mod by 2**32, which doesn't change the
-    // result.
-    1_usize.rotate_left(index as u32)
+	// Lossy as-cast used here because rotate_left implies a mod by small power
+	// of 2 (32, 64) and `as u32` implies mod by 2**32, which doesn't change the
+	// result.
+	1_usize.rotate_left(index as u32)
 }
 
 /// ############################################################################
@@ -185,27 +185,27 @@ const fn wake_mask_for_index(index: usize) -> usize {
 /// VTable for our wakers. Our wakers store a task notification bitmask in their
 /// "pointer" member, and atomically OR it into `WAKE_BITS` when invoked.
 static VTABLE: RawWakerVTable = RawWakerVTable::new(
-    // clone
-    |p| RawWaker::new(p, &VTABLE),
-    // wake
-    |p| wake_tasks_by_mask(p as usize),
-    // wake_by_ref
-    |p| wake_tasks_by_mask(p as usize),
-    // drop
-    |_| (),
+	// clone
+	|p| RawWaker::new(p, &VTABLE),
+	// wake
+	|p| wake_tasks_by_mask(p as usize),
+	// wake_by_ref
+	|p| wake_tasks_by_mask(p as usize),
+	// drop
+	|_| (),
 );
 
 /// Produces a `Waker` that will wake *at least* task `index` on invocation.
 ///
 /// Technically, this will wake any task `n` where `n % 32 == index % 32`.
 fn waker_for_task(index: usize) -> Waker {
-    let mask = wake_mask_for_index(index);
-    // Safety: Waker::from_raw is unsafe because bad things happen if the
-    // combination of this particular pointer and the functions in the vtable
-    // don't meet the Waker contract or are incompatible. In our case, our
-    // vtable functions are actually entirely safe, since we're passing an
-    // integer as a pointer.
-    unsafe { Waker::from_raw(RawWaker::new(mask as *const (), &VTABLE)) }
+	let mask = wake_mask_for_index(index);
+	// Safety: Waker::from_raw is unsafe because bad things happen if the
+	// combination of this particular pointer and the functions in the vtable
+	// don't meet the Waker contract or are incompatible. In our case, our
+	// vtable functions are actually entirely safe, since we're passing an
+	// integer as a pointer.
+	unsafe { Waker::from_raw(RawWaker::new(mask as *const (), &VTABLE)) }
 }
 
 /// Exploits our known Waker structure to extract the notification mask from a
@@ -219,52 +219,51 @@ fn waker_for_task(index: usize) -> Waker {
 /// In practice this function compiles down to a single inlined load
 /// instruction.
 fn extract_mask(waker: &Waker) -> usize {
-    // Determine whether the pointer member comes first or second within the
-    // representation of RawWaker. This is currently compile-time simplified
-    // and goes away.
-    //
-    // Safety: we are using `transmute` to inspect the raw composition of a
-    // Waker. That direction is safe -- it's a fancy version of casting a
-    // pointer to an integer. Transmuting the _other_ direction would be very
-    // unsafe.
-    //
-    // ##########################################################
-    // @Hustler
-    //
-    // In other word, `transmute` reinterprets the bits of a value
-    // of one type as another type.
-    //
-    // ##########################################################
-    let ptr_first = unsafe {
-        let (cell0, _) = mem::transmute::<Waker, (usize, usize)>(Waker::from_raw(RawWaker::new(
-            1234 as *const (),
-            &VTABLE,
-        )));
-        cell0 == 1234usize
-    };
+	// Determine whether the pointer member comes first or second within the
+	// representation of RawWaker. This is currently compile-time simplified
+	// and goes away.
+	//
+	// Safety: we are using `transmute` to inspect the raw composition of a
+	// Waker. That direction is safe -- it's a fancy version of casting a
+	// pointer to an integer. Transmuting the _other_ direction would be very
+	// unsafe.
+	//
+	// ##########################################################
+	// @Hustler
+	//
+	// In other word, `transmute` reinterprets the bits of a value
+	// of one type as another type.
+	//
+	// ##########################################################
+	let ptr_first = unsafe {
+		let (cell0, _) = mem::transmute::<Waker, (usize, usize)>(
+			Waker::from_raw(RawWaker::new(1234 as *const (), &VTABLE)),
+		);
+		cell0 == 1234usize
+	};
 
-    let waker: *const Waker = waker;
-    // Safety: at the moment, `Waker` consists exactly of a `*const ()` and a
-    // `&'static RawWakerVTable` (or equivalent pointer), and this is unlikely
-    // to change. We've already verified above that we can find the parameter
-    // word, which is what we care about. Extracting it cannot violate memory
-    // safety, since we're just reading initialized memory.
-    unsafe {
-        let parts = &*(waker as *const (usize, usize));
-        if ptr_first {
-            parts.0
-        } else {
-            parts.1
-        }
-    }
+	let waker: *const Waker = waker;
+	// Safety: at the moment, `Waker` consists exactly of a `*const ()` and a
+	// `&'static RawWakerVTable` (or equivalent pointer), and this is unlikely
+	// to change. We've already verified above that we can find the parameter
+	// word, which is what we care about. Extracting it cannot violate memory
+	// safety, since we're just reading initialized memory.
+	unsafe {
+		let parts = &*(waker as *const (usize, usize));
+		if ptr_first {
+			parts.0
+		} else {
+			parts.1
+		}
+	}
 }
 
 /// Used to construct wakers do nothing, as a placeholder.
 static NOOP_VTABLE: RawWakerVTable = RawWakerVTable::new(
-    |x| RawWaker::new(x, &NOOP_VTABLE), // clone
-    |_| (),                             // wake
-    |_| (),                             // wake_by_ref
-    |_| (),                             // drop
+	|x| RawWaker::new(x, &NOOP_VTABLE), // clone
+	|_| (),                             // wake
+	|_| (),                             // wake_by_ref
+	|_| (),                             // drop
 );
 
 /// Returns a [`Waker`] that doesn't do anything and costs nothing to `clone`.
@@ -272,23 +271,23 @@ static NOOP_VTABLE: RawWakerVTable = RawWakerVTable::new(
 /// This is useful as a placeholder before a *real* `Waker` becomes available.
 /// You probably don't need this unless you're building your own wake lists.
 #[deprecated(
-    since = "1.2.0",
-    note = "was only ever used with List which is now deprecated"
+	since = "1.2.0",
+	note = "was only ever used with List which is now deprecated"
 )]
 pub fn noop_waker() -> Waker {
-    // Safety: Waker::from_raw is unsafe because the Waker can do weird and
-    // destructive stuff if either the pointer, or the vtable functions, don't
-    // meet its contract. Our no-op functions _trivially_ meet its contract.
-    unsafe { Waker::from_raw(RawWaker::new(core::ptr::null(), &NOOP_VTABLE)) }
+	// Safety: Waker::from_raw is unsafe because the Waker can do weird and
+	// destructive stuff if either the pointer, or the vtable functions, don't
+	// meet its contract. Our no-op functions _trivially_ meet its contract.
+	unsafe { Waker::from_raw(RawWaker::new(core::ptr::null(), &NOOP_VTABLE)) }
 }
 
 /// Polls `future` in a context where the `Waker` will signal the task with
 /// index `index`.
 fn poll_task(index: usize, future: Pin<&mut dyn Future<Output = Infallible>>) {
-    match future.poll(&mut Context::from_waker(&waker_for_task(index))) {
-        Poll::Pending => (),
-        Poll::Ready(never) => match never {},
-    }
+	match future.poll(&mut Context::from_waker(&waker_for_task(index))) {
+		Poll::Pending => (),
+		Poll::Ready(never) => match never {},
+	}
 }
 
 /// Selects an interrupt control strategy for the scheduler.
@@ -297,71 +296,71 @@ fn poll_task(index: usize, future: Pin<&mut dyn Future<Output = Infallible>>) {
 /// [`run_tasks_with_preemption_and_idle`].
 #[derive(Copy, Clone, Debug)]
 pub enum Interrupts {
-    /// Use PRIMASK to completely disable interrupts while task code is running.
-    Masked,
-    /// Use BASEPRI to mask interrupts of the given priority and lower (i.e.
-    /// numerically greater, since 0 is "most important" and `0xFF` is "least
-    /// important").
-    ///
-    /// `Filtered(0)` is basically equivalent to `Masked`.
-    ///
-    /// Be careful when using this: note that the "next" priority past 0 is
-    /// vendor-dependent, because implementations can choose not to implement
-    /// some of the least significant interrupt priority bits to save space on
-    /// the chip. If what you want is to divide interrupts into a set that can
-    /// preempt everything (often timer interrupts) and a set that cannot,
-    /// `Filtered(0x80)` should work.
-    ///
-    /// When using the `systick` feature, note that the SysTick IRQ is
-    /// configured at priority 0 by default, so setting this to `Filtered(0x80)`
-    /// is enough to stop losing ticks during long-running sequences. (You can
-    /// adjust this priority in the NVIC.)
-    ///
-    /// This is not available on ARMv6-M, which lacks the `BASEPRI` feature.
-    #[cfg(tinybm_has_basepri)]
-    Filtered(u8),
+	/// Use PRIMASK to completely disable interrupts while task code is running.
+	Masked,
+	/// Use BASEPRI to mask interrupts of the given priority and lower (i.e.
+	/// numerically greater, since 0 is "most important" and `0xFF` is "least
+	/// important").
+	///
+	/// `Filtered(0)` is basically equivalent to `Masked`.
+	///
+	/// Be careful when using this: note that the "next" priority past 0 is
+	/// vendor-dependent, because implementations can choose not to implement
+	/// some of the least significant interrupt priority bits to save space on
+	/// the chip. If what you want is to divide interrupts into a set that can
+	/// preempt everything (often timer interrupts) and a set that cannot,
+	/// `Filtered(0x80)` should work.
+	///
+	/// When using the `systick` feature, note that the SysTick IRQ is
+	/// configured at priority 0 by default, so setting this to `Filtered(0x80)`
+	/// is enough to stop losing ticks during long-running sequences. (You can
+	/// adjust this priority in the NVIC.)
+	///
+	/// This is not available on ARMv6-M, which lacks the `BASEPRI` feature.
+	#[cfg(tinybm_has_basepri)]
+	Filtered(u8),
 }
 
 impl Interrupts {
-    fn scope<R>(self, body: impl FnOnce() -> R) -> R {
-        let r = match self {
-            Interrupts::Masked => {
-                let prev = cortex_m::register::primask::read();
-                cortex_m::interrupt::disable();
+	fn scope<R>(self, body: impl FnOnce() -> R) -> R {
+		let r = match self {
+			Interrupts::Masked => {
+				let prev = cortex_m::register::primask::read();
+				cortex_m::interrupt::disable();
 
-                let r = body();
+				let r = body();
 
-                if prev == cortex_m::register::primask::Primask::Active {
-                    // Safety: interrupts were just on, so this won't compromise
-                    // memory safety.
-                    unsafe {
-                        cortex_m::interrupt::enable();
-                    }
-                }
+				if prev == cortex_m::register::primask::Primask::Active {
+					// Safety: interrupts were just on, so this won't compromise
+					// memory safety.
+					unsafe {
+						cortex_m::interrupt::enable();
+					}
+				}
 
-                r
-            }
-            #[cfg(tinybm_has_basepri)]
-            Interrupts::Filtered(priority) => {
-                let prev = cortex_m::register::basepri::read();
-                cortex_m::register::basepri_max::write(priority);
+				r
+			}
+			#[cfg(tinybm_has_basepri)]
+			Interrupts::Filtered(priority) => {
+				let prev = cortex_m::register::basepri::read();
+				cortex_m::register::basepri_max::write(priority);
 
-                let r = body();
+				let r = body();
 
-                // Safety: just restoring state
-                unsafe {
-                    cortex_m::register::basepri::write(prev);
-                }
+				// Safety: just restoring state
+				unsafe {
+					cortex_m::register::basepri::write(prev);
+				}
 
-                r
-            }
-        };
+				r
+			}
+		};
 
-        // Make sure newly-enabled interrupt handlers fire.
-        cortex_m::asm::isb();
+		// Make sure newly-enabled interrupt handlers fire.
+		cortex_m::asm::isb();
 
-        r
-    }
+		r
+	}
 }
 
 /// Runs the given futures forever, sleeping when possible. Each future acts as
@@ -384,28 +383,33 @@ impl Interrupts {
 /// having more predictable response latency than spinning. If you'd like to
 /// override this behavior, see [`run_tasks_with_idle`].
 pub fn run_tasks(
-    futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
-    initial_mask: usize,
+	futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
+	initial_mask: usize,
 ) -> ! {
-    // Safety: we're passing Interrupts::Masked, the always-safe option
-    unsafe {
-        run_tasks_with_preemption_and_idle(futures, initial_mask, Interrupts::Masked, || {
-            cortex_m::asm::wfi();
-            // This works around an undocumented erratum on STM32 processors
-            // when WFI is set to go to "Sleep" level, and a debug agent has
-            // set the DBGMCU bits to cause clocks to continue to run during
-            // sleep. In this situation, it appears that the pipeline state
-            // after the WFI can be corrupted in the specific case where the
-            // WFI happens _without_ an interrupt service routine occurring
-            // (i.e. our default configuration of interrupts masked). An ISB
-            // appears to fix it, independent of alignment etc.
-            //
-            // Hard to tell, though, since this isn't in the errata sheet.
-            //
-            // On non-STM32 Cortex processors this will cost a few cycles.
-            cortex_m::asm::isb();
-        })
-    }
+	// Safety: we're passing Interrupts::Masked, the always-safe option
+	unsafe {
+		run_tasks_with_preemption_and_idle(
+			futures,
+			initial_mask,
+			Interrupts::Masked,
+			|| {
+				cortex_m::asm::wfi();
+				// This works around an undocumented erratum on STM32 processors
+				// when WFI is set to go to "Sleep" level, and a debug agent has
+				// set the DBGMCU bits to cause clocks to continue to run during
+				// sleep. In this situation, it appears that the pipeline state
+				// after the WFI can be corrupted in the specific case where the
+				// WFI happens _without_ an interrupt service routine occurring
+				// (i.e. our default configuration of interrupts masked). An ISB
+				// appears to fix it, independent of alignment etc.
+				//
+				// Hard to tell, though, since this isn't in the errata sheet.
+				//
+				// On non-STM32 Cortex processors this will cost a few cycles.
+				cortex_m::asm::isb();
+			},
+		)
+	}
 }
 
 /// Extended version of `run_tasks` that replaces the default idle behavior
@@ -416,14 +420,19 @@ pub fn run_tasks(
 ///
 /// See [`run_tasks`] for more details.
 pub fn run_tasks_with_idle(
-    futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
-    initial_mask: usize,
-    idle_hook: impl FnMut(),
+	futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
+	initial_mask: usize,
+	idle_hook: impl FnMut(),
 ) -> ! {
-    // Safety: we're passing Interrupts::Masked, the always-safe option
-    unsafe {
-        run_tasks_with_preemption_and_idle(futures, initial_mask, Interrupts::Masked, idle_hook)
-    }
+	// Safety: we're passing Interrupts::Masked, the always-safe option
+	unsafe {
+		run_tasks_with_preemption_and_idle(
+			futures,
+			initial_mask,
+			Interrupts::Masked,
+			idle_hook,
+		)
+	}
 }
 
 /// Extended version of `run_tasks` that configures the scheduler with a custom
@@ -447,14 +456,19 @@ pub fn run_tasks_with_idle(
 /// from a custom ISR. Only operations on types that are specifically described
 /// as being ISR safe, such as `Notify::notify`, can be used from ISRs.
 pub unsafe fn run_tasks_with_preemption(
-    futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
-    initial_mask: usize,
-    interrupts: Interrupts,
+	futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
+	initial_mask: usize,
+	interrupts: Interrupts,
 ) -> ! {
-    // Safety: this is safe if our own contract is upheld.
-    unsafe {
-        run_tasks_with_preemption_and_idle(futures, initial_mask, interrupts, cortex_m::asm::wfi)
-    }
+	// Safety: this is safe if our own contract is upheld.
+	unsafe {
+		run_tasks_with_preemption_and_idle(
+			futures,
+			initial_mask,
+			interrupts,
+			cortex_m::asm::wfi,
+		)
+	}
 }
 
 /// Extended version of `run_tasks` that configures the scheduler with a custom
@@ -481,89 +495,91 @@ pub unsafe fn run_tasks_with_preemption(
 /// from a custom ISR. Only operations on types that are specifically described
 /// as being ISR safe, such as `Notify::notify`, can be used from ISRs.
 pub unsafe fn run_tasks_with_preemption_and_idle(
-    futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
-    initial_mask: usize,
-    interrupts: Interrupts,
-    mut idle_hook: impl FnMut(),
+	futures: &mut [Pin<&mut dyn Future<Output = Infallible>>],
+	initial_mask: usize,
+	interrupts: Interrupts,
+	mut idle_hook: impl FnMut(),
 ) -> ! {
-    // Record the task futures for debugger access.
-    {
-        // Degrade &mut[] to *mut[]
-        let futures_ptr: *mut [Pin<&mut dyn Future<Output = Infallible>>] = futures;
-        // Change interpretation of the Pins; this assumes that &mut and *mut
-        // have equivalent representation! But we want to store *mut into the
-        // static because
-        // 1. It grants no authority without unsafe, so the fact that it aliases
-        //    an array we intend to keep using is nbd.
-        // 2. It relieves us from having to pretend the array has static
-        //    lifetime, which it does _not._ Casting it to `&'static mut` would
-        //    be wrong.
-        let futures_ptr: *mut [Pin<*mut dyn Future<Output = Infallible>>] = futures_ptr as _;
-        // Stash the task future array in a known location.
-        //
-        // Safety: this is written by code but never read back, so the fact that
-        // it's a static mut has no effect on code other than the warning.
-        unsafe {
-            TASK_FUTURES = Some(futures_ptr);
-        }
-    }
+	// Record the task futures for debugger access.
+	{
+		// Degrade &mut[] to *mut[]
+		let futures_ptr: *mut [Pin<&mut dyn Future<Output = Infallible>>] =
+			futures;
+		// Change interpretation of the Pins; this assumes that &mut and *mut
+		// have equivalent representation! But we want to store *mut into the
+		// static because
+		// 1. It grants no authority without unsafe, so the fact that it aliases
+		//    an array we intend to keep using is nbd.
+		// 2. It relieves us from having to pretend the array has static
+		//    lifetime, which it does _not._ Casting it to `&'static mut` would
+		//    be wrong.
+		let futures_ptr: *mut [Pin<*mut dyn Future<Output = Infallible>>] =
+			futures_ptr as _;
+		// Stash the task future array in a known location.
+		//
+		// Safety: this is written by code but never read back, so the fact that
+		// it's a static mut has no effect on code other than the warning.
+		unsafe {
+			TASK_FUTURES = Some(futures_ptr);
+		}
+	}
 
-    WAKE_BITS.store(initial_mask, Ordering::SeqCst);
+	WAKE_BITS.store(initial_mask, Ordering::SeqCst);
 
-    // Initialize the timer list.
-    #[cfg(feature = "systick")]
-    {
-        let already_initialized = TIMER_LIST_READY.swap(true, Ordering::SeqCst);
-        // Catch any attempt to do this twice. Would doing this twice be bad?
-        // Not necessarily. But it would be damn suspicious.
-        cheap_assert!(!already_initialized);
+	// Initialize the timer list.
+	#[cfg(feature = "systick")]
+	{
+		let already_initialized = TIMER_LIST_READY.swap(true, Ordering::SeqCst);
+		// Catch any attempt to do this twice. Would doing this twice be bad?
+		// Not necessarily. But it would be damn suspicious.
+		cheap_assert!(!already_initialized);
 
-        // Safety: by successfully flipping the initialization flag, we know
-        // we can do this without aliasing; being in a single-threaded context
-        // right now means we can do it without racing.
-        let timer_list = unsafe { &mut *addr_of_mut!(TIMER_LIST) };
+		// Safety: by successfully flipping the initialization flag, we know
+		// we can do this without aliasing; being in a single-threaded context
+		// right now means we can do it without racing.
+		let timer_list = unsafe { &mut *addr_of_mut!(TIMER_LIST) };
 
-        // Initialize the list node itself.
-        timer_list.write(List::new());
+		// Initialize the list node itself.
+		timer_list.write(List::new());
 
-        // The list is initialized; we can now produce _shared_ references to
-        // it. Because it won't move again, we can pin those references.
-    }
+		// The list is initialized; we can now produce _shared_ references to
+		// it. Because it won't move again, we can pin those references.
+	}
 
-    #[cfg(feature = "systick")]
-    let tl = get_timer_list();
-    loop {
-        interrupts.scope(|| {
-            #[cfg(feature = "systick")]
-            {
-                // Scan for any expired timers.
-                let now = TickTime::now();
-                tl.wake_while(|&t| t <= now);
-            }
+	#[cfg(feature = "systick")]
+	let tl = get_timer_list();
+	loop {
+		interrupts.scope(|| {
+			#[cfg(feature = "systick")]
+			{
+				// Scan for any expired timers.
+				let now = TickTime::now();
+				tl.wake_while(|&t| t <= now);
+			}
 
-            // Capture and reset wake bits, then process any 1s.
-            // TODO: this loop visits every future testing for 1 bits; it would
-            // almost certainly be faster to visit the futures corresponding to
-            // 1 bits instead. I have avoided this for now because of the
-            // increased complexity.
-            let mask = WAKE_BITS.swap(0, Ordering::SeqCst);
-            for (i, f) in futures.iter_mut().enumerate() {
-                if mask & wake_mask_for_index(i) != 0 {
-                    poll_task(i, f.as_mut());
-                }
-            }
+			// Capture and reset wake bits, then process any 1s.
+			// TODO: this loop visits every future testing for 1 bits; it would
+			// almost certainly be faster to visit the futures corresponding to
+			// 1 bits instead. I have avoided this for now because of the
+			// increased complexity.
+			let mask = WAKE_BITS.swap(0, Ordering::SeqCst);
+			for (i, f) in futures.iter_mut().enumerate() {
+				if mask & wake_mask_for_index(i) != 0 {
+					poll_task(i, f.as_mut());
+				}
+			}
 
-            // If none of the futures woke each other, we're relying on an
-            // interrupt to set bits -- so we can sleep waiting for it.
-            if WAKE_BITS.load(Ordering::SeqCst) == 0 {
-                idle_hook();
-            }
-        });
+			// If none of the futures woke each other, we're relying on an
+			// interrupt to set bits -- so we can sleep waiting for it.
+			if WAKE_BITS.load(Ordering::SeqCst) == 0 {
+				idle_hook();
+			}
+		});
 
-        // Now interrupts are enabled for a brief period before diving back in.
-        // Note that we allow interrupt-wake even when some wake bits are set;
-        // this prevents ISR starvation by polling tasks.
-    }
+		// Now interrupts are enabled for a brief period before diving back in.
+		// Note that we allow interrupt-wake even when some wake bits are set;
+		// this prevents ISR starvation by polling tasks.
+	}
 }
 
 /// This `static` variable is only written by the OS, and never read. It exists
@@ -580,7 +596,9 @@ pub unsafe fn run_tasks_with_preemption_and_idle(
 /// Note that the `#[used]` annotation is load-bearing here -- without it the
 /// compiler will happily throw the variable away, confusing the debugger.
 #[used]
-static mut TASK_FUTURES: Option<*mut [Pin<*mut dyn Future<Output = Infallible>>]> = None;
+static mut TASK_FUTURES: Option<
+	*mut [Pin<*mut dyn Future<Output = Infallible>>],
+> = None;
 
 /// Constant that can be passed to `run_tasks` and `wake_tasks_by_mask` to mean
 /// "all tasks."
@@ -665,132 +683,132 @@ pub const ALL_TASKS: usize = !0;
 /// an ISR.
 #[derive(Debug, Default)]
 pub struct Notify {
-    mask: AtomicUsize,
+	mask: AtomicUsize,
 }
 
 impl Notify {
-    /// Creates a new `Notify` with no tasks waiting.
-    pub const fn new() -> Self {
-        Self {
-            mask: AtomicUsize::new(0),
-        }
-    }
+	/// Creates a new `Notify` with no tasks waiting.
+	pub const fn new() -> Self {
+		Self {
+			mask: AtomicUsize::new(0),
+		}
+	}
 
-    /// Adds the `Waker` to the set of waiters.
-    ///
-    /// This is a low-level operation. For using a `Notify` in practice, you
-    /// probably want [`until`][Notify::until] instead.
-    pub fn subscribe(&self, waker: &Waker) {
-        self.mask.fetch_or(extract_mask(waker), Ordering::SeqCst);
-    }
+	/// Adds the `Waker` to the set of waiters.
+	///
+	/// This is a low-level operation. For using a `Notify` in practice, you
+	/// probably want [`until`][Notify::until] instead.
+	pub fn subscribe(&self, waker: &Waker) {
+		self.mask.fetch_or(extract_mask(waker), Ordering::SeqCst);
+	}
 
-    /// Wakes tasks, at least all those whose waiters have been passed to
-    /// `subscribe` since the last `notify`, possibly more.
-    ///
-    /// As with any wake, this makes the tasks eligible for polling in the next
-    /// iteration of the executor, and does not cause any code to run
-    /// immediately.
-    pub fn notify(&self) {
-        wake_tasks_by_mask(self.mask.swap(0, Ordering::SeqCst))
-    }
+	/// Wakes tasks, at least all those whose waiters have been passed to
+	/// `subscribe` since the last `notify`, possibly more.
+	///
+	/// As with any wake, this makes the tasks eligible for polling in the next
+	/// iteration of the executor, and does not cause any code to run
+	/// immediately.
+	pub fn notify(&self) {
+		wake_tasks_by_mask(self.mask.swap(0, Ordering::SeqCst))
+	}
 
-    /// Waits for a condition to become true, checking only when signaled by
-    /// this `Notify`. This is generally the right way to synchronize with an
-    /// event through a `Notify`.
-    ///
-    /// `until` repeatedly calls the `cond` function you provide, completing
-    /// when it "passes" (see below). In between calls, it subscribes to this
-    /// `Notify`, so that the task won't waste time checking `cond` when no
-    /// event has occurred.
-    ///
-    /// This is appropriate if you know that any change to `cond`'s result will
-    /// be preceded by some task calling `self.notify()`.
-    ///
-    /// The meaning of `cond` "passing" is defined by the [`TestResult`] trait.
-    ///
-    /// - In the easiest case, `cond` should return a `bool`. `until` will
-    ///   resolve when `cond` returns `true`.
-    ///
-    /// - For more interesting use cases, `cond` can also return an `Option<T>`.
-    ///   In this case, `until` will resolve when `cond` returns `Some(value)`,
-    ///   producing `value`.
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel safety:** Strict, if no data is moved into `cond`.
-    ///
-    /// Dropping this future will drop `cond`, and may leave the current task
-    /// subscribed to `self` (meaning one potential spurious wakeup in the
-    /// future is possible).
-    ///
-    /// If creating `cond` consumes some data, dropping the future produced by
-    /// `until` will drop that data, creating a potential for data loss on
-    /// cancellation. In practice it's hard to do this by accident; it usually
-    /// requires one of the following patterns:
-    ///
-    /// 1. Writing `cond` as an explicit `move` closure. In this case you can
-    ///    improve cancel safety by avoiding the move, if possible.
-    /// 2. Passing a closure you received as `cond` instead of making a new one.
-    ///    In this case, consider passing the closure by reference.
-    pub fn until<F, T: TestResult>(&self, cond: F) -> Until<'_, F>
-    where
-        F: FnMut() -> T,
-    {
-        Until { cond, notify: self }
-    }
+	/// Waits for a condition to become true, checking only when signaled by
+	/// this `Notify`. This is generally the right way to synchronize with an
+	/// event through a `Notify`.
+	///
+	/// `until` repeatedly calls the `cond` function you provide, completing
+	/// when it "passes" (see below). In between calls, it subscribes to this
+	/// `Notify`, so that the task won't waste time checking `cond` when no
+	/// event has occurred.
+	///
+	/// This is appropriate if you know that any change to `cond`'s result will
+	/// be preceded by some task calling `self.notify()`.
+	///
+	/// The meaning of `cond` "passing" is defined by the [`TestResult`] trait.
+	///
+	/// - In the easiest case, `cond` should return a `bool`. `until` will
+	///   resolve when `cond` returns `true`.
+	///
+	/// - For more interesting use cases, `cond` can also return an `Option<T>`.
+	///   In this case, `until` will resolve when `cond` returns `Some(value)`,
+	///   producing `value`.
+	///
+	/// # Cancellation
+	///
+	/// **Cancel safety:** Strict, if no data is moved into `cond`.
+	///
+	/// Dropping this future will drop `cond`, and may leave the current task
+	/// subscribed to `self` (meaning one potential spurious wakeup in the
+	/// future is possible).
+	///
+	/// If creating `cond` consumes some data, dropping the future produced by
+	/// `until` will drop that data, creating a potential for data loss on
+	/// cancellation. In practice it's hard to do this by accident; it usually
+	/// requires one of the following patterns:
+	///
+	/// 1. Writing `cond` as an explicit `move` closure. In this case you can
+	///    improve cancel safety by avoiding the move, if possible.
+	/// 2. Passing a closure you received as `cond` instead of making a new one.
+	///    In this case, consider passing the closure by reference.
+	pub fn until<F, T: TestResult>(&self, cond: F) -> Until<'_, F>
+	where
+		F: FnMut() -> T,
+	{
+		Until { cond, notify: self }
+	}
 
-    /// Waits for a condition to become true, in a way that tolerates race
-    /// conditions (e.g. preempting interrupt handlers).
-    ///
-    /// This is a variation on [`until`][Notify::until] that is slightly more
-    /// expensive, but won't miss events if the `Notify` may be signaled by a
-    /// preempting interrupt handler. The only difference between this and
-    /// `until` is that `until_racy` subscribes to the `Notify` _before_
-    /// checking the condition `cond`. This means if `cond` is immediately true,
-    /// you may see a spurious wakeup down the line (since the `subscribe`
-    /// cannot be undone). This will waste a bit of CPU but should have no other
-    /// ill effects.
-    ///
-    /// See [`until`][Notify::until] for more details.
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel safety:** Strict, if no data is moved into `cond`.
-    ///
-    /// Dropping this future will drop `cond`, and may leave the current task
-    /// subscribed to `self` (meaning one potential spurious wakeup in the
-    /// future is possible).
-    ///
-    /// If creating `cond` consumes some data, dropping the future produced by
-    /// `until` will drop that data, creating a potential for data loss on
-    /// cancellation. In practice it's hard to do this by accident; it usually
-    /// requires one of the following patterns:
-    ///
-    /// 1. Writing `cond` as an explicit `move` closure. In this case you can
-    ///    improve cancel safety by avoiding the move, if possible.
-    /// 2. Passing a closure you received as `cond` instead of making a new one.
-    ///    In this case, consider passing the closure by reference.
-    pub fn until_racy<F, T: TestResult>(&self, cond: F) -> UntilRacy<'_, F>
-    where
-        F: FnMut() -> T,
-    {
-        UntilRacy { cond, notify: self }
-    }
+	/// Waits for a condition to become true, in a way that tolerates race
+	/// conditions (e.g. preempting interrupt handlers).
+	///
+	/// This is a variation on [`until`][Notify::until] that is slightly more
+	/// expensive, but won't miss events if the `Notify` may be signaled by a
+	/// preempting interrupt handler. The only difference between this and
+	/// `until` is that `until_racy` subscribes to the `Notify` _before_
+	/// checking the condition `cond`. This means if `cond` is immediately true,
+	/// you may see a spurious wakeup down the line (since the `subscribe`
+	/// cannot be undone). This will waste a bit of CPU but should have no other
+	/// ill effects.
+	///
+	/// See [`until`][Notify::until] for more details.
+	///
+	/// # Cancellation
+	///
+	/// **Cancel safety:** Strict, if no data is moved into `cond`.
+	///
+	/// Dropping this future will drop `cond`, and may leave the current task
+	/// subscribed to `self` (meaning one potential spurious wakeup in the
+	/// future is possible).
+	///
+	/// If creating `cond` consumes some data, dropping the future produced by
+	/// `until` will drop that data, creating a potential for data loss on
+	/// cancellation. In practice it's hard to do this by accident; it usually
+	/// requires one of the following patterns:
+	///
+	/// 1. Writing `cond` as an explicit `move` closure. In this case you can
+	///    improve cancel safety by avoiding the move, if possible.
+	/// 2. Passing a closure you received as `cond` instead of making a new one.
+	///    In this case, consider passing the closure by reference.
+	pub fn until_racy<F, T: TestResult>(&self, cond: F) -> UntilRacy<'_, F>
+	where
+		F: FnMut() -> T,
+	{
+		UntilRacy { cond, notify: self }
+	}
 
-    /// Subscribes to `notify` and blocks until the task is awoken. This may
-    /// produces spurious wakeups, and is appropriate only when you're checking
-    /// some condition separately. Otherwise, use [`until`][Notify::until].
-    ///
-    /// # Cancellation
-    ///
-    /// **Cancel safety:** Strict.
-    ///
-    /// Dropping this future will leave the current task subscribed to `self`
-    /// (meaning one potential spurious wakeup in the future is possible).
-    pub fn until_next(&self) -> impl Future<Output = ()> + Captures<&'_ Self> {
-        let mut setup = false;
-        self.until(move || mem::replace(&mut setup, true))
-    }
+	/// Subscribes to `notify` and blocks until the task is awoken. This may
+	/// produces spurious wakeups, and is appropriate only when you're checking
+	/// some condition separately. Otherwise, use [`until`][Notify::until].
+	///
+	/// # Cancellation
+	///
+	/// **Cancel safety:** Strict.
+	///
+	/// Dropping this future will leave the current task subscribed to `self`
+	/// (meaning one potential spurious wakeup in the future is possible).
+	pub fn until_next(&self) -> impl Future<Output = ()> + Captures<&'_ Self> {
+		let mut setup = false;
+		self.until(move || mem::replace(&mut setup, true))
+	}
 }
 
 /// Trait implemented by things that indicate success or failure, to be used
@@ -801,29 +819,29 @@ impl Notify {
 ///
 /// This is used by the various polling functions in this module.
 pub trait TestResult {
-    /// Type of content produced on success.
-    type Output;
-    /// Converts `self` into an `Option` that is `Some` on success, `None` on
-    /// failure.
-    fn into_test_result(self) -> Option<Self::Output>;
+	/// Type of content produced on success.
+	type Output;
+	/// Converts `self` into an `Option` that is `Some` on success, `None` on
+	/// failure.
+	fn into_test_result(self) -> Option<Self::Output>;
 }
 
 impl TestResult for bool {
-    type Output = ();
-    fn into_test_result(self) -> Option<Self::Output> {
-        if self {
-            Some(())
-        } else {
-            None
-        }
-    }
+	type Output = ();
+	fn into_test_result(self) -> Option<Self::Output> {
+		if self {
+			Some(())
+		} else {
+			None
+		}
+	}
 }
 
 impl<T> TestResult for Option<T> {
-    type Output = T;
-    fn into_test_result(self) -> Option<Self::Output> {
-        self
-    }
+	type Output = T;
+	fn into_test_result(self) -> Option<Self::Output> {
+		self
+	}
 }
 
 /// Internal future type used to implement `Notify::until`. This makes it
@@ -832,26 +850,26 @@ impl<T> TestResult for Option<T> {
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 #[pin_project]
 pub struct Until<'n, F> {
-    cond: F,
-    notify: &'n Notify,
+	cond: F,
+	notify: &'n Notify,
 }
 
 impl<F, T> Future for Until<'_, F>
 where
-    F: FnMut() -> T,
-    T: TestResult,
+	F: FnMut() -> T,
+	T: TestResult,
 {
-    type Output = T::Output;
+	type Output = T::Output;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let p = self.project();
-        if let Some(x) = (p.cond)().into_test_result() {
-            Poll::Ready(x)
-        } else {
-            p.notify.subscribe(cx.waker());
-            Poll::Pending
-        }
-    }
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		let p = self.project();
+		if let Some(x) = (p.cond)().into_test_result() {
+			Poll::Ready(x)
+		} else {
+			p.notify.subscribe(cx.waker());
+			Poll::Pending
+		}
+	}
 }
 
 /// Internal future type used to implement `Notify::until_racy`. This makes
@@ -860,26 +878,26 @@ where
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 #[pin_project]
 pub struct UntilRacy<'n, F> {
-    cond: F,
-    notify: &'n Notify,
+	cond: F,
+	notify: &'n Notify,
 }
 
 impl<F, T> Future for UntilRacy<'_, F>
 where
-    F: FnMut() -> T,
-    T: TestResult,
+	F: FnMut() -> T,
+	T: TestResult,
 {
-    type Output = T::Output;
+	type Output = T::Output;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let p = self.project();
-        p.notify.subscribe(cx.waker());
-        if let Some(x) = (p.cond)().into_test_result() {
-            Poll::Ready(x)
-        } else {
-            Poll::Pending
-        }
-    }
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		let p = self.project();
+		p.notify.subscribe(cx.waker());
+		if let Some(x) = (p.cond)().into_test_result() {
+			Poll::Ready(x)
+		} else {
+			Poll::Pending
+		}
+	}
 }
 
 /// Notifies the executor that any tasks whose wake bits are set in `mask`
@@ -889,7 +907,7 @@ where
 /// `Notify`.
 #[inline(always)]
 pub fn wake_tasks_by_mask(mask: usize) {
-    WAKE_BITS.fetch_or(mask, Ordering::SeqCst);
+	WAKE_BITS.fetch_or(mask, Ordering::SeqCst);
 }
 
 /// Notifies the executor that the task with the given `index` should be polled
@@ -899,7 +917,7 @@ pub fn wake_tasks_by_mask(mask: usize) {
 /// to at least wake the desired task.
 #[inline(always)]
 pub fn wake_task_by_index(index: usize) {
-    wake_tasks_by_mask(wake_mask_for_index(index));
+	wake_tasks_by_mask(wake_mask_for_index(index));
 }
 
 /// Tracks whether the timer list has been initialized.
@@ -914,11 +932,11 @@ static mut TIMER_LIST: MaybeUninit<List<TickTime>> = MaybeUninit::uninit();
 /// prevent OS features that are unavailable to ISRs from being used in ISRs.
 #[cfg(feature = "systick")]
 fn assert_not_in_isr() {
-    let psr_value = cortex_m::register::apsr::read().bits();
-    // Bottom 9 bits are the exception number, which are 0 in Thread mode.
-    if psr_value & 0x1FF != 0 {
-        panic!();
-    }
+	let psr_value = cortex_m::register::apsr::read().bits();
+	// Bottom 9 bits are the exception number, which are 0 in Thread mode.
+	if psr_value & 0x1FF != 0 {
+		panic!();
+	}
 }
 
 /// Nabs a reference to the global timer list.
@@ -930,23 +948,23 @@ fn assert_not_in_isr() {
 ///   say, from within a task.
 #[cfg(feature = "systick")]
 pub(crate) fn get_timer_list() -> Pin<&'static List<TickTime>> {
-    // Prevent this from being used from interrupt context.
+	// Prevent this from being used from interrupt context.
 
-    assert_not_in_isr();
+	assert_not_in_isr();
 
-    // Ensure that the timer list has been initialized.
-    cheap_assert!(TIMER_LIST_READY.load(Ordering::Acquire));
+	// Ensure that the timer list has been initialized.
+	cheap_assert!(TIMER_LIST_READY.load(Ordering::Acquire));
 
-    // Since we know we're not running concurrently with the scheduler setup, we
-    // can freely vend pin references to the now-immortal timer list.
-    //
-    // Safety: &mut references to TIMER_LIST have stopped after initialization.
-    let list_ref = unsafe { &*addr_of!(TIMER_LIST) };
-    // Safety: we know the list has been initialized because we checked
-    // TIMER_LIST_READY, above. We also know that the list trivially meets the
-    // pin criterion, since it's immortal and always referenced by shared
-    // reference at this point.
-    unsafe { Pin::new_unchecked(list_ref.assume_init_ref()) }
+	// Since we know we're not running concurrently with the scheduler setup, we
+	// can freely vend pin references to the now-immortal timer list.
+	//
+	// Safety: &mut references to TIMER_LIST have stopped after initialization.
+	let list_ref = unsafe { &*addr_of!(TIMER_LIST) };
+	// Safety: we know the list has been initialized because we checked
+	// TIMER_LIST_READY, above. We also know that the list trivially meets the
+	// pin criterion, since it's immortal and always referenced by shared
+	// reference at this point.
+	unsafe { Pin::new_unchecked(list_ref.assume_init_ref()) }
 }
 
 /// Returns a future that will be pending exactly once before resolving.
@@ -960,25 +978,28 @@ pub(crate) fn get_timer_list() -> Pin<&'static List<TickTime>> {
 ///
 /// Dropping this future does nothing in particular.
 pub fn yield_cpu() -> impl Future<Output = ()> {
-    YieldCpu { polled: false }
+	YieldCpu { polled: false }
 }
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 struct YieldCpu {
-    polled: bool,
+	polled: bool,
 }
 
 impl Future for YieldCpu {
-    type Output = ();
+	type Output = ();
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if mem::replace(&mut self.polled, true) {
-            Poll::Ready(())
-        } else {
-            // Ensure that we get called next round.
-            cx.waker().wake_by_ref();
+	fn poll(
+		mut self: Pin<&mut Self>,
+		cx: &mut Context<'_>,
+	) -> Poll<Self::Output> {
+		if mem::replace(&mut self.polled, true) {
+			Poll::Ready(())
+		} else {
+			// Ensure that we get called next round.
+			cx.waker().wake_by_ref();
 
-            Poll::Pending
-        }
-    }
+			Poll::Pending
+		}
+	}
 }

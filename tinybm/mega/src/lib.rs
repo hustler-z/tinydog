@@ -132,19 +132,18 @@
 //! [Cancellation]: https://github.com/cbiffle/tinybm/blob/main/doc/cancellation.adoc
 
 #![no_std]
-
 #![warn(
-    elided_lifetimes_in_paths,
-    explicit_outlives_requirements,
-    missing_debug_implementations,
-    missing_docs,
-    semicolon_in_expressions_from_macros,
-    single_use_lifetimes,
-    trivial_casts,
-    trivial_numeric_casts,
-    unreachable_pub,
-    unsafe_op_in_unsafe_fn,
-    unused_qualifications,
+	elided_lifetimes_in_paths,
+	explicit_outlives_requirements,
+	missing_debug_implementations,
+	missing_docs,
+	semicolon_in_expressions_from_macros,
+	single_use_lifetimes,
+	trivial_casts,
+	trivial_numeric_casts,
+	unreachable_pub,
+	unsafe_op_in_unsafe_fn,
+	unused_qualifications
 )]
 #![warn(clippy::undocumented_unsafe_blocks)]
 
@@ -154,26 +153,28 @@
 /// asserts significantly smaller in terms of text size.
 #[cfg(any(debug_assertions, feature = "systick"))]
 macro_rules! cheap_assert {
-    ($x:expr) => {
-        if !$x { panic!(); };
-    }
+	($x:expr) => {
+		if !$x {
+			panic!();
+		};
+	};
 }
 
-pub mod exec;
 #[deprecated(since = "1.3.0", note = "please use the portable-atomic crate")]
 pub mod atomic;
+pub mod exec;
 pub mod util;
 
 #[macro_use]
 #[deprecated(since = "1.2.0", note = "please move to the tinybm-list crate")]
 pub mod list;
 
-#[cfg(feature = "systick")]
-pub mod time;
 #[cfg(feature = "mutex")]
 pub mod mutex;
 #[cfg(feature = "spsc")]
 pub mod spsc;
+#[cfg(feature = "systick")]
+pub mod time;
 
 #[doc(hidden)]
 pub use portable_atomic;

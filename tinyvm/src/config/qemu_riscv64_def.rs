@@ -2,15 +2,16 @@
 //
 // Self-Education Only
 
+use crate::device::EmuDeviceType;
+use crate::kernel::{VmType, HVC_IRQ};
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::device::EmuDeviceType;
-use crate::kernel::{HVC_IRQ, VmType};
 
 use super::{
-    VmConfigEntry, VmCpuConfig, VmEmulatedDeviceConfig, VmImageConfig, VmMemoryConfig, VmPassthroughDeviceConfig,
-    VmRegion, vm_cfg_set_config_name, PassthroughRegion, vm_cfg_add_vm_entry, VmEmulatedDeviceConfigList,
-    VMDtbDevConfigList,
+	vm_cfg_add_vm_entry, vm_cfg_set_config_name, PassthroughRegion,
+	VMDtbDevConfigList, VmConfigEntry, VmCpuConfig, VmEmulatedDeviceConfig,
+	VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig,
+	VmPassthroughDeviceConfig, VmRegion,
 };
 
 /// Initializes the configuration for the manager VM (VM0).

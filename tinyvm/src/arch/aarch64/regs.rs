@@ -5,25 +5,25 @@
 use alloc::fmt;
 
 pub trait SysReg {
-    // Register value type.
-    type Value: Copy + Eq + fmt::LowerHex + TryFrom<u64>;
-    // Register name.
-    const NAME: &'static str;
+	// Register value type.
+	type Value: Copy + Eq + fmt::LowerHex + TryFrom<u64>;
+	// Register name.
+	const NAME: &'static str;
 }
 
 // Writeable system register.
 pub trait WriteableReg: SysReg {
-    // Write value to the register..
-    /// # Safety:
-    /// The caller must have enough privileges to operate on the register and ensure the value is valid
-    unsafe fn write(val: Self::Value);
+	// Write value to the register..
+	/// # Safety:
+	/// The caller must have enough privileges to operate on the register and ensure the value is valid
+	unsafe fn write(val: Self::Value);
 }
 
 // Readable system register.
 pub trait ReadableReg: SysReg {
-    // Read register value.
-    // no need to guarantee safety
-    fn read() -> Self::Value;
+	// Read register value.
+	// no need to guarantee safety
+	fn read() -> Self::Value;
 }
 
 // Move to ARM register from system coprocessor register.
@@ -77,81 +77,81 @@ macro_rules! msr {
 
 // Declare a system register.
 macro_rules! sysreg_declare {
-    ($name: ident, $type:ty) => {
-        #[allow(non_camel_case_types)]
-        pub struct $name;
+	($name: ident, $type:ty) => {
+		#[allow(non_camel_case_types)]
+		pub struct $name;
 
-        impl SysReg for $name {
-            type Value = $type;
-            const NAME: &'static str = stringify!($name);
-        }
-    };
+		impl SysReg for $name {
+			type Value = $type;
+			const NAME: &'static str = stringify!($name);
+		}
+	};
 }
 
 // Only used for Readable system register.
 macro_rules! sysreg_impl_read {
-    ($definename:ident, $asmname:ident) => {
-        impl ReadableReg for $definename {
-            #[inline]
-            fn read() -> Self::Value {
-                mrs!($asmname)
-            }
-        }
-    };
+	($definename:ident, $asmname:ident) => {
+		impl ReadableReg for $definename {
+			#[inline]
+			fn read() -> Self::Value {
+				mrs!($asmname)
+			}
+		}
+	};
 }
 
 // Only used for Writeable system register.
 macro_rules! sysreg_impl_write {
-    ($definename:ident, $asmname:ident) => {
-        impl WriteableReg for $definename {
-            #[inline]
-            unsafe fn write(val: Self::Value) {
-                msr!($asmname, val)
-            }
-        }
-    };
+	($definename:ident, $asmname:ident) => {
+		impl WriteableReg for $definename {
+			#[inline]
+			unsafe fn write(val: Self::Value) {
+				msr!($asmname, val)
+			}
+		}
+	};
 }
 
 // Define a Read-only system register so that it will panic when written.
 macro_rules! define_sysreg_ro {
-    ($definename:ident, $type:ty,$asmname:ident) => {
-        sysreg_declare!($definename, $type);
-        sysreg_impl_read!($definename, $asmname);
-    };
-    ($definename:ident, $type:ty) => {
-        define_sysreg_ro!($definename, $type, $definename);
-    };
-    ($definename:ident) => {
-        define_sysreg_ro!($definename, usize);
-    };
+	($definename:ident, $type:ty,$asmname:ident) => {
+		sysreg_declare!($definename, $type);
+		sysreg_impl_read!($definename, $asmname);
+	};
+	($definename:ident, $type:ty) => {
+		define_sysreg_ro!($definename, $type, $definename);
+	};
+	($definename:ident) => {
+		define_sysreg_ro!($definename, usize);
+	};
 }
 
 // Define a Write-only system register so that it will panic when reading.
 macro_rules! define_sysreg_wo {
-    ($definename:ident, $type:ty, $asmname:ident) => {
-        sysreg_declare!($definename, $type);
-        sysreg_impl_write!($definename, $asmname);
-    };
-    ($definename:ident, $type:ty) => {
-        define_sysreg_wo!($definename, $type, $definename);
-    };
-    ($definename:ident) => {
-        define_sysreg_wo!($definename, usize);
-    };
+	($definename:ident, $type:ty, $asmname:ident) => {
+		sysreg_declare!($definename, $type);
+		sysreg_impl_write!($definename, $asmname);
+	};
+	($definename:ident, $type:ty) => {
+		define_sysreg_wo!($definename, $type, $definename);
+	};
+	($definename:ident) => {
+		define_sysreg_wo!($definename, usize);
+	};
 }
 
 macro_rules! define_sysreg {
-    ($definename:ident, $type:ty, $asmname:ident) => {
-        sysreg_declare!($definename, $type);
-        sysreg_impl_read!($definename, $asmname);
-        sysreg_impl_write!($definename, $asmname);
-    };
-    ($definename:ident, $type:ty) => {
-        define_sysreg!($definename, $type, $definename);
-    };
-    ($definename:ident) => {
-        define_sysreg!($definename, usize);
-    };
+	($definename:ident, $type:ty, $asmname:ident) => {
+		sysreg_declare!($definename, $type);
+		sysreg_impl_read!($definename, $asmname);
+		sysreg_impl_write!($definename, $asmname);
+	};
+	($definename:ident, $type:ty) => {
+		define_sysreg!($definename, $type, $definename);
+	};
+	($definename:ident) => {
+		define_sysreg!($definename, usize);
+	};
 }
 
 macro_rules! sysop {
@@ -187,16 +187,16 @@ macro_rules! sysop {
 }
 
 macro_rules! define_sysop {
-    // SAFETY:
-    // sysop without any passed value can't trigger any side effects.
-    ($terms:ident) => {
-        #[doc=concat!("System operation: ", stringify!($terms))]
-        pub fn $terms() {
-            unsafe {
-                sysop!($terms);
-            }
-        }
-    };
+	// SAFETY:
+	// sysop without any passed value can't trigger any side effects.
+	($terms:ident) => {
+		#[doc=concat!("System operation: ", stringify!($terms))]
+		pub fn $terms() {
+			unsafe {
+				sysop!($terms);
+			}
+		}
+	};
 }
 
 // Data Store Barrier ('DSB') instructions.
@@ -204,71 +204,71 @@ macro_rules! define_sysop {
 // DSB can't trigger any side effects.
 // So it is a safe marco.
 pub mod dsb {
-    macro_rules! define_dsb {
-        ($mode:ident) => {
-            pub fn $mode() {
-                unsafe {
-                    sysop!(dsb, $mode);
-                }
-            }
-        };
-    }
+	macro_rules! define_dsb {
+		($mode:ident) => {
+			pub fn $mode() {
+				unsafe {
+					sysop!(dsb, $mode);
+				}
+			}
+		};
+	}
 
-    define_dsb!(oshld);
-    define_dsb!(oshst);
-    define_dsb!(osh);
-    define_dsb!(nshld);
-    define_dsb!(nshst);
-    define_dsb!(nsh);
-    define_dsb!(ishld);
-    define_dsb!(ishst);
-    define_dsb!(ish);
-    define_dsb!(ld);
-    define_dsb!(st);
-    define_dsb!(sy);
+	define_dsb!(oshld);
+	define_dsb!(oshst);
+	define_dsb!(osh);
+	define_dsb!(nshld);
+	define_dsb!(nshst);
+	define_dsb!(nsh);
+	define_dsb!(ishld);
+	define_dsb!(ishst);
+	define_dsb!(ish);
+	define_dsb!(ld);
+	define_dsb!(st);
+	define_dsb!(sy);
 }
 
 // Data Synchronization Barrier ('DSB') instructions.
 // SAFETY:
 // DSB can't trigger any side effects.
 pub mod dmb {
-    macro_rules! define_dmb {
-        ($mode:ident) => {
-            pub fn $mode() {
-                unsafe {
-                    sysop!(dmb, $mode);
-                }
-            }
-        };
-    }
+	macro_rules! define_dmb {
+		($mode:ident) => {
+			pub fn $mode() {
+				unsafe {
+					sysop!(dmb, $mode);
+				}
+			}
+		};
+	}
 
-    define_dmb!(oshld);
-    define_dmb!(oshst);
-    define_dmb!(osh);
-    define_dmb!(nshld);
-    define_dmb!(nshst);
-    define_dmb!(nsh);
-    define_dmb!(ishld);
-    define_dmb!(ishst);
-    define_dmb!(ish);
-    define_dmb!(ld);
-    define_dmb!(st);
-    define_dmb!(sy);
+	define_dmb!(oshld);
+	define_dmb!(oshst);
+	define_dmb!(osh);
+	define_dmb!(nshld);
+	define_dmb!(nshst);
+	define_dmb!(nsh);
+	define_dmb!(ishld);
+	define_dmb!(ishst);
+	define_dmb!(ish);
+	define_dmb!(ld);
+	define_dmb!(st);
+	define_dmb!(sy);
 }
 
 // Address Translation ('AT') Instructions.
 pub mod at {
-    macro_rules! define_at {
-        ($mode:ident) => {
-            pub fn $mode(va: usize) {
-                unsafe {
-                    sysop!(at, $mode, va as u64);
-                }
-            }
-        };
-    }
+	macro_rules! define_at {
+		($mode:ident) => {
+			pub fn $mode(va: usize) {
+				unsafe {
+					sysop!(at, $mode, va as u64);
+				}
+			}
+		};
+	}
 
-    define_at!(s1e1r);
+	define_at!(s1e1r);
 }
 
 // Define a system with RW access.
@@ -320,7 +320,7 @@ define_sysreg!(AFSR0_EL1, u64); // Auxiliary Fault Status Register 0 EL1
 define_sysreg!(CNTHP_TVAL_EL2); // Counter-timer Hypervisor Physical Timer TimerValue register
 define_sysreg!(CNTHP_CTL_EL2); // Counter-timer Hypervisor Physical Timer Control register
 define_sysreg!(VTTBR_EL2); // Virtualization Translation Table Base Register EL2
-                           // define GIC_V3 system register
+						   // define GIC_V3 system register
 define_sysreg!(ICH_HCR_EL2); // Interrupt Controller Hypervisor Control Register
 define_sysreg!(ICC_SRE_EL2); // Interrupt Controller System Register Enable Register
 define_sysreg!(ICC_SRE_EL1); // Interrupt Controller System Register Enable Register
@@ -375,10 +375,16 @@ define_sysop!(sevl);
 define_sysop!(isb);
 
 #[inline(always)]
-pub const fn sysreg_enc_addr(op0: usize, op1: usize, crn: usize, crm: usize, op2: usize) -> usize {
-    (((op0) & 0x3) << 20)
-        | (((op2) & 0x7) << 17)
-        | (((op1) & 0x7) << 14)
-        | (((crn) & 0xf) << 10)
-        | (((crm) & 0xf) << 1)
+pub const fn sysreg_enc_addr(
+	op0: usize,
+	op1: usize,
+	crn: usize,
+	crm: usize,
+	op2: usize,
+) -> usize {
+	(((op0) & 0x3) << 20)
+		| (((op2) & 0x7) << 17)
+		| (((op1) & 0x7) << 14)
+		| (((crn) & 0xf) << 10)
+		| (((crm) & 0xf) << 1)
 }

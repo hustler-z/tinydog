@@ -8,15 +8,16 @@ use alloc::vec::Vec;
 use fdt::binding::FdtBuf;
 
 use crate::arch::traits::InterruptController;
-use crate::board::{Platform, PlatOperation};
+use crate::board::{PlatOperation, Platform};
 use crate::config::vm_cfg_add_vm_entry;
 use crate::device::EmuDeviceType;
 use crate::error::Result;
-use crate::kernel::{HVC_IRQ, VmType};
+use crate::kernel::{VmType, HVC_IRQ};
 
 use super::{
-    PassthroughRegion, vm_cfg_set_config_name, VmConfigEntry, VmCpuConfig, VmEmulatedDeviceConfig,
-    VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig, VmPassthroughDeviceConfig, VmRegion,
+	vm_cfg_set_config_name, PassthroughRegion, VmConfigEntry, VmCpuConfig,
+	VmEmulatedDeviceConfig, VmEmulatedDeviceConfigList, VmImageConfig,
+	VmMemoryConfig, VmPassthroughDeviceConfig, VmRegion,
 };
 
 /// This function provides functions for patching the flattened device tree (FDT) for VM configuration.
@@ -24,50 +25,50 @@ use super::{
 /// The `patch_fdt` function removes unnecessary nodes and configurations from the FDT to customize
 /// it for a specific VM setup.
 pub fn patch_fdt(fdt: &mut FdtBuf) -> Result<()> {
-    // fdt.remove_node(c"/sram@10f000")?;
-    // use for boot one core
-    fdt.remove_node(c"/cpus/cpu-map/cluster0/core1")?;
-    fdt.remove_node(c"/cpus/cpu-map/cluster0/core2")?;
-    fdt.remove_node(c"/cpus/cpu-map/cluster0/core3")?;
-    fdt.remove_node(c"/cpus/cpu@100")?;
-    fdt.remove_node(c"/cpus/cpu@200")?;
-    fdt.remove_node(c"/cpus/cpu@300")?;
+	// fdt.remove_node(c"/sram@10f000")?;
+	// use for boot one core
+	fdt.remove_node(c"/cpus/cpu-map/cluster0/core1")?;
+	fdt.remove_node(c"/cpus/cpu-map/cluster0/core2")?;
+	fdt.remove_node(c"/cpus/cpu-map/cluster0/core3")?;
+	fdt.remove_node(c"/cpus/cpu@100")?;
+	fdt.remove_node(c"/cpus/cpu@200")?;
+	fdt.remove_node(c"/cpus/cpu@300")?;
 
-    // use for boot 4 cores in cluster-1. and if want to boot all,don`t remove any code about cpu
-    fdt.remove_node(c"/cpus/cpu-map/cluster1")?;
-    fdt.remove_node(c"/cpus/cpu-map/cluster2")?;
-    fdt.remove_node(c"/cpus/cpu@400")?;
-    fdt.remove_node(c"/cpus/cpu@500")?;
-    fdt.remove_node(c"/cpus/cpu@600")?;
-    fdt.remove_node(c"/cpus/cpu@700")?;
+	// use for boot 4 cores in cluster-1. and if want to boot all,don`t remove any code about cpu
+	fdt.remove_node(c"/cpus/cpu-map/cluster1")?;
+	fdt.remove_node(c"/cpus/cpu-map/cluster2")?;
+	fdt.remove_node(c"/cpus/cpu@400")?;
+	fdt.remove_node(c"/cpus/cpu@500")?;
+	fdt.remove_node(c"/cpus/cpu@600")?;
+	fdt.remove_node(c"/cpus/cpu@700")?;
 
-    // use for boot 2 cores in cluster-1
-    // fdt.remove_node(c"/cpus/cpu-map/cluster0/core2")?;
-    // fdt.remove_node(c"/cpus/cpu-map/cluster0/core3")?;
-    // fdt.remove_node(c"/cpus/cpu@200")?;
-    // fdt.remove_node(c"/cpus/cpu@300")?;
+	// use for boot 2 cores in cluster-1
+	// fdt.remove_node(c"/cpus/cpu-map/cluster0/core2")?;
+	// fdt.remove_node(c"/cpus/cpu-map/cluster0/core3")?;
+	// fdt.remove_node(c"/cpus/cpu@200")?;
+	// fdt.remove_node(c"/cpus/cpu@300")?;
 
-    fdt.remove_node(c"/cpus/idle-states")?;
+	fdt.remove_node(c"/cpus/idle-states")?;
 
-    // fdt.remove_node(c"/timer@feae0000")?;
-    // fdt.remove_node(c"/timer")?;
-    // fdt.remove_node(c"/i2c@feaa0000")?;
-    // fdt.remove_node(c"/reserved-memory")?;
-    // fdt.remove_node(c"/serial@feb70000")?;
-    // fdt.remove_node(c"/serial@feb80000")?;
-    // fdt.remove_node(c"/serial@feb60000")?;
-    // fdt.remove_node(c"/serial@feba0000")?;
-    // fdt.remove_node(c"/serial@feb50000")?;
+	// fdt.remove_node(c"/timer@feae0000")?;
+	// fdt.remove_node(c"/timer")?;
+	// fdt.remove_node(c"/i2c@feaa0000")?;
+	// fdt.remove_node(c"/reserved-memory")?;
+	// fdt.remove_node(c"/serial@feb70000")?;
+	// fdt.remove_node(c"/serial@feb80000")?;
+	// fdt.remove_node(c"/serial@feb60000")?;
+	// fdt.remove_node(c"/serial@feba0000")?;
+	// fdt.remove_node(c"/serial@feb50000")?;
 
-    // fdt.remove_node(c"/pcie@fe180000")?;
-    // fdt.remove_node(c"/pcie@fe190000")?;
+	// fdt.remove_node(c"/pcie@fe180000")?;
+	// fdt.remove_node(c"/pcie@fe190000")?;
 
-    fdt.remove_node(c"/memory")?;
+	fdt.remove_node(c"/memory")?;
 
-    #[cfg(feature = "rk3588-noeth")]
-    fdt.remove_node(c"/ethernet@fe1c0000")?;
+	#[cfg(feature = "rk3588-noeth")]
+	fdt.remove_node(c"/ethernet@fe1c0000")?;
 
-    Ok(())
+	Ok(())
 }
 
 /// Initializes the configuration for the manager VM (VM0).

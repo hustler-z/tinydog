@@ -94,7 +94,7 @@ pub mod vmm;
 pub mod error;
 #[cfg(feature = "doc")]
 pub mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+	include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
 #[macro_use]
@@ -134,7 +134,7 @@ mod utils;
 mod vmm;
 #[cfg(not(feature = "doc"))]
 mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+	include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
 // use lib::{BitAlloc, BitAlloc256};
@@ -142,95 +142,95 @@ mod built_info {
 pub static SYSTEM_FDT: spin::Once<alloc::vec::Vec<u8>> = spin::Once::new();
 
 fn print_built_info() {
-    // @Hustler
-    //
-    // Add the tag at the very beginning, on my personal interest.
-    println!(
-        r#"
+	// @Hustler
+	//
+	// Add the tag at the very beginning, on my personal interest.
+	println!(
+		r#"
     ____            _
     \_  \()/\/\/\/\/ \/\    /\/\
      / // /\   \  // /_ \/\/_/ /
      \/ \/  \/\/_/__/_/\_/\/ \/ @2024
         "#
-    );
-    println!(
-        "board {} {} {} lauching currently",
-        env!("BOARD"),
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION")
-    );
-    println!(
-        r#"
+	);
+	println!(
+		"board {} {} {} lauching currently",
+		env!("BOARD"),
+		env!("CARGO_PKG_NAME"),
+		env!("CARGO_PKG_VERSION")
+	);
+	println!(
+		r#"
 built:    {build_time} By {hostname}
 compiler: {rustc_version}
 features: {features:?}
 commitid: {commit_hash}
         "#,
-        build_time = env!("BUILD_TIME"),
-        hostname = env!("HOSTNAME"),
-        commit_hash = env!("GIT_COMMIT"),
-        rustc_version = built_info::RUSTC_VERSION,
-        features = built_info::FEATURES_LOWERCASE_STR,
-    );
+		build_time = env!("BUILD_TIME"),
+		hostname = env!("HOSTNAME"),
+		commit_hash = env!("GIT_COMMIT"),
+		rustc_version = built_info::RUSTC_VERSION,
+		features = built_info::FEATURES_LOWERCASE_STR,
+	);
 }
 
 // Only core 0 will execute this function
 #[no_mangle]
 pub fn init(dtb: &mut fdt::myctypes::c_void) {
-    print_built_info();
+	print_built_info();
 
-    kernel::logger_init().unwrap();
+	kernel::logger_init().unwrap();
 
-    heap_init();
+	heap_init();
 
-    mem_init();
+	mem_init();
 
-    // SAFETY:
-    // DTB is saved value from boot_stage
-    // And it is passed by bootloader
-    unsafe {
-        init_vm0_dtb(dtb).unwrap();
-    }
+	// SAFETY:
+	// DTB is saved value from boot_stage
+	// And it is passed by bootloader
+	unsafe {
+		init_vm0_dtb(dtb).unwrap();
+	}
 
-    iommu_init();
+	iommu_init();
 
-    cpu_init();
+	cpu_init();
 
-    interrupt_init();
+	interrupt_init();
 
-    timer_init();
+	timer_init();
 
-    cpu_sched_init();
+	cpu_sched_init();
 
-    #[cfg(not(feature = "secondary_start"))]
-    crate::utils::barrier();
+	#[cfg(not(feature = "secondary_start"))]
+	crate::utils::barrier();
 
-    vm_init();
+	vm_init();
 
-    info!("start booting guest kernel");
+	info!("start booting guest kernel");
 
-    vmm_boot_vm(0);
+	vmm_boot_vm(0);
 
-    loop {
-        core::hint::spin_loop();
-    }
+	loop {
+		core::hint::spin_loop();
+	}
 }
 
 // Other cores will execute this function
 pub fn secondary_init(mpidr: usize) {
-    info!("secondary hcpu @ {:#x} init", mpidr);
+	info!("secondary hcpu @ {:#x} init", mpidr);
 
-    cpu_init();
+	cpu_init();
 
-    interrupt_init();
+	interrupt_init();
 
-    timer_init();
+	timer_init();
 
-    cpu_sched_init();
+	cpu_sched_init();
 
-    #[cfg(not(feature = "secondary_start"))]
-    crate::utils::barrier();
-    use crate::arch::guest_cpu_on;
-    guest_cpu_on(mpidr);
-    crate::kernel::cpu_idle();
+	#[cfg(not(feature = "secondary_start"))]
+	crate::utils::barrier();
+	use crate::arch::guest_cpu_on;
+	guest_cpu_on(mpidr);
+	crate::kernel::cpu_idle();
 }

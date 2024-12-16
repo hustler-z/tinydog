@@ -10,9 +10,10 @@ use crate::device::EmuDeviceType;
 use crate::kernel::{VmType, HVC_IRQ};
 
 use super::{
-    vm_cfg_add_vm_entry, vm_cfg_set_config_name, PassthroughRegion, VmConfigEntry, VmCpuConfig,
-    VmEmulatedDeviceConfig, VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig,
-    VmPassthroughDeviceConfig, VmRegion,
+	vm_cfg_add_vm_entry, vm_cfg_set_config_name, PassthroughRegion,
+	VmConfigEntry, VmCpuConfig, VmEmulatedDeviceConfig,
+	VmEmulatedDeviceConfigList, VmImageConfig, VmMemoryConfig,
+	VmPassthroughDeviceConfig, VmRegion,
 };
 
 /// Initializes the configuration for the manager VM (VM0).

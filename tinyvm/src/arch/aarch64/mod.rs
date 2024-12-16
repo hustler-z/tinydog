@@ -2,6 +2,7 @@
 //
 // Self-Education Only
 
+pub use self::cache::*;
 pub use self::context_frame::*;
 pub use self::cpu::*;
 pub use self::exception::*;
@@ -13,18 +14,17 @@ pub use self::interface::*;
 pub use self::interrupt::*;
 pub use self::page_table::*;
 pub use self::psci::*;
+pub use self::regs::*;
 pub use self::smc::*;
 pub use self::smmu::*;
+pub use self::start::*;
 pub use self::sync::*;
 pub use self::timer::*;
+pub use self::tlb::*;
 #[cfg(not(feature = "gicv3"))]
 pub use self::vgic::*;
 #[cfg(feature = "gicv3")]
 pub use self::vgicv3::*;
-pub use self::start::*;
-pub use self::regs::*;
-pub use self::cache::*;
-pub use self::tlb::*;
 
 #[macro_use]
 mod regs;
@@ -56,6 +56,6 @@ mod vm;
 
 #[repr(C)]
 pub struct ArchDesc {
-    pub gic_desc: GicDesc,
-    pub smmu_desc: SmmuDesc,
+	pub gic_desc: GicDesc,
+	pub smmu_desc: SmmuDesc,
 }

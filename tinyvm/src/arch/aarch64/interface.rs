@@ -20,19 +20,19 @@ pub type Arch = Aarch64Arch;
 pub struct Aarch64Arch;
 
 impl ArchTrait for Aarch64Arch {
-    fn wait_for_interrupt() {
-        // SAFETY: Wait for interrupt
-        crate::arch::wfi();
-    }
+	fn wait_for_interrupt() {
+		// SAFETY: Wait for interrupt
+		crate::arch::wfi();
+	}
 
-    // Restore the MMU context of a VM Stage2 (typically set vmid)
-    fn install_vm_page_table(base: usize, vmid: usize) {
-        // restore vm's Stage2 MMU context
-        let vttbr = (vmid << 48) | base;
-        // SAFETY: 'vttbr' is saved in the vcpu struct when last scheduled
-        unsafe {
-            core::arch::asm!("msr VTTBR_EL2, {0}", in(reg) vttbr);
-            crate::arch::isb();
-        }
-    }
+	// Restore the MMU context of a VM Stage2 (typically set vmid)
+	fn install_vm_page_table(base: usize, vmid: usize) {
+		// restore vm's Stage2 MMU context
+		let vttbr = (vmid << 48) | base;
+		// SAFETY: 'vttbr' is saved in the vcpu struct when last scheduled
+		unsafe {
+			core::arch::asm!("msr VTTBR_EL2, {0}", in(reg) vttbr);
+			crate::arch::isb();
+		}
+	}
 }

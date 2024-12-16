@@ -11,23 +11,23 @@
 
 #![no_std]
 #![warn(
-    elided_lifetimes_in_paths,
-    explicit_outlives_requirements,
-    missing_debug_implementations,
-    missing_docs,
-    semicolon_in_expressions_from_macros,
-    single_use_lifetimes,
-    trivial_casts,
-    trivial_numeric_casts,
-    unreachable_pub,
-    unsafe_op_in_unsafe_fn,
-    unused_qualifications
+	elided_lifetimes_in_paths,
+	explicit_outlives_requirements,
+	missing_debug_implementations,
+	missing_docs,
+	semicolon_in_expressions_from_macros,
+	single_use_lifetimes,
+	trivial_casts,
+	trivial_numeric_casts,
+	unreachable_pub,
+	unsafe_op_in_unsafe_fn,
+	unused_qualifications
 )]
 
 use core::pin::Pin;
+use pin_project::pin_project;
 use portable_atomic::{AtomicUsize, Ordering};
 use tinybm_list::List;
-use pin_project::pin_project;
 
 /// A [counting semaphore].
 ///
@@ -102,129 +102,129 @@ use pin_project::pin_project;
 #[derive(Debug)]
 #[pin_project]
 pub struct Semaphore {
-    available: AtomicUsize,
-    #[pin]
-    waiters: List<()>,
+	available: AtomicUsize,
+	#[pin]
+	waiters: List<()>,
 }
 
 impl Semaphore {
-    /// Creates a future that will resolve when it can take a single permit from
-    /// the semaphore. Until then, the future will remain pending (i.e. block).
-    ///
-    /// # Cancellation
-    ///
-    /// Cancel-safe but affects your position in line, to maintain fairness.
-    ///
-    /// If you drop the returned future before it resolves...
-    /// - If it had not successfully acquired a permit, nothing happens.
-    /// - If it had, the permit is released.
-    ///
-    /// Dropping the future and re-calling `acquire` bumps the caller to the
-    /// back of the priority list, to maintain fairness. Otherwise, the result
-    /// is indistinguishable.
-    pub async fn acquire(self: Pin<&Self>) {
-        if self.try_acquire().is_ok() {
-            return;
-        }
+	/// Creates a future that will resolve when it can take a single permit from
+	/// the semaphore. Until then, the future will remain pending (i.e. block).
+	///
+	/// # Cancellation
+	///
+	/// Cancel-safe but affects your position in line, to maintain fairness.
+	///
+	/// If you drop the returned future before it resolves...
+	/// - If it had not successfully acquired a permit, nothing happens.
+	/// - If it had, the permit is released.
+	///
+	/// Dropping the future and re-calling `acquire` bumps the caller to the
+	/// back of the priority list, to maintain fairness. Otherwise, the result
+	/// is indistinguishable.
+	pub async fn acquire(self: Pin<&Self>) {
+		if self.try_acquire().is_ok() {
+			return;
+		}
 
-        // Add ourselves to the wait list...
-        self.project_ref()
-            .waiters
-            .join_with_cleanup((), || {
-                // This is called when we've been detached from the wait
-                // list, which means a permit was transferred to us, but
-                // we haven't been polled -- and won't ever be polled,
-                // for we are being dropped. This means we need to
-                // release our permit, which might wake another task.
-                self.release();
-            })
-            .await
-    }
+		// Add ourselves to the wait list...
+		self.project_ref()
+			.waiters
+			.join_with_cleanup((), || {
+				// This is called when we've been detached from the wait
+				// list, which means a permit was transferred to us, but
+				// we haven't been polled -- and won't ever be polled,
+				// for we are being dropped. This means we need to
+				// release our permit, which might wake another task.
+				self.release();
+			})
+			.await
+	}
 
-    /// Attempts to take a single permit from the semaphore, returning `Ok` if
-    /// one is available immediately, or `Err` if they are all taken.
-    pub fn try_acquire(&self) -> Result<(), NoPermits> {
-        self.available
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| {
-                a.checked_sub(1)
-            })
-            .map_err(|_| NoPermits)?;
-        Ok(())
-    }
+	/// Attempts to take a single permit from the semaphore, returning `Ok` if
+	/// one is available immediately, or `Err` if they are all taken.
+	pub fn try_acquire(&self) -> Result<(), NoPermits> {
+		self.available
+			.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| {
+				a.checked_sub(1)
+			})
+			.map_err(|_| NoPermits)?;
+		Ok(())
+	}
 
-    /// Returns the number of permits available in the semaphore.
-    ///
-    /// Note that this is a _snapshot._ If this returns 4, for instance, it
-    /// doesn't mean you can successfully call `acquire` 4 times without
-    /// blocking, because another acquirer may be racing you.
-    pub fn permits_available(&self) -> usize {
-        self.available.load(Ordering::Relaxed)
-    }
+	/// Returns the number of permits available in the semaphore.
+	///
+	/// Note that this is a _snapshot._ If this returns 4, for instance, it
+	/// doesn't mean you can successfully call `acquire` 4 times without
+	/// blocking, because another acquirer may be racing you.
+	pub fn permits_available(&self) -> usize {
+		self.available.load(Ordering::Relaxed)
+	}
 
-    /// Stuffs one permit back into the semaphore.
-    #[inline(always)]
-    pub fn release(self: Pin<&Self>) {
-        self.release_multiple(1)
-    }
+	/// Stuffs one permit back into the semaphore.
+	#[inline(always)]
+	pub fn release(self: Pin<&Self>) {
+		self.release_multiple(1)
+	}
 
-    /// Stuffs one permit back into the semaphore.
-    ///
-    /// Use this if you have called [`core::mem::forget`] on a [`Permit`], when
-    /// you want to restore that permit to the semaphore. Note that this is an
-    /// unusual use case and should only be done with good reason.
-    ///
-    /// It is, however, safe, in the Rust sense.
-    ///
-    /// It's possible to use this operation to increase the total number of
-    /// permits available in the `Semaphore`. That's an even weirder use case,
-    /// so be careful.
-    pub fn release_multiple(self: Pin<&Self>, mut n: usize) {
-        debug_assert!(n > 0);
+	/// Stuffs one permit back into the semaphore.
+	///
+	/// Use this if you have called [`core::mem::forget`] on a [`Permit`], when
+	/// you want to restore that permit to the semaphore. Note that this is an
+	/// unusual use case and should only be done with good reason.
+	///
+	/// It is, however, safe, in the Rust sense.
+	///
+	/// It's possible to use this operation to increase the total number of
+	/// permits available in the `Semaphore`. That's an even weirder use case,
+	/// so be careful.
+	pub fn release_multiple(self: Pin<&Self>, mut n: usize) {
+		debug_assert!(n > 0);
 
-        let p = self.project_ref();
-        while n > 0 {
-            if !p.waiters.wake_one() {
-                // We have exhausted the list, stop using this strategy.
-                break;
-            }
-            n -= 1;
-        }
+		let p = self.project_ref();
+		while n > 0 {
+			if !p.waiters.wake_one() {
+				// We have exhausted the list, stop using this strategy.
+				break;
+			}
+			n -= 1;
+		}
 
-        if n > 0 {
-            // Since we're not yielding -- we're not even in an async fn! -- the
-            // only thing concurrent with us is ISRs, which can only wake tasks,
-            // not insert them.
-            //
-            // So the fact that the waiters list was found empty cannot change
-            // during this loop.
-            self.available
-                .fetch_update(
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                    // Note that this has a potential overflow on addition. This is
-                    // deliberate, and is why we're not using fetch_add here!
-                    |a| Some(a + n),
-                )
-                .unwrap();
-        }
-    }
+		if n > 0 {
+			// Since we're not yielding -- we're not even in an async fn! -- the
+			// only thing concurrent with us is ISRs, which can only wake tasks,
+			// not insert them.
+			//
+			// So the fact that the waiters list was found empty cannot change
+			// during this loop.
+			self.available
+				.fetch_update(
+					Ordering::Relaxed,
+					Ordering::Relaxed,
+					// Note that this has a potential overflow on addition. This is
+					// deliberate, and is why we're not using fetch_add here!
+					|a| Some(a + n),
+				)
+				.unwrap();
+		}
+	}
 
-    /// Returns an `Semaphore` initialized with `permits` permits.
-    ///
-    /// The result needs to be pinned to be useful, so you'll usually write:
-    ///
-    /// ```
-    /// let semaphore = pin!(Semaphore::new(permit_count));
-    /// let semaphore = semaphore.into_ref();
-    /// ```
-    ///
-    /// See also the convenience macro [`create_semaphore!`].
-    pub const fn new(permits: usize) -> Self {
-        Semaphore {
-            available: AtomicUsize::new(permits),
-            waiters: List::new(),
-        }
-    }
+	/// Returns an `Semaphore` initialized with `permits` permits.
+	///
+	/// The result needs to be pinned to be useful, so you'll usually write:
+	///
+	/// ```
+	/// let semaphore = pin!(Semaphore::new(permit_count));
+	/// let semaphore = semaphore.into_ref();
+	/// ```
+	///
+	/// See also the convenience macro [`create_semaphore!`].
+	pub const fn new(permits: usize) -> Self {
+		Semaphore {
+			available: AtomicUsize::new(permits),
+			waiters: List::new(),
+		}
+	}
 }
 
 /// Error produced by [`Semaphore::try_acquire`] when no permits were available.
@@ -243,10 +243,10 @@ pub struct NoPermits;
 /// for details.
 #[macro_export]
 macro_rules! create_semaphore {
-    ($var:ident, $permits:expr) => {
-        let $var = core::pin::pin!($crate::Semaphore::new($permits));
-        let $var = $var.into_ref();
-    };
+	($var:ident, $permits:expr) => {
+		let $var = core::pin::pin!($crate::Semaphore::new($permits));
+		let $var = $var.into_ref();
+	};
 }
 
 /// A [counting semaphore] that uses resource objects to manage permits,
@@ -267,76 +267,76 @@ macro_rules! create_semaphore {
 #[derive(Debug)]
 #[pin_project]
 pub struct ScopedSemaphore {
-    #[pin]
-    inner: Semaphore,
+	#[pin]
+	inner: Semaphore,
 }
 
 impl ScopedSemaphore {
-    /// Creates a future that will resolve when it can take a single [`Permit`]
-    /// from the semaphore. Until then, the future will remain pending (i.e.
-    /// block).
-    ///
-    /// # Cancellation
-    ///
-    /// Cancel-safe but affects your position in line, to maintain fairness.
-    ///
-    /// If you drop the returned future before it resolves...
-    /// - If it had not successfully acquired a permit, nothing happens.
-    /// - If it had, the permit is released.
-    ///
-    /// Dropping the future and re-calling `acquire` bumps the caller to the
-    /// back of the priority list, to maintain fairness. Otherwise, the result
-    /// is indistinguishable.
-    pub async fn acquire(self: Pin<&Self>) -> Permit<'_> {
-        self.project_ref().inner.acquire().await;
+	/// Creates a future that will resolve when it can take a single [`Permit`]
+	/// from the semaphore. Until then, the future will remain pending (i.e.
+	/// block).
+	///
+	/// # Cancellation
+	///
+	/// Cancel-safe but affects your position in line, to maintain fairness.
+	///
+	/// If you drop the returned future before it resolves...
+	/// - If it had not successfully acquired a permit, nothing happens.
+	/// - If it had, the permit is released.
+	///
+	/// Dropping the future and re-calling `acquire` bumps the caller to the
+	/// back of the priority list, to maintain fairness. Otherwise, the result
+	/// is indistinguishable.
+	pub async fn acquire(self: Pin<&Self>) -> Permit<'_> {
+		self.project_ref().inner.acquire().await;
 
-        Permit { semaphore: self }
-    }
+		Permit { semaphore: self }
+	}
 
-    /// Attempts to take a single [`Permit`] from the semaphore, returning
-    /// `Ok(permit)` on success, or `Err` if they are all taken.
-    pub fn try_acquire(self: Pin<&Self>) -> Result<Permit<'_>, NoPermits> {
-        self.inner.try_acquire()?;
-        Ok(Permit { semaphore: self })
-    }
+	/// Attempts to take a single [`Permit`] from the semaphore, returning
+	/// `Ok(permit)` on success, or `Err` if they are all taken.
+	pub fn try_acquire(self: Pin<&Self>) -> Result<Permit<'_>, NoPermits> {
+		self.inner.try_acquire()?;
+		Ok(Permit { semaphore: self })
+	}
 
-    /// Returns the number of permits available in the semaphore.
-    ///
-    /// Note that this is a _snapshot._ If this returns 4, for instance, it
-    /// doesn't mean you can successfully call `acquire` 4 times without
-    /// blocking, because another acquirer may be racing you.
-    pub fn permits_available(&self) -> usize {
-        self.inner.permits_available()
-    }
+	/// Returns the number of permits available in the semaphore.
+	///
+	/// Note that this is a _snapshot._ If this returns 4, for instance, it
+	/// doesn't mean you can successfully call `acquire` 4 times without
+	/// blocking, because another acquirer may be racing you.
+	pub fn permits_available(&self) -> usize {
+		self.inner.permits_available()
+	}
 
-    /// Stuffs `n` permits back into the semaphore.
-    ///
-    /// This operation is useful for either increasing the number of permits
-    /// available in an existing semaphore, or restoring permits that were
-    /// hidden from the compiler's view by calling [`core::mem::forget`] on a
-    /// [`Permit`].
-    ///
-    /// If you find yourself using this operation regularly, it may be a sign
-    /// that you want a plain old [`Semaphore`] instead of a `ScopedSemaphore`.
-    pub fn out_of_band_release(self: Pin<&Self>, n: usize) {
-        self.project_ref().inner.release_multiple(n);
-    }
+	/// Stuffs `n` permits back into the semaphore.
+	///
+	/// This operation is useful for either increasing the number of permits
+	/// available in an existing semaphore, or restoring permits that were
+	/// hidden from the compiler's view by calling [`core::mem::forget`] on a
+	/// [`Permit`].
+	///
+	/// If you find yourself using this operation regularly, it may be a sign
+	/// that you want a plain old [`Semaphore`] instead of a `ScopedSemaphore`.
+	pub fn out_of_band_release(self: Pin<&Self>, n: usize) {
+		self.project_ref().inner.release_multiple(n);
+	}
 
-    /// Returns a `ScopedSemaphore` that initially contains `permits` permits.
-    ///
-    /// The result needs to be pinned to be useful, so you'll usually write:
-    ///
-    /// ```
-    /// let semaphore = pin!(ScopedSemaphore::new(permit_count));
-    /// let semaphore = semaphore.into_ref();
-    /// ```
-    ///
-    /// See also the convenience macro [`create_scoped_semaphore!`].
-    pub const fn new(permits: usize) -> Self {
-        Self {
-            inner: Semaphore::new(permits),
-        }
-    }
+	/// Returns a `ScopedSemaphore` that initially contains `permits` permits.
+	///
+	/// The result needs to be pinned to be useful, so you'll usually write:
+	///
+	/// ```
+	/// let semaphore = pin!(ScopedSemaphore::new(permit_count));
+	/// let semaphore = semaphore.into_ref();
+	/// ```
+	///
+	/// See also the convenience macro [`create_scoped_semaphore!`].
+	pub const fn new(permits: usize) -> Self {
+		Self {
+			inner: Semaphore::new(permits),
+		}
+	}
 }
 
 /// A resource object representing one permit acquired from a
@@ -346,13 +346,13 @@ impl ScopedSemaphore {
 #[derive(Debug)]
 #[must_use = "dropping the permit will immediately release it"]
 pub struct Permit<'a> {
-    semaphore: Pin<&'a ScopedSemaphore>,
+	semaphore: Pin<&'a ScopedSemaphore>,
 }
 
 impl Drop for Permit<'_> {
-    fn drop(&mut self) {
-        self.semaphore.out_of_band_release(1)
-    }
+	fn drop(&mut self) {
+		self.semaphore.out_of_band_release(1)
+	}
 }
 
 /// Convenience macro for creating a [`ScopedSemaphore`] on the stack.
@@ -367,8 +367,8 @@ impl Drop for Permit<'_> {
 /// for details.
 #[macro_export]
 macro_rules! create_scoped_semaphore {
-    ($var:ident, $permits:expr) => {
-        let $var = core::pin::pin!($crate::ScopedSemaphore::new($permits));
-        let $var = $var.into_ref();
-    };
+	($var:ident, $permits:expr) => {
+		let $var = core::pin::pin!($crate::ScopedSemaphore::new($permits));
+		let $var = $var.into_ref();
+	};
 }

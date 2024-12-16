@@ -28,50 +28,50 @@ mod vm;
 mod vplic;
 
 use alloc::sync::Arc;
-pub use cache::*;
-pub use interface::*;
-pub use interrupt::*;
-pub use context_frame::*;
-#[cfg(feature = "plic")]
-pub use plic::*;
 #[cfg(feature = "aia")]
 pub use aplic::*;
+pub use cache::*;
+pub use context_frame::*;
+pub use cpu::*;
 #[cfg(feature = "aia")]
 pub use imsic::*;
+pub use interface::*;
+pub use interrupt::*;
+pub use page_fault::*;
+pub use page_table::*;
+#[cfg(feature = "plic")]
+pub use plic::*;
+pub use power::*;
 pub use regs::*;
 pub use sbicall::*;
+pub use smmu::*;
 pub use start::*;
 pub use timer::*;
 pub use tlb::*;
-#[cfg(feature = "plic")]
-pub use vplic::*;
 #[cfg(feature = "aia")]
 pub use vaplic::*;
-pub use page_table::*;
-pub use power::*;
-pub use cpu::*;
-pub use smmu::*;
-pub use page_fault::*;
+#[cfg(feature = "plic")]
+pub use vplic::*;
 
 /// TODO: fake implementations
 pub struct GicDesc {
-    pub gicd_addr: usize,
-    pub gicc_addr: usize,
-    pub gich_addr: usize,
-    pub gicv_addr: usize,
-    pub maintenance_int_id: usize,
+	pub gicd_addr: usize,
+	pub gicc_addr: usize,
+	pub gich_addr: usize,
+	pub gicv_addr: usize,
+	pub maintenance_int_id: usize,
 }
 
 pub struct SmmuDesc {
-    pub base: usize,
-    pub interrupt_id: usize,
-    pub global_mask: u16,
+	pub base: usize,
+	pub interrupt_id: usize,
+	pub global_mask: u16,
 }
 
 #[repr(C)]
 pub struct ArchDesc {
-    pub gic_desc: GicDesc,
-    pub smmu_desc: SmmuDesc,
+	pub gic_desc: GicDesc,
+	pub smmu_desc: SmmuDesc,
 }
 
 pub const GIC_SGIS_NUM: usize = 16;
@@ -81,7 +81,7 @@ pub struct GicContext;
 
 #[allow(unused_variables)]
 pub fn gicc_clear_current_irq(for_hypervisor: bool) {
-    IntCtrl::clear();
+	IntCtrl::clear();
 }
 
 use crate::{config::VmEmulatedDeviceConfig, device::EmuDev};
@@ -89,6 +89,8 @@ use crate::{config::VmEmulatedDeviceConfig, device::EmuDev};
 use super::InterruptController;
 
 #[allow(unused_variables)]
-pub fn emu_smmu_init(emu_cfg: &VmEmulatedDeviceConfig) -> Result<Arc<dyn EmuDev>, ()> {
-    todo!()
+pub fn emu_smmu_init(
+	emu_cfg: &VmEmulatedDeviceConfig,
+) -> Result<Arc<dyn EmuDev>, ()> {
+	todo!()
 }
