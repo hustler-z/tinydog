@@ -2,5 +2,6 @@ tinybm/target/*
 tinyfw/target/*
 tinyos/target/*
 tinyvm/target/*
+tinyec/out/*
 
 

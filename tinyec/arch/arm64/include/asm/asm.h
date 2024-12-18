@@ -50,36 +50,35 @@
 #define count_args_exp(args...) count_args(args)
 #if count_args_exp(CODE_FILL)
 
-#define DO_CODE_ALIGN(align...)              \
+#define CODE_ALIGN(align...)                 \
     LASTARG(ARM_FUNC_ALIGN, ## align), CODE_FILL
 #else
-#define DO_CODE_ALIGN(align...)              \
+#define CODE_ALIGN(align...)                 \
     LASTARG(ARM_FUNC_ALIGN, ## align)
 #endif
 
 #define FUNC(name, align...)                 \
-    SYM(name, FUNC, GLOBAL, DO_CODE_ALIGN(align))
+    SYM(name, FUNC, GLOBAL, CODE_ALIGN(align))
 #define LABEL(name, align...)                \
-    SYM(name, NONE, GLOBAL, DO_CODE_ALIGN(align))
+    SYM(name, NONE, GLOBAL, CODE_ALIGN(align))
 #define DATA(name, align...)                 \
     SYM(name, DATA, GLOBAL, LASTARG(DATA_ALIGN, ## align), DATA_FILL)
 
 #define FUNC_LOCAL(name, align...)           \
-    SYM(name, FUNC, LOCAL, DO_CODE_ALIGN(align))
+    SYM(name, FUNC, LOCAL, CODE_ALIGN(align))
 #define LABEL_LOCAL(name, align...)          \
-    SYM(name, NONE, LOCAL, DO_CODE_ALIGN(align))
+    SYM(name, NONE, LOCAL, CODE_ALIGN(align))
 #define DATA_LOCAL(name, align...)           \
     SYM(name, DATA, LOCAL, LASTARG(DATA_ALIGN, ## align), DATA_FILL)
+
+#define GLOBAL(name)                         \
+    .globl name;                             \
+    name:
 
 #define END(name)                            \
     .size name, . - name
 
 #define __HEAD           .section .head, "ax", %progbits
-
-
-#define MMU      (1 << 0)
-#define DCACHE   (1 << 2)
-#define ICACHE   (1 << 12)
 
 // ##############################################################
 
