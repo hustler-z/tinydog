@@ -1,15 +1,26 @@
 // @Hustler's Project
 
 #include <asm/asm.h>
+#include <asm/offset.h>
 
 // ##############################################################
 
 /**
  * TODO
+ *
+ * save the context of current execution flow.
+ *
+ * --------------------------- high
+ *    |
+ *    : [struct context]
+ *    |
+ *    V
+ * --------------------------- low
  */
 .macro exception_entry
     dmb   sy
 
+    sub   sp, sp, #(ELR - LR)
     push  x28, x29
     push  x26, x27
     push  x24, x25
@@ -25,15 +36,26 @@
     push  x4, x5
     push  x2, x3
     push  x0, x1
-    mrs   x0, SPSR_EL2
-    mrs   x1, ELR_EL2
-    mrs   x2, ESR_EL2
+
+    add   x21, sp, #ELR
+    stp   lr, x21, [sp, #LR]
+    mrs   x21, ELR_EL2
+    str   x21, [sp, #PC]
+
+    add   x21, sp, #CPSR
+    mrs   x22, SPSR_EL2
+    mrs   x23, ESR_EL2
+    stp   x22, x23, [x21]
 .endm
 
 /**
  * TODO
  */
 .macro exception_exit
+    msr   DAIFSet, #0x02
+    ldr   x21, [sp, #PC]
+    ldr   x22, [sp, #CPSR]
+
     pop   x0, x1
     pop   x2, x3
     pop   x4, x5
@@ -49,6 +71,11 @@
     pop   x24, x25
     pop   x26, x27
     pop   x28, x29
+
+    msr   ELR_EL2, x21
+    msr   SPSR_EL2, x22
+
+    ldr   lr, [sp], #(ELR - LR)
 
     dmb   sy
 
@@ -82,28 +109,28 @@
  */
 
     .align 11
-GLOBAL(exception_table)
+GLOBAL(exception_vector)
     // Exception from the current EL while using SP_EL0
-    ventry _syn_el0
-    ventry _irq_el0
-    ventry _fiq_el0
-    ventry _err_el0
+    ventry syn_sp0
+    ventry irq_sp0
+    ventry fiq_sp0
+    ventry err_sp0
 
     // Exception from the current EL while using SP_ELx
-    ventry _syn_elx
-    ventry _irq_elx
-    ventry _fiq_elx
-    ventry _err_elx
+    ventry syn_spx
+    ventry irq_spx
+    ventry fiq_spx
+    ventry err_spx
 
     // Exception from a lower EL and at least one lower EL is AArch64
-    ventry _syn_ell
-    ventry _irq_ell
-    ventry _fiq_ell
-    ventry _err_ell
+    ventry syn_low
+    ventry irq_low
+    ventry fiq_low
+    ventry err_low
 
     // Exception from a lower EL and all lower ELs are AArch32
-    ventry _syn_a32
-    ventry _irq_a32
-    ventry _fiq_a32
-    ventry _err_a32
-END(exception_table)
+    ventry syn_opt
+    ventry irq_opt
+    ventry fiq_opt
+    ventry err_opt
+END(exception_vector)

@@ -1,5 +1,5 @@
-#ifndef _ENTRY_H_
-#define _ENTRY_H_
+#ifndef _ASM_ENTRY_H_
+#define _ASM_ENTRY_H_
 
 
 #ifndef __TINY_START__
@@ -9,4 +9,4 @@
 #define TINY_START              __TINY_START__
 
 
-#endif /* _ENTRY_H_ */
+#endif /* _ASM_ENTRY_H_ */

@@ -1,3 +1,5 @@
+// @Hustler's Project
+
 #ifndef _ASM_H_
 #define _ASM_H_
 
@@ -119,7 +121,7 @@ label: .asciz msg;                           \
     add  \dst, \dst, :lo12:\sym
 .endm
 
-/* Stack pushing/popping register pairs
+/* stack pushing/popping register pairs
  */
 .macro push, xn, xm
     stp \xn, \xm, [sp, #-16]!

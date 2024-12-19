@@ -1,7 +1,7 @@
 // @Hustler
 
-#ifndef _TINY_H_
-#define _TINY_H_
+#ifndef _TINY_COMPILER_H_
+#define _TINY_COMPILER_H_
 
 // ##############################################################
 
@@ -22,8 +22,5 @@
 
 #define __init                __section(".data.init")
 
-
-#define NULL                  (void *)0
-
 // ##############################################################
-#endif /* _TINY_H_ */
+#endif /* _TINY_COMPILER_H_ */

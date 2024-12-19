@@ -5,23 +5,24 @@
 #define UART_LSR             0x05 /* Line Status */
 #define UART_LSR_THRE        0x20 /* Transmit Hold Reg Empty */
 #define UART_THR             0x00 /* Transmit Holding */
+#define DEBUG_SERIAL         0xFE660000U
 
 .macro _uart_wake xb c
 1:
-    ldrb w\c, [\xb, #UART_LSR]
-    and  w\c, w\c, #UART_LSR_THRE
-    cmp  w\c, #UART_LSR_THRE
-    bne  1b
+    ldrb  w\c, [\xb, #UART_LSR]
+    and   w\c, w\c, #UART_LSR_THRE
+    cmp   w\c, #UART_LSR_THRE
+    bne   1b
 .endm
 
 .macro _uart_xfer xb wt
-    strb \wt, [\xb, #UART_THR]
+    strb  \wt, [\xb, #UART_THR]
 .endm
 
 FUNC(_uart_init)
-    ldr  x23, =DEBUG_SERIAL
+    ldr   x23, =DEBUG_SERIAL
 
-    DBG("- UART Enabled -\r\n")
+    DBG("- uart enabled -\r\n")
 
     ret
 END(_uart_init)
@@ -30,10 +31,10 @@ END(_uart_init)
 
 FUNC(_outs)
     _uart_wake x23, 1
-    ldrb w1, [x0], #1
-    cbz  w1, 1f
+    ldrb  w1, [x0], #1
+    cbz   w1, 1f
     _uart_xfer x23, w1
-    b    _outs
+    b     _outs
 1:
     ret
 END(_outs)

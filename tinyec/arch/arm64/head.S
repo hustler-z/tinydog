@@ -1,6 +1,7 @@
 // @Hustler's Project
 
 #include <asm/asm.h>
+#include <asm/offset.h>
 
 #define MPIDR_AFFn          8
 #define EL1                 0x04
@@ -11,6 +12,13 @@
 #define MMU                 (1 << 0)
 #define DCACHE              (1 << 2)
 #define ICACHE              (1 << 12)
+
+// HCR_EL2
+#define AMO                 (1 << 5)
+#define IMO                 (1 << 4)
+#define FMO                 (1 << 3)
+
+// ##############################################################
 
     __HEAD
 
@@ -27,12 +35,12 @@ END(_head)
     .ascii "ARM64"
     .long  0
 
-_entry:
+FUNC(_entry)
     ldr   x0, =_head
     adr   x19, _head
     sub   x20, x19, x0
 
-    // disable all exception
+    // disable SError, IRQ, FIQ, Sync exception
     msr   DAIFSet, #0x0F
 
     // debug uart initialization
@@ -50,7 +58,7 @@ _entry:
     cmp   x1, #EL2
     b.eq  1f
 
-    DBG("[tiny] not on el2!!\r\n")
+    DBG("[tiny] os not on el2!!\r\n")
 
 2:  wfe
     b     2b
@@ -63,9 +71,39 @@ _entry:
     bic   x1, x1, #DCACHE
     msr   SCTLR_EL2, x1
 
+    DBG("[tiny] disable MMU,D-cache,I-cache\r\n")
 
+    // invalidate data cache
+    mov   x0, #0
+    bl    cache_invalidate
 
+    // set up exception table
+    ldr   x1, =exception_vector
+    msr   VBAR_EL2, x1
 
+    mrs   x0, HCR_EL2
+    orr   x0, x0, #AMO
+    orr   x0, x0, #IMO
+    orr   x0, x0, #FMO
+    msr   HCR_EL2, x0
+
+    // enable SError, IRQ, FIQ, Sync exceptions
+    msr   DAIFClr, #0x0F
+
+    // clear bss
+    bl    bss_clear
+
+    // set up the stack
+    ldr   x1, =boot_cpu
+    add   x1, x1, #STACK
+    ldr   x1, [x1]
+    mov   sp, x1
+
+    mov   x0, x20
+    b     bootc
+END(_entry)
+
+// ##############################################################
 
 /**
  * @Hustler - bit manipulation
@@ -104,7 +142,7 @@ FUNC(cpu_affinity)
 END(cpu_affinity)
 
 FUNC(bss_clear)
-    DBG("[tiny] clear the bss\r\n")
+    DBG("[tiny] clear the bss section\r\n")
 
     adr_l x0, __bss_start
     adr_l x1, __bss_end
@@ -113,3 +151,5 @@ FUNC(bss_clear)
     b.lt  1b
     ret
 END(bss_clear)
+
+// ##############################################################
