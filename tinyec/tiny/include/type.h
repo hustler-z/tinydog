@@ -23,4 +23,6 @@ typedef u64                   register_t;
 
 typedef u64                   size_t;
 
+typedef u64                   addr_t;
+
 #endif /* _TINY_TYPE_H_ */

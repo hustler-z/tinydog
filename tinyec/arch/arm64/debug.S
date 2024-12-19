@@ -1,11 +1,11 @@
 #include <asm/asm.h>
 
-// ##############################################################
+// ####################################################
 
-#define UART_LSR             0x05 /* Line Status */
-#define UART_LSR_THRE        0x20 /* Transmit Hold Reg Empty */
-#define UART_THR             0x00 /* Transmit Holding */
-#define DEBUG_SERIAL         0xFE660000U
+#define UART_LSR         0x05 /* Line Status */
+#define UART_LSR_THRE    0x20 /* Transmit Hold Reg Empty */
+#define UART_THR         0x00 /* Transmit Holding */
+#define DEBUG_SERIAL     0xFE660000U
 
 .macro _uart_wake xb c
 1:
@@ -22,12 +22,12 @@
 FUNC(_uart_init)
     ldr   x23, =DEBUG_SERIAL
 
-    DBG("- uart enabled -\r\n")
+    DBG("[tiny] uart enabled\r\n")
 
     ret
 END(_uart_init)
 
-// ##############################################################
+// ####################################################
 
 FUNC(_outs)
     _uart_wake x23, 1
@@ -69,4 +69,4 @@ END(_outx)
 
 RODATA(.rodata.debug, hex, "0123456789abcdef")
 
-// ##############################################################
+// ####################################################

@@ -4,3 +4,4 @@ tiny-y += scheduler.o
 tiny-y += task.o
 tiny-y += tiny.o
 tiny-y += util.o
+tiny-y += debug.o

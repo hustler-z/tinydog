@@ -4,7 +4,7 @@
 
 extern void _outs(char *msg);
 
-// ##############################################################
+// ####################################################
 
 void syn_sp0_handler(struct context *context) {
     _outs("-----> [syn sp0]\r\n");
@@ -25,7 +25,7 @@ void err_sp0_handler(struct context *context) {
     _outs("-----> [err sp0]\r\n");
 }
 
-// ##############################################################
+// ####################################################
 
 void syn_spx_handler(struct context *context) {
 
@@ -47,7 +47,7 @@ void err_spx_handler(struct context *context) {
     _outs("-----> [err spx]\r\n");
 }
 
-// ##############################################################
+// ####################################################
 
 void syn_low_handler(struct context *context) {
 
@@ -69,7 +69,7 @@ void err_low_handler(struct context *context) {
     _outs("-----> [err low]\r\n");
 }
 
-// ##############################################################
+// ####################################################
 
 void syn_opt_handler(struct context *context) {
 
@@ -90,4 +90,4 @@ void err_opt_handler(struct context *context) {
     _outs("-----> [err opt]\r\n");
 }
 
-// ##############################################################
+// ####################################################
