@@ -26,6 +26,14 @@ typedef u64                   size_t;
 // address pointer
 typedef u64 __attribute__((__mode__(__pointer__))) addr_t;
 
+typedef enum {
+    true = 0,
+    false,
+} bool;
+
 #define __void__(x)           ((void *)(unsigned long)(x))
+
+#define __stringify_1(x...)   #x
+#define __stringify(x...)     __stringify_1(x)
 
 #endif /* _TINY_TYPE_H_ */

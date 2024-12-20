@@ -5,21 +5,20 @@
 
 // ####################################################
 
-#define __stringify_1(x...)        #x
-#define __stringify(x...)          __stringify_1(x)
+#include <type.h>
 
 #define WRITE_SYSREG64(v, name) do {                          \
-    unsigned long _r = (v);                                   \
+    u64 _r = (v);                                             \
     asm volatile("msr "__stringify(name)", %0" : : "r" (_r)); \
 } while (0)
 
 #define READ_SYSREG64(name) ({                                \
-    unsigned long _r;                                         \
+    u64 _r;                                                   \
     asm volatile("mrs  %0, "__stringify(name) : "=r" (_r));   \
     _r; })
 
 #define READ_REG(Xn) ({                                       \
-    unsigned long reg;                                        \
+    u64 reg;                                                  \
     asm volatile("mov %0, "__stringify(Xn) : "=r"(reg));      \
     reg; })
 

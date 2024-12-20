@@ -6,7 +6,7 @@
 // ####################################################
 
 #ifndef asmlinkage
-#define asmlinkage
+#define asmlinkage            __attribute__((regparm(0)))
 #endif
 
 #define __aligned(x)          __attribute__((__aligned__(x)))
@@ -21,6 +21,7 @@
 // ####################################################
 
 #define __init                __section(".text.init")
+#define __stack               __section(".stack")
 
 // ####################################################
 

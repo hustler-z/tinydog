@@ -1,13 +1,14 @@
 // @Hustler's Project
 
 #include <cpu.h>
+#include <compiler.h>
 
-u8 boot_stack[STACK_SIZE];
+__stack u8 tiny_stack[STACK_SIZE];
 
 struct cpu boot_cpu = {
     .id = 0,
     .flags = CPU_ACTIVE,
-    .stack = (void *)boot_stack,
+    .stack = (void *)tiny_stack,
 };
 
 int primary_cpu_init(void) {

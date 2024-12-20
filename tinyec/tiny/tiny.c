@@ -36,7 +36,7 @@ out:
     return ret;
 }
 
-void asmlinkage __init bootc(unsigned long offset) {
+void __init bootc(unsigned long offset) {
     // @Hustler
     if (_bootc(bootf))
         return;

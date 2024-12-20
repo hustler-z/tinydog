@@ -47,6 +47,8 @@ CFLAGS     += -I$(TINY_DIR)/include
 CFLAGS     += -I$(BOARD_DIR)/include
 CFLAGS     += -nostdlib -nostdinc -g -Wall
 CFLAGS     += -std=gnu11 -fno-builtin -fno-common
+# objdump -x [.elf]
+CFLAGS     += -Wl,--no-warn-rwx-segments
 
 AFLAGS     += -I$(ARCH_DIR)/include
 AFLAGS     += -D__ASSEMBLY__

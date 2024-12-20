@@ -9,14 +9,14 @@
 #define EL3                 0x0C
 
 // SCTLR_EL2
-#define MMU                 (1 << 0)
-#define DCACHE              (1 << 2)
-#define ICACHE              (1 << 12)
+#define MMU                 (1U << 0)
+#define DCACHE              (1U << 2)
+#define ICACHE              (1U << 12)
 
 // HCR_EL2
-#define AMO                 (1 << 5)
-#define IMO                 (1 << 4)
-#define FMO                 (1 << 3)
+#define AMO                 (1U << 5)
+#define IMO                 (1U << 4)
+#define FMO                 (1U << 3)
 
 // ####################################################
 
