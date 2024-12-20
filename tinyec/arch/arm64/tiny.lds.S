@@ -12,11 +12,13 @@ SECTIONS {
 
     __tiny_start = .;
 
-    .head : {
-        __head_start = .;
-        *(.head .head.*)
+    .text : {
+        __text_start = .;
+        *(.text.head)
+        *(.text.init)
+        *(.text .text.*)
         . = ALIGN(8);
-        __head_end = .;
+        __text_end = .;
     }
 
     .rodata : {
@@ -29,7 +31,7 @@ SECTIONS {
     .data : {
         __data_start = .;
         *(.data .data.*)
-        . = ALIGN(4096);
+        . = ALIGN(8);
         __data_end = .;
     }
 
@@ -41,6 +43,13 @@ SECTIONS {
     }
 
     . = ALIGN(4096);
+
+    .heap : {
+        __heap_start = .;
+        *(.heap .heap.*)
+        . = ALIGN(4096);
+        __heap_end = .;
+    }
 
     __tiny_end = .;
 }

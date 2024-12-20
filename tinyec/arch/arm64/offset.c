@@ -1,6 +1,6 @@
 // @Hustler's Project
 
-#include <asm/cpu.h>
+#include <cpu.h>
 #include <util.h>
 
 #define DEFINE(sym, val)                \

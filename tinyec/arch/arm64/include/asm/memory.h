@@ -1,5 +1,8 @@
 // @Hustler's Project
 
+#ifndef _ASM_MEMORY_H_
+#define _ASM_MEMORY_H_
+
 #include <type.h>
 
 struct mmu_blk {
@@ -15,3 +18,5 @@ struct mmu_cfg {
     u64 ttbr0;
     const struct mmu_blk *mmu_blks;
 };
+
+#endif /* _ASM_MEMORY_H_ */

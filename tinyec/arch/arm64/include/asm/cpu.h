@@ -52,13 +52,6 @@ struct context {
     register_t elr;
 };
 
-struct cpu {
-    struct context context;
-    u32 id;
-    u32 flags;
-    u8 stack[STACK_SIZE];
-};
-
 // ####################################################
 
 #endif /* _ASM_CPU_H_ */

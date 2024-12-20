@@ -3,7 +3,7 @@
 #ifndef _TINY_TYPE_H_
 #define _TINY_TYPE_H_
 
-#define NULL                  (void *)0
+#define NULL                  ((void *)0)
 
 typedef char                  i8;
 typedef short                 i16;
@@ -23,6 +23,9 @@ typedef u64                   register_t;
 
 typedef u64                   size_t;
 
-typedef u64                   addr_t;
+// address pointer
+typedef u64 __attribute__((__mode__(__pointer__))) addr_t;
+
+#define __void__(x)           ((void *)(unsigned long)(x))
 
 #endif /* _TINY_TYPE_H_ */

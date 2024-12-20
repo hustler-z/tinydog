@@ -35,10 +35,12 @@ OBJCOPY    := $(CROSS_COMPILE)objcopy
 ARCH_DIR   := $(CURDIR)/arch/$(ARCH)
 TINY_DIR   := $(CURDIR)/tiny
 BOARD_DIR  := $(CURDIR)/tiny/board
+DRIVER_DIR := $(CURDIR)/tiny/driver
 
 ARCH_OUT   := $(OUTPUT)/arch/$(ARCH)
 TINY_OUT   := $(OUTPUT)/tiny
 BOARD_OUT  := $(OUTPUT)/tiny/board
+DRIVER_OUT := $(OUTPUT)/tiny/driver
 
 CFLAGS     += -I$(ARCH_DIR)/include
 CFLAGS     += -I$(TINY_DIR)/include
@@ -52,11 +54,14 @@ AFLAGS     += -nostdlib -g -Wall
 
 include $(ARCH_DIR)/arch.mk
 include $(TINY_DIR)/tiny.mk
+include $(BOARD_DIR)/board.mk
+include $(DRIVER_DIR)/driver.mk
 
 asm_obj    := $(addprefix $(ARCH_OUT)/,$(asm-y))
 tiny_obj   := $(addprefix $(TINY_OUT)/,$(tiny-y))
 arm_obj    := $(addprefix $(ARCH_OUT)/,$(arm-y))
 board_obj  := $(addprefix $(BOARD_OUT)/,$(board-y))
+driver_obj := $(addprefix $(DRIVER_OUT)/,$(driver-y))
 LDS        := $(addprefix $(ARCH_OUT)/,$(lds-y))
 
 #################################################################
@@ -115,7 +120,7 @@ all: $(BIN)
 $(BIN): $(ELF)
 	$(call cc_objcopy,$@,$<)
 
-$(ELF): $(OFFSET_H) $(asm_obj) $(arm_obj) $(tiny_obj) $(LDS)
+$(ELF): $(OFFSET_H) $(asm_obj) $(arm_obj) $(tiny_obj) $(board_obj) $(driver_obj) $(LDS)
 	$(call cc_ld,$@,$(LDS),$(filter-out $(OFFSET_H),$(filter-out $(LDS),$^)))
 
 $(OFFSET_H): $(OFFSET_S)
@@ -138,6 +143,9 @@ $(tiny_obj): $(TINY_OUT)/%.o: $(TINY_DIR)/%.c
 	$(call cc_cc,$@,$<)
 
 $(board_obj): $(BOARD_OUT)/%.o: $(BOARD_DIR)/%.c
+	$(call cc_cc,$@,$<)
+
+$(driver_obj): $(DRIVER_OUT)/%.o: $(DRIVER_DIR)/%.c
 	$(call cc_cc,$@,$<)
 
 #################################################################

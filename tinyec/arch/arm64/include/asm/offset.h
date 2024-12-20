@@ -12,6 +12,6 @@
 #define ESR 272 /* offsetof(struct context, esr) */
 
 #define ELR 280 /* offsetof(struct context, elr) */
-#define STACK 296 /* offsetof(struct cpu, stack) */
+#define STACK 304 /* offsetof(struct cpu, stack) */
 
 #endif /* _ASM_OFFSET_ */

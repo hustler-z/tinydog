@@ -80,7 +80,9 @@
 #define END(name)                            \
     .size name, . - name
 
-#define __HEAD           .section .head, "ax", %progbits
+// ####################################################
+
+#define __HEAD     .section .text.head, "ax", %progbits
 
 // ####################################################
 
