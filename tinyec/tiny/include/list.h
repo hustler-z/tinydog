@@ -32,6 +32,19 @@ static inline bool list_head_is_null(const struct list_head *list)
     return !list->next && !list->prev;
 }
 
+/**
+ * ####################################################
+ *
+ * @Hustler     <List Illustration>
+ *
+ *     prev       new        next
+ *     +--+       +--+       +--+
+ *     |  |<------|  |<------|  |
+ *     |  |------>|  |------>|  |
+ *     +--+       +--+       +--+
+ *
+ * ####################################################
+ */
 static inline void __list_add(struct list_head *new,
                   struct list_head *prev,
                   struct list_head *next)

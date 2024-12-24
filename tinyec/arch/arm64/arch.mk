@@ -7,6 +7,6 @@ asm-y += mmu.o
 arm-y += exception.o
 arm-y += memory.o
 arm-y += gicv3.o
-arm-y += time.o
+arm-y += cpu.o
 
 lds-y += tiny.lds

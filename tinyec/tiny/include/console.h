@@ -64,10 +64,6 @@ typedef struct {
 
 xmd get_function_addr(char *cmd_str);
 
-void set_cin(int (*func)(void));
-
-void set_cout(void (*func)(char));
-
 int console_init(void);
 
 // ####################################################

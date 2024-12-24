@@ -1,3 +1,0 @@
-# Counting semaphore for `tinybm`
-
-This provides a counting semaphore for use with `tinybm`.

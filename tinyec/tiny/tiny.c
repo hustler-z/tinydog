@@ -3,6 +3,7 @@
 #include <compiler.h>
 #include <console.h>
 #include <type.h>
+#include <time.h>
 #include <cpu.h>
 
 typedef int (*bootc_t)(void);
@@ -14,6 +15,8 @@ static const bootc_t bootf[] = {
     primary_cpu_init,
 
     secondary_cpu_init,
+
+    time_preset,
 
     console_init,
 

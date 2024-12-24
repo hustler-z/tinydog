@@ -1,5 +1,12 @@
 // @Hustler's Project
 
+#include <asm/time.h>
+#include <asm/cpu.h>
+#include <compiler.h>
+#include <time.h>
+
+// ####################################################
+
 #define _U  0x01    /* upper */
 #define _L  0x02    /* lower */
 #define _D  0x04    /* digit */
@@ -35,3 +42,63 @@ const unsigned char _ctype[] = {
     _L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,_L,     /* 224-239 */
     _L,_L,_L,_L,_L,_L,_L,_P,_L,_L,_L,_L,_L,_L,_L,_L      /* 240-255 */
 };
+
+// ####################################################
+
+// @Hustler - Time
+static u64 boot_count;
+static u64 cpu_khz;
+
+/* Compute with 96 bit intermediate result: (a*b)/c
+ */
+u64 muldiv64(u64 a, u32 b, u32 c)
+{
+    union {
+        u64 ll;
+        struct {
+            u32 low, high;
+        } l;
+    } u, res;
+    u64 rl, rh;
+
+    u.ll = a;
+    rl = (u64)u.l.low * (u64)b;
+    rh = (u64)u.l.high * (u64)b;
+    rh += (rl >> 32);
+    res.l.high = rh / c;
+    res.l.low = (((rh % c) << 32) + (u32)rl) / c;
+
+    return res.ll;
+}
+
+time_t ticks_to_ns(u64 ticks) {
+    return muldiv64(ticks, SECONDS(1), 1000 * cpu_khz);
+}
+
+u64 ns_to_ticks(time_t ns) {
+    return muldiv64(ns, 1000 * cpu_khz, SECONDS(1));
+}
+
+time_t nanosecond(void) {
+    u64 ticks = physical_count() - boot_count;
+    return ticks_to_ns(ticks);
+}
+
+void udelay(time_t usecs) {
+    time_t deadline = nanosecond() + 1000 * (time_t)usecs;
+    while((nanosecond() - deadline) < 0)
+        ;
+
+    dsb(sy);
+    isb();
+}
+
+// can only call once
+int __init time_preset(void) {
+    boot_count = physical_count();
+    cpu_khz = cpufreq_khz();
+
+    return 0;
+}
+
+// ####################################################

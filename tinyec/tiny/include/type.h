@@ -20,8 +20,8 @@ typedef unsigned long         u64;
 #define _wo                   volatile
 
 typedef u64                   register_t;
-
 typedef u64                   size_t;
+typedef u64                   time_t;
 
 // address pointer
 typedef u64 __attribute__((__mode__(__pointer__))) addr_t;

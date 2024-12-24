@@ -3,6 +3,8 @@
 #ifndef _TINY_UTIL_H_
 #define _TINY_UTIL_H_
 
+#ifndef __ASSEMBLY__
+
 #include <type.h>
 
 // ####################################################
@@ -76,7 +78,7 @@ static inline unsigned char __toupper(unsigned char c)
     __rem;                           \
 })
 
-#define max(x, y) ({\
+#define max(x, y) ({                 \
     typeof(x) _max1 = (x);           \
     typeof(y) _max2 = (y);           \
     (void) (&_max1 == &_max2);       \
@@ -93,9 +95,9 @@ static inline unsigned char __toupper(unsigned char c)
     (((x) + (__y - 1)) / __y) * __y; \
 })
 
-#define ROUNDDOWN(x, y) ({\
-	typeof(x) __x = (x);\
-	__x - (__x % (y));\
+#define ROUNDDOWN(x, y) ({           \
+	typeof(x) __x = (x);             \
+	__x - (__x % (y));               \
 })
 
 #define min_t(type,x,y) \
@@ -184,6 +186,24 @@ static inline unsigned char __toupper(unsigned char c)
 
 #define find_closest(x, a, as) \
     __find_closest(x, a, as, <=)
+
+#endif /* !__ASSEMBLY__ */
+
+#ifdef __ASSEMBLY__
+#define _AC(X, Y)       X
+#define _AT(T, X)       X
+#else
+#define __AC(X, Y)      (X##Y)
+#define _AC(X, Y)       __AC(X, Y)
+#define _AT(T, X)       ((T)(X))
+#endif
+
+#define BIT(pos, sfx)   (_AC(1, sfx) << (pos))
+#define BYTES_PER_LONG  8
+#define BITS_PER_LONG   (BYTES_PER_LONG << 3)
+
+#define GENMASK(h, l) \
+    (((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
 
 // ####################################################
 

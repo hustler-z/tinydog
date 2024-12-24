@@ -233,7 +233,7 @@ static char *pointer(char *str, const char *end,
                   16, field_width, precision, flags);
 }
 
-int vsnprint(char *buf, size_t size, const char *fmt, va_list args)
+static int vsnprint(char *buf, size_t size, const char *fmt, va_list args)
 {
     unsigned long long num;
     int base;
@@ -464,6 +464,30 @@ int snprint(char *buf, size_t size, const char *fmt, ...)
     va_end(args);
 
     return i;
+}
+
+void (*__outs__)(const char *s);
+
+static void vprint(const char *fmt, va_list args) {
+    static char buf[1024];
+
+    (void)vsnprint(buf, sizeof(buf), fmt, args);
+
+    if (__outs__)
+        __outs__(buf);
+}
+
+void __print__(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    vprint(fmt, args);
+
+    va_end(args);
+}
+
+void __init set_outs(void (*func)(const char *)) {
+    __outs__ = func;
 }
 
 // ####################################################

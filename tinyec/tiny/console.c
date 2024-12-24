@@ -1,10 +1,11 @@
 // @Hustler's Project
 
+#include <compiler.h>
 #include <console.h>
 #include <string.h>
 #include <print.h>
 
-int (*__cin__)(void);
+char (*__cin__)(void);
 void (*__cout__)(char c);
 
 extern u64 __cmd_list__;
@@ -20,11 +21,11 @@ static char cmd_history[NUM_HISTORY_ENTRIES][LINE_BUFF_SIZE];
 
 static volatile bool __echo = ECHO_INIT_VALUE;
 
-void set_cin(int (*func)(void)) {
+void __init set_cin(char (*func)(void)) {
     __cin__ = func;
 }
 
-void set_cout(void (*func)(char)) {
+void __init set_cout(void (*func)(char)) {
     __cout__ = func;
 }
 
@@ -62,7 +63,7 @@ static void handle_up_arrow(char *cmd_buf, int *char_count) {
 
     if (curr_command_ptr < total_num_commands - NUM_HISTORY_ENTRIES ||
         curr_command_ptr == 0) {
-        tiny_print("%s", cmd_buf);
+        __print__("%s", cmd_buf);
 
         return;
     }
@@ -74,7 +75,7 @@ static void handle_up_arrow(char *cmd_buf, int *char_count) {
     memcpy(cmd_buf, &cmd_history[index], LINE_BUFF_SIZE);
     *char_count = strlen(cmd_buf);
 
-    tiny_print("%s", cmd_buf);
+    __print__("%s", cmd_buf);
 }
 
 static void handle_down_arrow(char *cmd_buf, int *char_count) {
@@ -91,7 +92,7 @@ static void handle_down_arrow(char *cmd_buf, int *char_count) {
     memcpy(cmd_buf, &cmd_history[index], LINE_BUFF_SIZE);
     *char_count = strlen(cmd_buf);
 
-    tiny_print("%s", cmd_buf);
+    __print__("%s", cmd_buf);
 }
 
 static void add_command_to_history(const char *cmd_str) {
@@ -113,7 +114,7 @@ static int show_history(int argc, char **argv) {
         beg_index = total_num_commands - NUM_HISTORY_ENTRIES;
 
     for (u32 index = beg_index; index <= end_index; ++index)
-        tiny_print("%s\n", cmd_history[index % NUM_HISTORY_ENTRIES]);
+        __print__("%s\n", cmd_history[index % NUM_HISTORY_ENTRIES]);
 
     return 0;
 }
@@ -146,7 +147,7 @@ static void handle_tab(char *cmd_buf, int *char_count) {
         if (prefix_match(cmd_buf, *char_count, cmd_list[i].name)) {
             match_count++;
             last_match = i;
-            tiny_print("\n%s", cmd_list[i].name);
+            __print__("\n%s", cmd_list[i].name);
         }
 
         i++;
@@ -158,30 +159,30 @@ static void handle_tab(char *cmd_buf, int *char_count) {
     }
 
     if (match_count) {
-        tiny_print("\n");
+        __print__("\n");
         prepend_prompt();
-        tiny_print(PROMPT);
-        tiny_print("%s", cmd_buf);
+        __print__(PROMPT);
+        __print__("%s", cmd_buf);
     }
 }
 
-static int parse_line(char **argv, char *line_buff, int argument_size) {
+static int parse_line(char **argv, char *line_buf, int argument_size) {
     int argc = 0;
     int pos = 0;
-    int length = strlen(line_buff);
+    int length = strlen(line_buf);
 
     while (pos <= length) {
-        if (line_buff[pos] != '\t' && line_buff[pos] != SPACE &&
-            line_buff[pos] != END_OF_LINE)
-            argv[argc++] = &line_buff[pos];
+        if (line_buf[pos] != '\t' && line_buf[pos] != SPACE &&
+            line_buf[pos] != END_OF_LINE)
+            argv[argc++] = &line_buf[pos];
 
-        for (; line_buff[pos] != '\t' && line_buff[pos] != SPACE &&
-            line_buff[pos] != END_OF_LINE;
+        for (; line_buf[pos] != '\t' && line_buf[pos] != SPACE &&
+            line_buf[pos] != END_OF_LINE;
             pos++)
             ;
 
-        if (line_buff[pos] == '\t' || line_buff[pos] == SPACE)
-            line_buff[pos] = END_OF_LINE;
+        if (line_buf[pos] == '\t' || line_buf[pos] == SPACE)
+            line_buf[pos] = END_OF_LINE;
 
         pos++;
     }
@@ -201,7 +202,7 @@ static void execute(int argc, char **argv) {
     }
 
     if (match_found == false) {
-        tiny_print("\"%s\": command not found. "
+        __print__("\"%s\": command not found. "
                    "Use \"help\" to list all command.\n",
             argv[0]);
         __cmd_exec_status = -1;
@@ -214,17 +215,17 @@ static void shell(void) {
     int special_key = 0;
     char c;
 
-    char line_buff[LINE_BUFF_SIZE];
+    char line_buf[LINE_BUFF_SIZE];
     char *argv[MAX_ARG_COUNT];
 
     for (i = 0; i < LINE_BUFF_SIZE; i++)
-        line_buff[i] = 0;
+        line_buf[i] = 0;
 
     for (i = 0; i < MAX_ARG_COUNT; i++)
         argv[i] = NULL;
 
     prepend_prompt();
-    tiny_print(PROMPT);
+    __print__(PROMPT);
 
     while (true) {
         if (!active_prompt())
@@ -235,7 +236,7 @@ static void shell(void) {
             c = (char)s;
 
             if (c == CARRIAGE_RETURN || c == NEW_LINE) {
-                line_buff[count] = END_OF_LINE;
+                line_buf[count] = END_OF_LINE;
                 __cout__(NEW_LINE);
                 break;
             }
@@ -251,7 +252,7 @@ static void shell(void) {
 
                 count--;
 
-                line_buff[count] = END_OF_LINE;
+                line_buf[count] = END_OF_LINE;
                 delete();
             } else if (c == ESCAPE) {
                 special_key = 1;
@@ -270,17 +271,17 @@ static void shell(void) {
                 }
 
                 if (c == 'A') {
-                    handle_up_arrow(line_buff, &count);
+                    handle_up_arrow(line_buf, &count);
                 } else {
-                    handle_down_arrow(line_buff, &count);
+                    handle_down_arrow(line_buf, &count);
                 }
                 special_key = 0;
                 continue;
             } else if (c == TAB) {
-                handle_tab(line_buff, &count);
+                handle_tab(line_buf, &count);
                 continue;
             } else {
-                line_buff[count] = c;
+                line_buf[count] = c;
                 count++;
             }
 
@@ -290,9 +291,9 @@ static void shell(void) {
             loop();
     }
 
-    add_command_to_history(line_buff);
+    add_command_to_history(line_buf);
 
-    argc = parse_line(argv, line_buff, MAX_ARG_COUNT);
+    argc = parse_line(argv, line_buf, MAX_ARG_COUNT);
 
     if (argc > 0)
         execute(argc, argv);
@@ -306,7 +307,7 @@ static void exec_auto_cmds(void) {
 }
 
 static int build_info(int argc, char **argv) {
-    tiny_print("Build: [" SHELL_VERSION ":" USER_REPO_VERSION "] - [" BUILD_USER
+    __print__("Build: [" SHELL_VERSION ":" USER_REPO_VERSION "] - [" BUILD_USER
                "@" BUILD_HOST "] - " __DATE__ " - " __TIME__ "\n");
     return 0;
 }
@@ -354,17 +355,17 @@ int help(int argc, char **argv) {
     if (argc > 1 && (!strcmp(argv[1], "-l")))
         verbose = false;
     else
-        tiny_print("use: help -l for list only.\n\n");
+        __print__("use: help -l for list only.\n\n");
 
     while (cmd_list[i].name != NULL) {
-        tiny_print(cmd_list[i].name);
+        __print__(cmd_list[i].name);
 
         if (verbose) {
-            tiny_print("\n\t");
-            tiny_print(cmd_list[i].help);
+            __print__("\n\t");
+            __print__(cmd_list[i].help);
         }
 
-        tiny_print("\n");
+        __print__("\n");
 
         i++;
     }
@@ -373,14 +374,14 @@ int help(int argc, char **argv) {
 }
 
 int cmd_exec_status(int argc, char **argv) {
-    tiny_print("%d\n", __cmd_exec_status);
+    __print__("%d\n", __cmd_exec_status);
 
     return 0;
 }
 
-PUSH_CMD_AUTO(version, "Prints details of the build", build_info);
-PUSH_CMD_LIST(help, "Prints all available commands", help);
-PUSH_CMD_LIST(status, "Returns exit status of last executed command",
+PUSH_CMD_AUTO(version, "prints details of the build", build_info);
+PUSH_CMD_LIST(help, "prints all available commands", help);
+PUSH_CMD_LIST(status, "returns exit status of last executed command",
         cmd_exec_status);
 
 __attribute__((__section__(".cmd_end"))) static volatile cmd_t noop_cmd = {

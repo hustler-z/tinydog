@@ -1,5 +1,0 @@
-# Read-write lock for `tinybm`
-
-This provides a read-write lock for use with `tinybm`.
-
-See the API documentation for more.

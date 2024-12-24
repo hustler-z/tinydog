@@ -52,6 +52,10 @@ struct context {
     register_t elr;
 };
 
+// @Hustler
+// @arch/arm64/arm.c
+u64 cpufreq_khz(void);
+
 // ####################################################
 
 #endif /* _ASM_CPU_H_ */
