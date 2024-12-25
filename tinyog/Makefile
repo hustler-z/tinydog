@@ -29,6 +29,7 @@ CXX        := $(CROSS_COMPILE)cpp
 LD         := $(CROSS_COMPILE)ld
 AS         := $(CROSS_COMPILE)as
 OBJCOPY    := $(CROSS_COMPILE)objcopy
+OBJDUMP    := $(CROSS_COMPILE)objdump
 
 #################################################################
 
@@ -114,6 +115,10 @@ cc_objcopy = $(Q)mkdir -p `dirname $(1)`; \
              echo "BN   $(subst $(OUTPUT)/,,$(1))"; \
              $(OBJCOPY) -O binary $(2) $(1)
 
+cc_objdump = $(Q)mkdir -p `dirname $(1)`; \
+             echo "OD   $(patsubst %.elf,%.asm,$(subst $(OUTPUT)/,,$(1)))"; \
+             $(OBJDUMP) -S -r -d $(1) > $(patsubst %.elf,%.asm,$(1))
+
 #################################################################
 
 .PHONY: all
@@ -124,6 +129,7 @@ $(BIN): $(ELF)
 
 $(ELF): $(OFFSET_H) $(asm_obj) $(arm_obj) $(tiny_obj) $(board_obj) $(driver_obj) $(LDS)
 	$(call cc_ld,$@,$(LDS),$(filter-out $(OFFSET_H),$(filter-out $(LDS),$^)))
+	$(call cc_objdump,$@)
 
 $(OFFSET_H): $(OFFSET_S)
 	$(call asm_offsets)
