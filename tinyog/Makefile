@@ -43,15 +43,19 @@ TINY_OUT   := $(OUTPUT)/tiny
 BOARD_OUT  := $(OUTPUT)/tiny/board
 DRIVER_OUT := $(OUTPUT)/tiny/driver
 
-CFLAGS     += -I$(ARCH_DIR)/include
-CFLAGS     += -I$(TINY_DIR)/include
-CFLAGS     += -I$(BOARD_DIR)/include
-CFLAGS     += -nostdlib -nostdinc -g -Wall
+INCDIR     += -I$(ARCH_DIR)/include
+INCDIR     += -I$(TINY_DIR)/include
+INCDIR     += -I$(BOARD_DIR)/include
+CFLAGS     += -nostdlib -nostdinc -g -Wall $(INCDIR)
 CFLAGS     += -std=gnu11 -fno-builtin -fno-common
-# objdump -x [.elf]
-# CFLAGS     += -Wl,--no-warn-rwx-segments
+CFLAGS     += -fno-omit-frame-pointer -Og
+CFLAGS     += -mcpu=cortex-a55
 
-AFLAGS     += -I$(ARCH_DIR)/include
+LDFLAGS    += -nostdlib -g -Wall
+# objdump -x [.elf]
+LDFLAGS    += -Wl,--no-warn-rwx-segments
+
+AFLAGS     += $(INCDIR)
 AFLAGS     += -D__ASSEMBLY__ -D__TINY_START__=0x200000
 AFLAGS     += -nostdlib -g -Wall
 
@@ -105,7 +109,7 @@ cc_as      = $(Q)mkdir -p `dirname $(1)`; \
 
 cc_ld      = $(Q)mkdir -p `dirname $(1)`; \
              echo "LD   $(subst $(OUTPUT)/,,$(1))"; \
-             $(CC) $(3) $(CFLAGS) -T$(2) -o $(1)
+             $(CC) $(3) $(LDFLAGS) -T$(2) -o $(1)
 
 cc_lds     = $(Q)mkdir -p `dirname $(1)`; \
              echo "LS   $(patsubst %.lds,%.ld,$(subst $(OUTPUT)/arch/$(ARCH)/,,$(1)))"; \
@@ -117,7 +121,7 @@ cc_objcopy = $(Q)mkdir -p `dirname $(1)`; \
 
 cc_objdump = $(Q)mkdir -p `dirname $(1)`; \
              echo "OD   $(patsubst %.elf,%.asm,$(subst $(OUTPUT)/,,$(1)))"; \
-             $(OBJDUMP) -S -r -d $(1) > $(patsubst %.elf,%.asm,$(1))
+             $(OBJDUMP) -S -d $(1) > $(patsubst %.elf,%.asm,$(1))
 
 #################################################################
 
@@ -158,6 +162,12 @@ $(driver_obj): $(DRIVER_OUT)/%.o: $(DRIVER_DIR)/%.c
 
 #################################################################
 
+.PHONY: ctags
+ctags:
+	@set -e; rm -rf tags; \
+	ctags --languages=Asm,c,c++,Make -R
+
+.PHONY: clean
 clean:
 	$(Q)rm -rf $(OUTPUT)
 

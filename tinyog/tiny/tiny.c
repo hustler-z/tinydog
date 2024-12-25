@@ -23,7 +23,7 @@ static const bootc_t bootf[] = {
     NULL,
 };
 
-static int __init _bootc(const bootc_t *bootf) {
+static int __init __bootc__(const bootc_t *bootf) {
     // @Hustler
     const bootc_t *step;
     int ret = 0;
@@ -41,6 +41,6 @@ out:
 
 void __init bootc(unsigned long offset) {
     // @Hustler
-    if (_bootc(bootf))
+    if (__bootc__(bootf))
         return;
 }

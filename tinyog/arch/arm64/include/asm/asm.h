@@ -83,6 +83,9 @@
 // ####################################################
 
 #define __HEAD     .section .text.head, "ax", %progbits
+#define __ENTRY    .section .text.entry, "ax", %progbits
+#define __BUGS     .section .text.bugs, "ax", %progbits
+#define __VECS     .section .text.vecs, "ax", %progbits
 
 // ####################################################
 
@@ -94,7 +97,7 @@ label: .asciz msg;                           \
 #define PRINT(section, string)               \
     mov   x3, lr;                            \
     adr_l x0, 98f;                           \
-    bl    _outs;                             \
+    bl    __asm_outs__;                      \
     mov   lr, x3;                            \
     RODATA(section, 98, string)
 
@@ -103,7 +106,7 @@ label: .asciz msg;                           \
 .macro dump_reg xb
     mov   x0, \xb
     mov   x4, lr
-    bl    _outx
+    bl    __asm_hex__
     mov   lr, x4
 .endm
 

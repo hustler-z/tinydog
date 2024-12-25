@@ -22,12 +22,12 @@
 
     __HEAD
 
-FUNC(_head)
+FUNC(__head__)
     add   x13, x18, #0x16
-    b     _entry
-END(_head)
+    b     __entry__
+END(__head__)
     .long  0
-    .quad  __tiny_end - _head
+    .quad  __tiny_end - __head__
     .quad  0
     .quad  0
     .quad  0
@@ -35,16 +35,18 @@ END(_head)
     .ascii "ARM64"
     .long  0
 
-FUNC(_entry)
-    ldr   x0, =_head
-    adr   x19, _head
-    sub   x20, x19, x0
+    __ENTRY
 
+__entry__:
     // disable SError, IRQ, FIQ, Sync exception
     msr   DAIFSet, #0x0F
 
+    ldr   x0, =__head__
+    adr   x19, __head__
+    sub   x20, x19, x0
+
     // debug uart initialization
-    bl    _uart_init
+    bl    __asm_uart_init__
 
     // @Hustler
     //
@@ -101,7 +103,6 @@ FUNC(_entry)
 
     mov   x0, x20
     b     bootc
-END(_entry)
 
 // ####################################################
 

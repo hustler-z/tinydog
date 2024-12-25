@@ -5,7 +5,7 @@
 
 OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH("aarch64")
-ENTRY(_head)
+ENTRY(__head__)
 
 SECTIONS {
     . = TINY_START;
@@ -15,6 +15,9 @@ SECTIONS {
     .text : {
         __text_start = .;
         *(.text.head)
+        *(.text.entry)
+        *(.text.bugs)
+        *(.text.vecs)
         *(.text.init)
         *(.text .text.*)
         . = ALIGN(8);

@@ -62,6 +62,9 @@
 #define GPIO4_BASE          0xFE770000U /* GPIO4 base address */
 #define MBOX0_BASE          0xFE780000U /* MBOX0 base address */
 
+// @Hustler
+#define DEBUG_SERIAL        UART2_BASE
+
 // ####################################################
 
 #endif /* _BOARD_RK3566_H_ */

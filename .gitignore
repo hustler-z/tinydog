@@ -1,5 +1,6 @@
 tinyos/target/*
 tinyvm/target/*
 tinyog/out/*
+tinyog/tags
 
 
