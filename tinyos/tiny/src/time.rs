@@ -217,7 +217,7 @@ impl From<TickTime> for u64 {
 /// division, much less 64-bit division.
 ///
 /// `Millis` wraps a `u64` and records a number of milliseconds. Since
-/// milliseconds are `tinybm`'s unit used for internal timekeeping, this ensures
+/// milliseconds are `tinyos`'s unit used for internal timekeeping, this ensures
 /// that a `Millis` can be used for any deadline or timeout computation without
 /// any unit conversions or expensive arithmetic operations.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Default)]

@@ -3,8 +3,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 fn main() {
-    println!(r#"cargo:rustc-check-cfg=cfg(tinybm_has_basepri)"#);
-    println!(r#"cargo:rustc-check-cfg=cfg(tinybm_has_native_rmw)"#);
+    println!(r#"cargo:rustc-check-cfg=cfg(tinyos_has_basepri)"#);
+    println!(r#"cargo:rustc-check-cfg=cfg(tinyos_has_native_rmw)"#);
 
     match std::env::var("TARGET").unwrap().as_str() {
         "aarch64-unknown-none" => {

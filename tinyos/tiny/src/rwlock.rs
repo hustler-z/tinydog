@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//! A [read-write lock] for use with [`tinybm`].
+//! A [read-write lock] for use with [`tinyos`].
 //!
 //! There's a small family of related types in this here crate:
 //!
@@ -17,12 +17,12 @@
 //!   guarded data.
 //! - [`ExclusiveGuard<T>`] allows arbitrary exclusive access, even across
 //!   `await` points, but you have to promise the library that the data is
-//!   inherently cancel-safe (by using the [`tinybm::util::CancelSafe`] marker
+//!   inherently cancel-safe (by using the [`tinyos::util::CancelSafe`] marker
 //!   type).
 //!
 //! See the docs on [`RwLock`] for more details.
 //!
-//! [`tinybm`]: https://docs.rs/tinybm/
+//! [`tinyos`]: https://docs.rs/tinyos/
 //! [read-write lock]: https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock
 
 #![no_std]
@@ -45,8 +45,8 @@ use core::ops::{Deref, DerefMut};
 use core::pin::Pin;
 use pin_project::pin_project;
 use scopeguard::ScopeGuard;
-use tinybm::util::CancelSafe;
-use tinybm_list::{List, Meta};
+use tinyos::util::CancelSafe;
+use tinyos_list::{List, Meta};
 
 /// A lock that guards data of type `T` and allows, at any one time, shared
 /// access by many readers, or exclusive access by one writer, but not both.
@@ -112,7 +112,7 @@ use tinybm_list::{List, Meta};
 /// structures in Rust.) You can still do it, as long as you're very careful not
 /// to `await` while the guarded data is in an unacceptable state.
 ///
-/// To do this, you wrap the data in a [`CancelSafe`][tinybm::util::CancelSafe]
+/// To do this, you wrap the data in a [`CancelSafe`][tinyos::util::CancelSafe]
 /// wrapper, which causes [`RwLock::lock_exclusive_assuming_cancel_safe`] to
 /// become available. This returns an [`ExclusiveGuard`] which acts like the
 /// mutex guards in `std`.

@@ -7,18 +7,18 @@
 //! This provides a lightweight operating environment for running async Rust
 //! code on ARM Cortex-M microprocessors, plus some useful doodads and gizmos.
 //!
-//! `tinybm` is deliberately designed to be compact, to avoid the use of proc
+//! `tinyos` is deliberately designed to be compact, to avoid the use of proc
 //! macros, to be highly portable to different microcontrollers, and to be as
 //! statically predictable as possible with no dynamic resource allocation.
 //!
 //! These are the API docs for the OS. If you'd like a higher-level introduction
 //! with worked examples, please have a look at [the intro guide]!
 //!
-//! [the intro guide]: https://github.com/cbiffle/tinybm/blob/main/doc/intro.adoc
+//! [the intro guide]: https://github.com/cbiffle/tinyos/blob/main/doc/intro.adoc
 //!
 //! # About the OS
 //!
-//! `tinybm` is designed around the notion of a fixed set of concurrent tasks
+//! `tinyos` is designed around the notion of a fixed set of concurrent tasks
 //! that run forever. To use the OS, your application startup routine calls
 //! [`exec::run_tasks`], giving it an array of tasks you've defined; `run_tasks`
 //! never returns.
@@ -43,12 +43,12 @@
 //! For detailed discussion and some cookbook examples, see either [the intro
 //! guide] or [the `examples` directory in the repo][examples].
 //!
-//! [examples]: https://github.com/cbiffle/tinybm/tree/main/examples
+//! [examples]: https://github.com/cbiffle/tinyos/tree/main/examples
 //!
 //!
 //! # Feature flags
 //!
-//! `tinybm` currently exposes the following Cargo features for
+//! `tinyos` currently exposes the following Cargo features for
 //! enabling/disabling portions of the system:
 //!
 //! - `systick` (on by default). Enables reliance on the ARM M-profile SysTick
@@ -111,7 +111,7 @@
 //! more about this in [The Intro Guide] and the technical note on
 //! [Cancellation].
 //!
-//! `tinybm` itself tries to make it easier for you to handle cancellation in
+//! `tinyos` itself tries to make it easier for you to handle cancellation in
 //! your programs, by providing APIs that have reasonable behavior on cancel.
 //! All of the core APIs aim for _strict_ cancel-safety, where dropping a future
 //! and retrying the operation that produced it is equivalent to not dropping
@@ -119,7 +119,7 @@
 //! will take more CPU cycles; that's not what we mean by side effects.)
 //!
 //! If some code is useful, but can't achieve strict cancel safety, it should go
-//! in a separate crate. For example, the `tinybm-handoff` crate _used to_ be
+//! in a separate crate. For example, the `tinyos-handoff` crate _used to_ be
 //! part of the core OS, but was evicted because it can only achieve a weaker
 //! notion of cancel safety.
 //!
@@ -128,8 +128,8 @@
 //!
 //! [`select_biased!`]: https://docs.rs/futures/latest/futures/macro.select_biased.html
 //! [`join!`]: https://docs.rs/futures/latest/futures/macro.join.html
-//! [The Intro Guide]: https://github.com/cbiffle/tinybm/blob/main/doc/intro.adoc
-//! [Cancellation]: https://github.com/cbiffle/tinybm/blob/main/doc/cancellation.adoc
+//! [The Intro Guide]: https://github.com/cbiffle/tinyos/blob/main/doc/intro.adoc
+//! [Cancellation]: https://github.com/cbiffle/tinyos/blob/main/doc/cancellation.adoc
 
 #![no_std]
 #![warn(
@@ -147,6 +147,47 @@
 )]
 #![warn(clippy::undocumented_unsafe_blocks)]
 
+/// ############################################################################
+/// @Hustler 2024/11/17
+///
+///
+/// To understand Rust 'macro_rules' a little better, here I try to walk through
+/// the code and see if I can understand why and how.
+///
+/// In Rust, there are two types of macros, declarative macros as below, also
+/// procedural macros.
+///
+/// ($matcher) => {$expansion}
+///
+///          Capture
+///             |
+///             V
+/// $identifier:fragment-specifier
+///                     |
+///                    [0]  block
+///                    [1]  expr
+///                    [2]  ident
+///                    [3]  item
+///                    [4]  lifetime
+///                    [5]  literal
+///                    [6]  meta
+///                    [7]  pat      a pattern
+///                    [8]  path
+///                    [9]  stmt     a statement
+///                    [10] tt       a single token tree
+///                    [11] ty       a type
+///                    [12] vis
+///
+/// Matcher can contains repetitions:
+///
+/// $( ... ) separator-token repeat-operator
+///                |                |
+///                V                V
+///            [, and ;]       [0] ? Indicate at most one repetition
+///                            [1] * Indicate zero or more repetitions
+///                            [2] + Indicate one or more repetitions
+///
+/// ############################################################################
 /// Internal assert macro that doesn't stringify its expression or generate any
 /// fancy messages. This means failures must be diagnosed by file:line only, so,
 /// don't use this more than once on the same line. In exchange, this makes
@@ -160,13 +201,10 @@ macro_rules! cheap_assert {
 	};
 }
 
-#[deprecated(since = "1.3.0", note = "please use the portable-atomic crate")]
-pub mod atomic;
-pub mod exec;
+pub mod task;
 pub mod util;
 
 #[macro_use]
-#[deprecated(since = "1.2.0", note = "please move to the tinybm-list crate")]
 pub mod list;
 
 #[cfg(feature = "mutex")]

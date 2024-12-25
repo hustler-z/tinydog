@@ -5,7 +5,7 @@
 #define UART_LSR         0x05 /* Line Status */
 #define UART_LSR_THRE    0x20 /* Transmit Hold Reg Empty */
 #define UART_THR         0x00 /* Transmit Holding */
-#define DEBUG_SERIAL     0xFE660000U
+#define DEBUG_SERIAL     0xFE660000
 
 .macro _uart_wake xb c
 1:

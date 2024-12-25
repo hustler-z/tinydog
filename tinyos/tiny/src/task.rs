@@ -153,7 +153,7 @@ cfg_if::cfg_if! {
 		use portable_atomic::AtomicBool;
 		use core::ptr::{addr_of, addr_of_mut};
 
-		use tinybm_list::List;
+		use tinyos_list::List;
 		use core::mem::MaybeUninit;
 		use crate::time::TickTime;
 	}
@@ -317,7 +317,7 @@ pub enum Interrupts {
 	/// adjust this priority in the NVIC.)
 	///
 	/// This is not available on ARMv6-M, which lacks the `BASEPRI` feature.
-	#[cfg(tinybm_has_basepri)]
+	#[cfg(tinyos_has_basepri)]
 	Filtered(u8),
 }
 
@@ -340,7 +340,7 @@ impl Interrupts {
 
 				r
 			}
-			#[cfg(tinybm_has_basepri)]
+			#[cfg(tinyos_has_basepri)]
 			Interrupts::Filtered(priority) => {
 				let prev = cortex_m::register::basepri::read();
 				cortex_m::register::basepri_max::write(priority);
@@ -607,7 +607,7 @@ pub const ALL_TASKS: usize = !0;
 /// A lightweight task notification scheme that can be used to safely route
 /// events from interrupt handlers to task code.
 ///
-/// This is the lowest level inter-task communication type in `tinybm`, and is
+/// This is the lowest level inter-task communication type in `tinyos`, and is
 /// appropriate if you're building your own higher-level mechanism, or if you
 /// want to signal events from interrupt service routines.
 ///

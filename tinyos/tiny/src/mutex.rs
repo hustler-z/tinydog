@@ -84,7 +84,7 @@ use core::pin::Pin;
 use portable_atomic::{AtomicUsize, Ordering};
 
 use pin_project::pin_project;
-use tinybm_list::List;
+use tinyos_list::List;
 
 pub use crate::util::CancelSafe;
 

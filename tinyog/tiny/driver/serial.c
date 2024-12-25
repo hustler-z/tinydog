@@ -5,6 +5,9 @@
 
 struct serial {
     u32 baudrate, clock_hz, data_bits, parity, stop_bits, fifo_size, irq;
+    u64 io_base;
+    u64 io_size;
+    u8 lsr_mask;
 };
 
 void serial_putc(char c) {

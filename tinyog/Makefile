@@ -5,8 +5,8 @@
 CURDIR     := .
 OUTPUT     := out
 ARCH       ?= arm64
-BIN        := $(OUTPUT)/tinyc
-ELF        := $(OUTPUT)/tinyc.elf
+BIN        := $(OUTPUT)/tinyog
+ELF        := $(OUTPUT)/tinyog.elf
 HOST       ?= $(shell uname -m | sed -e s/aarch64/arm64/ \
                      -e s/x86_64/x86/)
 
@@ -48,10 +48,10 @@ CFLAGS     += -I$(BOARD_DIR)/include
 CFLAGS     += -nostdlib -nostdinc -g -Wall
 CFLAGS     += -std=gnu11 -fno-builtin -fno-common
 # objdump -x [.elf]
-CFLAGS     += -Wl,--no-warn-rwx-segments
+# CFLAGS     += -Wl,--no-warn-rwx-segments
 
 AFLAGS     += -I$(ARCH_DIR)/include
-AFLAGS     += -D__ASSEMBLY__
+AFLAGS     += -D__ASSEMBLY__ -D__TINY_START__=0x200000
 AFLAGS     += -nostdlib -g -Wall
 
 include $(ARCH_DIR)/arch.mk
