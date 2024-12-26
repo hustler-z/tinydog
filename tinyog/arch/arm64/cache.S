@@ -14,7 +14,7 @@
  *
  * x0 - cache level
  */
-FUNC(cache_invalidate)
+FUNC(__cache_invalidate__)
     msr   csselr_el1, x0
     mrs   x4, ccsidr_el1      // read cache size id.
     and   x1, x4, #0x7
@@ -41,4 +41,4 @@ FUNC(cache_invalidate)
     ble   1b                  // if not, iterate way_loop
 
     ret
-END(cache_invalidate)
+END(__cache_invalidate__)

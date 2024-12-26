@@ -15,7 +15,6 @@ SECTIONS {
     .text : {
         __text_start = .;
         *(.text.head)
-        *(.text.entry)
         *(.text.bugs)
         *(.text.vecs)
         *(.text.init)
@@ -33,15 +32,20 @@ SECTIONS {
 
     .rodata : {
         __rodata_start = .;
+        *(.rodata.debug)
+        *(.rodata .rodata.*)
+        . = ALIGN(8);
+        __rodata_end = .;
+    }
+
+    .console : {
         /* console commands */
         __cmd_list__ = .;
         KEEP(*(.cmd_list))
         __cmd_auto__ = .;
         KEEP(*(.cmd_auto))
         KEEP(*(.cmd_end))
-        *(.rodata .rodata.*)
         . = ALIGN(8);
-        __rodata_end = .;
     }
 
     .bss : {

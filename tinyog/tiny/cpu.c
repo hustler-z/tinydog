@@ -1,7 +1,8 @@
 // @Hustler's Project
 
-#include <cpu.h>
+#include <asm/entry.h>
 #include <compiler.h>
+#include <cpu.h>
 
 __stack u8 tiny_stack[STACK_SIZE];
 

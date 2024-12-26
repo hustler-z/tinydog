@@ -7,8 +7,6 @@
 
 #include <type.h>
 
-#define STACK_SIZE           (4096)
-
 struct context {
     register_t x0;
     register_t x1;

@@ -43,20 +43,19 @@ TINY_OUT   := $(OUTPUT)/tiny
 BOARD_OUT  := $(OUTPUT)/tiny/board
 DRIVER_OUT := $(OUTPUT)/tiny/driver
 
-INCDIR     += -I$(ARCH_DIR)/include
-INCDIR     += -I$(TINY_DIR)/include
-INCDIR     += -I$(BOARD_DIR)/include
-CFLAGS     += -nostdlib -nostdinc -g -Wall $(INCDIR)
+CFLAGS     += -I$(ARCH_DIR)/include
+CFLAGS     += -I$(TINY_DIR)/include
+CFLAGS     += -I$(BOARD_DIR)/include
+CFLAGS     += -nostdlib -nostdinc -g -Wall
 CFLAGS     += -std=gnu11 -fno-builtin -fno-common
 CFLAGS     += -fno-omit-frame-pointer -Og
-CFLAGS     += -mcpu=cortex-a55
 
 LDFLAGS    += -nostdlib -g -Wall
-# objdump -x [.elf]
-LDFLAGS    += -Wl,--no-warn-rwx-segments
+# LDFLAGS    += -Wl,--no-warn-rwx-segments
 
-AFLAGS     += $(INCDIR)
+AFLAGS     += -I$(ARCH_DIR)/include
 AFLAGS     += -D__ASSEMBLY__ -D__TINY_START__=0x200000
+AFLAGS     += -D__DBG_UART_BA__=0xFE660000
 AFLAGS     += -nostdlib -g -Wall
 
 include $(ARCH_DIR)/arch.mk
@@ -121,7 +120,7 @@ cc_objcopy = $(Q)mkdir -p `dirname $(1)`; \
 
 cc_objdump = $(Q)mkdir -p `dirname $(1)`; \
              echo "OD   $(patsubst %.elf,%.asm,$(subst $(OUTPUT)/,,$(1)))"; \
-             $(OBJDUMP) -S -d $(1) > $(patsubst %.elf,%.asm,$(1))
+             $(OBJDUMP) -x -d $(1) > $(patsubst %.elf,%.asm,$(1))
 
 #################################################################
 

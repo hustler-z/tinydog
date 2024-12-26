@@ -1,9 +1,12 @@
 // @Hustler's Project
 
-#include <asm/asm.h>
 #include <asm/offset.h>
+#include <asm/entry.h>
+#include <asm/asm.h>
 
-#define MPIDR_AFFn          8
+// ####################################################
+
+#define MPIDR_AFF_OFFSET    8
 #define EL1                 0x04
 #define EL2                 0x08
 #define EL3                 0x0C
@@ -23,21 +26,6 @@
     __HEAD
 
 FUNC(__head__)
-    add   x13, x18, #0x16
-    b     __entry__
-END(__head__)
-    .long  0
-    .quad  __tiny_end - __head__
-    .quad  0
-    .quad  0
-    .quad  0
-    .quad  0
-    .ascii "ARM64"
-    .long  0
-
-    __ENTRY
-
-__entry__:
     // disable SError, IRQ, FIQ, Sync exception
     msr   DAIFSet, #0x0F
 
@@ -47,6 +35,16 @@ __entry__:
 
     // debug uart initialization
     bl    __asm_uart_init__
+
+#if 1
+    ldr   x0, =__DBG_UART_BA__
+    mov   x1, 'X'
+    str   x1, [x0]
+    mov   x1, '\r'
+    str   x1, [x0]
+    mov   x1, '\n'
+    str   x1, [x0]
+#endif
 
     // @Hustler
     //
@@ -60,11 +58,9 @@ __entry__:
     cmp   x1, #EL2
     b.eq  1f
 
-    DBG("[tiny] os not on el2!!\r\n")
+    DBG("[tiny] not on el2\r\n")
 
-2:  wfe
-    b     2b
-
+    b     __boot_failed__
 1:
     // disable MMU, dcache, icache
     mrs   x1, SCTLR_EL2
@@ -73,36 +69,50 @@ __entry__:
     bic   x1, x1, #DCACHE
     msr   SCTLR_EL2, x1
 
-    DBG("[tiny] disable MMU,D-cache,I-cache\r\n")
+    DBG("[tiny] mmu,d-cache,i-cache disabled\r\n")
 
     // invalidate data cache
     mov   x0, #0
-    bl    cache_invalidate
+    bl    __cache_invalidate__
 
     // set up exception table
-    ldr   x1, =exception_vector
+    ldr   x1, =__vector__
     msr   VBAR_EL2, x1
 
+    // set up exception routing
     mrs   x0, HCR_EL2
     orr   x0, x0, #AMO
     orr   x0, x0, #IMO
     orr   x0, x0, #FMO
     msr   HCR_EL2, x0
 
+    // boot on cpu0
+    bl    __cpu_affinity__
+    cbz   w4, __boot_primary_cpu__
+
+    b     __boot_failed__
+END(__head__)
+
+// @Hustler
+FUNC(__boot_primary_cpu__)
     // enable SError, IRQ, FIQ, Sync exceptions
     msr   DAIFClr, #0x0F
 
     // clear bss
-    bl    bss_clear
+    bl    __bss_zero__
+
+    DBG("[tiny] start booting\r\n")
 
     // set up the stack
     ldr   x1, =boot_cpu
     add   x1, x1, #STACK
     ldr   x1, [x1]
+    add   x1, x1, #STACK_SIZE
     mov   sp, x1
 
     mov   x0, x20
     b     bootc
+END(__boot_primary_cpu__)
 
 // ####################################################
 
@@ -134,23 +144,38 @@ __entry__:
  *
  * MPIDR_EL1 - Multiprocessor Affinity Register
  */
-FUNC(cpu_affinity)
+FUNC(__cpu_affinity__)
     // cpu affinity
     mrs   x4, MPIDR_EL1
-    ubfx  x5, x4, #32, #MPIDR_AFFn
-    bfi   w4, w5, #24, #MPIDR_AFFn
+    ubfx  x5, x4, #32, #MPIDR_AFF_OFFSET
+    bfi   w4, w5, #24, #MPIDR_AFF_OFFSET
     ret
-END(cpu_affinity)
+END(__cpu_affinity__)
 
-FUNC(bss_clear)
-    DBG("[tiny] clear the bss section\r\n")
 
-    adr_l x0, __bss_start
-    adr_l x1, __bss_end
+// @Hustler
+FUNC(__bss_zero__)
+    DBG("[tiny] clear the bss\r\n")
+
+    adr   x0, __bss_start
+    adr   x1, __bss_end
 1:  str   xzr, [x0], #8
     cmp   x0, x1
     b.lt  1b
     ret
-END(bss_clear)
+END(__bss_zero__)
+
+// @Hustler
+FUNC(__boot_secondary_cpu__)
+    nop
+    nop
+END(__boot_secondary_cpu__)
+
+// @Hustler
+FUNC(__boot_failed__)
+    DBG("[tiny] boot cpu failed\r\n")
+1:  wfi
+    b     1b
+END(__boot_failed__)
 
 // ####################################################

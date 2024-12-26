@@ -19,7 +19,7 @@
  *    V
  * --------------------------- low
  */
-.macro exception_entry
+.macro __exception_entry__
     dmb   sy
 
     sub   sp, sp, #(ELR - LR)
@@ -53,7 +53,7 @@
 /**
  * TODO
  */
-.macro exception_exit
+.macro __exception_exit__
     msr   DAIFSet, #0x02
     ldr   x21, [sp, #PC]
     ldr   x22, [sp, #CPSR]
@@ -89,9 +89,9 @@
 .macro ventry, label
     .align 7
 \label:
-    exception_entry
+    __exception_entry__
     b     \label\()_handler
-    exception_exit
+    __exception_exit__
 .endm
 
 /**
@@ -111,7 +111,7 @@
  */
 
     .align 11
-GLOBAL(exception_vector)
+GLOBAL(__vector__)
     // Exception from the current EL while using SP_EL0
     ventry syn_sp0
     ventry irq_sp0
@@ -135,6 +135,6 @@ GLOBAL(exception_vector)
     ventry irq_opt
     ventry fiq_opt
     ventry err_opt
-END(exception_vector)
+END(__vector__)
 
 // ####################################################

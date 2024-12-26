@@ -1,8 +1,11 @@
+#include <asm/entry.h>
 #include <asm/asm.h>
-#include <serial.h>
-#include <rk3566.h>
 
 // ####################################################
+
+#define UART_LSR          0x05
+#define UART_LSR_THRE     0x20
+#define UART_THR          0x00
 
     __BUGS
 
@@ -19,10 +22,7 @@
 .endm
 
 FUNC(__asm_uart_init__)
-    ldr   x23, =DEBUG_SERIAL
-
-    DBG("[tiny] uart enabled\r\n")
-
+    ldr   x23, =__DBG_UART_BA__
     ret
 END(__asm_uart_init__)
 
@@ -39,20 +39,20 @@ FUNC(__asm_outs__)
 END(__asm_outs__)
 
 FUNC(__asm_outc__)
-    ldr   x15, =DEBUG_SERIAL
+    ldr   x15, =__DBG_UART_BA__
     __asm_uart_wake__ x15, 1
     __asm_uart_xfer__ x15, w0
     ret
 END(__asm_outc__)
 
 FUNC(__asm_flush__)
-    ldr   x15, =DEBUG_SERIAL
+    ldr   x15, =__DBG_UART_BA__
     __asm_uart_wake__ x15, 1
     ret
 END(__asm_flush__)
 
 FUNC(__asm_hex__)
-    adr_l x1, hex
+    ldr   x1, hex
     mov   x3, #16
 1:
     __asm_uart_wake__ x23, 2

@@ -83,9 +83,20 @@
 // ####################################################
 
 #define __HEAD     .section .text.head, "ax", %progbits
-#define __ENTRY    .section .text.entry, "ax", %progbits
 #define __BUGS     .section .text.bugs, "ax", %progbits
 #define __VECS     .section .text.vecs, "ax", %progbits
+
+// ####################################################
+
+/* stack pushing/popping register pairs
+ */
+.macro push, xn, xm
+    stp \xn, \xm, [sp, #-16]!
+.endm
+
+.macro pop,  xn, xm
+    ldp \xn, \xm, [sp], #16
+.endm
 
 // ####################################################
 
@@ -96,10 +107,10 @@ label: .asciz msg;                           \
 
 #define PRINT(section, string)               \
     mov   x3, lr;                            \
-    adr_l x0, 98f;                           \
+    adr   x0, 502f;                          \
     bl    __asm_outs__;                      \
     mov   lr, x3;                            \
-    RODATA(section, 98, string)
+    RODATA(section, 502, string)
 
 #define DBG(string) PRINT(.rodata.debug, string)
 
@@ -108,32 +119,6 @@ label: .asciz msg;                           \
     mov   x4, lr
     bl    __asm_hex__
     mov   lr, x4
-.endm
-
-/* :lo12: A special notation is used to
- *        add only the lowest 12 bits of
- *        the label to the adrp address.
- *        4KB page is addressable with
- *        12 bits.
- * adrp - Form PC-relative address to 4KB
- *        page.
- *
- * Load address of <sym> into <reg>, <sym> being in the range
- * +/- 4GB of the PC.
- */
-.macro  adr_l, dst, sym
-    adrp \dst, \sym
-    add  \dst, \dst, :lo12:\sym
-.endm
-
-/* stack pushing/popping register pairs
- */
-.macro push, xn, xm
-    stp \xn, \xm, [sp, #-16]!
-.endm
-
-.macro pop,  xn, xm
-    ldp \xn, \xm, [sp], #16
 .endm
 
 #endif /* __ASSEMBLY__ */
