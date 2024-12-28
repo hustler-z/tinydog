@@ -1,6 +1,6 @@
 tinyos/target/*
 tinyvm/target/*
-tinyog/out/*
-tinyog/tags
+tinycs/out/*
+tinycs/tags
 
 
