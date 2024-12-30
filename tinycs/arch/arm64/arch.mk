@@ -5,6 +5,7 @@ asm-y += head.o
 asm-y += mmu.o
 
 arm-y += exception.o
+arm-y += spinlock.o
 arm-y += memory.o
 arm-y += gicv3.o
 arm-y += cpu.o

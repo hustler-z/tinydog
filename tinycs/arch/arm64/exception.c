@@ -1,7 +1,8 @@
 // @Hustler's Project
 
-#include <asm/debug.h>
 #include <asm/cpu.h>
+
+extern void __asm_outs__(const char *msg);
 
 // @Hustler [ISR]
 void do_sync(struct context *context);

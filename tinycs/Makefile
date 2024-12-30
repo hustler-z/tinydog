@@ -19,7 +19,7 @@ endif
 #################################################################
 
 ifeq ($(HOST), x86)
-CROSS_COMPILE ?= aarch64-none-elf-
+CROSS_COMPILE ?= /home/wolf/hustler/aarch64-none-elf/bin/aarch64-none-elf-
 else
 CROSS_COMPILE ?=
 endif
@@ -47,6 +47,7 @@ CFLAGS     += -I$(BSP_DIR)/include
 CFLAGS     += -nostdlib -nostdinc -g -Wall
 CFLAGS     += -std=gnu11 -fno-builtin -fno-common
 CFLAGS     += -fno-omit-frame-pointer -Og
+CFLAGS     += -D__RK356X__
 
 LDFLAGS    += -nostdlib -g -Wall
 LDFLAGS    += -Wl,--no-warn-rwx-segments

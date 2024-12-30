@@ -467,7 +467,42 @@ int snprint(char *buf, size_t size, const char *fmt, ...)
     return i;
 }
 
-static void (*__outs__)(const char *s);
+// ####################################################
+
+// @Hustler
+extern void __asm_outc__(const char c); // @arch/arm64/debug.S
+extern void __asm_flush__(void);
+
+// @Hustler
+void (*__outs__)(const char *msg);
+
+static void prev_print(const char *msg) {
+    size_t len = strlen(msg);
+
+    while (len-- > 0) {
+        if (*msg == '\n')
+            __asm_outc__('\r');
+
+        __asm_outc__(*msg);
+        msg++;
+    }
+
+    __asm_flush__();
+}
+
+int prev_print_init(void) {
+    __outs__ = prev_print;
+
+    return 0;
+}
+
+int post_print_init(void (*func)(const char *)) {
+    __outs__ = func;
+
+    return 0;
+}
+
+// ####################################################
 
 static void vprint(const char *fmt, va_list args) {
     static char buf[1024];
@@ -486,9 +521,3 @@ void __print__(const char *fmt, ...) {
 
     va_end(args);
 }
-
-void __init set_outs(void (*func)(const char *)) {
-    __outs__ = func;
-}
-
-// ####################################################

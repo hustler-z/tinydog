@@ -1,4 +1,3 @@
-bsp-y += rk3566.o
 bsp-y += uart.o
 bsp-y += bsp.o
 bsp-y += hal.o

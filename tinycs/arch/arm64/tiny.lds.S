@@ -64,5 +64,12 @@ SECTIONS {
         __stack_end = .;
     }
 
+    .heap : {
+        __heap_start = .;
+        *(.heap .heap.*)
+        . = ALIGN(4096);
+        __heap_end = .;
+    }
+
     __tiny_end = .;
 }

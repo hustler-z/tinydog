@@ -1,8 +1,8 @@
 // @Hustler's Project
 
-#include <asm/debug.h>
 #include <compiler.h>
 #include <console.h>
+#include <print.h>
 #include <type.h>
 #include <time.h>
 #include <hal.h>
@@ -15,6 +15,8 @@ static const bootc_t bootf[] = {
     // @Hustler
     //
     // Here's the booting workflow
+    prev_print_init,
+
     primary_cpu_init,
 
     secondary_cpu_init,
@@ -24,6 +26,8 @@ static const bootc_t bootf[] = {
     time_init,
 
     hal_init,
+
+    post_print_init,
 
     console_init,
 
@@ -48,7 +52,6 @@ out:
 }
 
 void __init bootc(unsigned long offset) {
-    __asm_outs__("- hello, C world\r\n");
 
     // @Hustler
     if (__bootc__(bootf))
