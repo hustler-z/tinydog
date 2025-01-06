@@ -3,8 +3,10 @@ ____            _
  / // /\   \  // /_ \/\/_/ /
  \/ \/  \/\/_/__/_/\_/\/ \/ @2024
 
-This is derived from 'lilos'.
+rust    - tinyos implemented with Rust
+          [on process]
 
-[on process]
+cimp    - tinyos implemented with C
+          [active]
 
 This project gonna be running on radxa-zero 3w.
